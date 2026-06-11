@@ -35,5 +35,4 @@ LonnieCrow Room 1 rebuilt as a browser game (Vite + TypeScript + Three.js). Godo
 
 ## Blockers / notes
 
-- Local folder is still named `LonnieCrowV1`; GitHub remote is `project-stillpoint`.
 - Player model: `public/models/characters/man-in-suit.glb` (CC0, Quaternius Animated Men Pack).

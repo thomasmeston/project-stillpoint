@@ -8,7 +8,7 @@
 Browser-based isometric escape room: Lonnie Crow wakes trapped in his bedroom and must solve puzzles to escape while uncovering the truth about **Project Stillpoint**.
 
 **GitHub:** https://github.com/thomasmeston/project-stillpoint  
-**Local path:** `C:\Users\thoma\OneDrive\Documents\GitHub\LonnieCrowV1` (folder name predates repo rename)
+**Local path:** `C:\Users\thoma\OneDrive\Documents\GitHub\project-stillpoint`
 
 ## Stack
 
