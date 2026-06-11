@@ -1,0 +1,46 @@
+{
+  "items": {
+    "calendar_scrap": {
+      "label": "Calendar Scrap",
+      "description": "A torn piece of March calendar. Someone circled the 17th and wrote 3:17 in the margin."
+    },
+    "photo_set": {
+      "label": "Photo Backs",
+      "description": "Four wallet photos flipped over. Letters are scribbled on the cardboard backs."
+    },
+    "receipt_stub": {
+      "label": "Receipt Stub",
+      "description": "Stillpoint Sleep Lab — intake deposit. Date matches the circled calendar day."
+    },
+    "key_blade": {
+      "label": "Key Blade",
+      "description": "A narrow brass key blade without a handle."
+    },
+    "key_handle": {
+      "label": "Key Handle",
+      "description": "A worn wooden key grip. It looks like it snapped off something."
+    },
+    "assembled_key": {
+      "label": "Assembled Key",
+      "description": "Blade and handle joined. It should fit the wardrobe lock."
+    },
+    "cipher_disk": {
+      "label": "Cipher Disk",
+      "description": "A cardboard wheel with cut-out windows. Align STILL with POINT."
+    },
+    "stillpoint_letter": {
+      "label": "Stillpoint Letter",
+      "description": "Folded consent letter for Project Stillpoint. Your signature is at the bottom."
+    }
+  },
+  "combine_rules": [
+    {
+      "inputs": ["key_blade", "key_handle"],
+      "result": "assembled_key",
+      "on_success": [
+        "journal:key_assembled",
+        "thought:key_ready"
+      ]
+    }
+  ]
+}

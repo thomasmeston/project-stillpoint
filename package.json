@@ -1,0 +1,22 @@
+{
+  "name": "lonnie-crow",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "package:itch": "node scripts/package-itch.mjs"
+  },
+  "dependencies": {
+    "howler": "^2.2.4",
+    "three": "^0.175.0"
+  },
+  "devDependencies": {
+    "@types/howler": "^2.2.12",
+    "@types/three": "^0.175.0",
+    "typescript": "^5.8.2",
+    "vite": "^6.2.2"
+  }
+}

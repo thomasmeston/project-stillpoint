@@ -1,0 +1,98 @@
+{
+  "puzzles": [
+    {
+      "id": "clock",
+      "type": "clock",
+      "solution": { "hour": 3, "minute": 17 },
+      "on_success": [
+        "set_flag:desk_drawer_unlocked",
+        "journal:clock_solved",
+        "thought:drawer_unlocked"
+      ]
+    },
+    {
+      "id": "photo_cipher",
+      "type": "photo_cipher",
+      "solution": "STILL",
+      "on_success": [
+        "set_flag:safe_combo_known",
+        "set_flag:painting_moved",
+        "journal:photo_cipher_solved",
+        "thought:safe_found"
+      ]
+    },
+    {
+      "id": "padlock",
+      "type": "padlock",
+      "solution": "STILLPOINT",
+      "on_success": [
+        "set_flag:door_unlocked",
+        "journal:door_code",
+        "thought:door_opening"
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "hotspot": "desk_drawer",
+      "requires": ["flag:desk_drawer_unlocked"]
+    },
+    {
+      "hotspot": "painting",
+      "requires": ["flag:desk_drawer_unlocked"]
+    },
+    {
+      "hotspot": "wall_safe",
+      "requires": ["flag:painting_moved"]
+    },
+    {
+      "hotspot": "key_handle",
+      "requires": ["flag:desk_drawer_unlocked"]
+    },
+    {
+      "hotspot": "cipher_disk_pickup",
+      "requires": ["flag:wardrobe_unlocked"]
+    },
+    {
+      "hotspot": "stillpoint_letter",
+      "requires": ["flag:wardrobe_unlocked"]
+    },
+    {
+      "hotspot": "door",
+      "requires": ["item:cipher_disk"]
+    }
+  ],
+  "hotspots": [
+    { "id": "bed", "action": "examine" },
+    { "id": "calendar_scrap", "action": "pickup", "item": "calendar_scrap" },
+    { "id": "wall_clock", "action": "open_puzzle", "puzzle": "clock" },
+    { "id": "desk", "action": "examine" },
+    { "id": "desk_drawer", "action": "examine" },
+    { "id": "sketchbook", "action": "examine" },
+    { "id": "bookshelf", "action": "examine" },
+    { "id": "nightstand", "action": "examine" },
+    { "id": "key_handle", "action": "pickup", "item": "key_handle" },
+    { "id": "painting", "action": "open_puzzle", "puzzle": "photo_cipher" },
+    { "id": "wall_safe", "action": "examine" },
+    { "id": "wardrobe", "action": "examine" },
+    { "id": "cipher_disk_pickup", "action": "pickup", "item": "cipher_disk" },
+    { "id": "stillpoint_letter", "action": "pickup", "item": "stillpoint_letter" },
+    { "id": "door", "action": "open_puzzle", "puzzle": "padlock" },
+    { "id": "window", "action": "examine" },
+    { "id": "phone", "action": "examine" },
+    { "id": "combine_station", "action": "combine" }
+  ],
+  "item_uses": [
+    {
+      "item": "assembled_key",
+      "hotspot": "wardrobe",
+      "requires": ["item:assembled_key"],
+      "on_success": [
+        "set_flag:wardrobe_unlocked",
+        "journal:wardrobe_open",
+        "thought:wardrobe_open"
+      ],
+      "consume_item": false
+    }
+  ]
+}

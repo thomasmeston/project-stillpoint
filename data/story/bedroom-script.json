@@ -1,0 +1,154 @@
+{
+  "opening_thought": "My head is thick with static. The door should open. It doesn't. Nothing in this room feels quite mine.",
+  "thoughts": {
+    "locked_hint": "That won't budge yet. There has to be another way in.",
+    "drawer_unlocked": "The drawer clicks. Someone wanted me to find what's inside.",
+    "safe_found": "The painting shifts. A safe sits in the wall like a secret I forgot on purpose.",
+    "key_ready": "The key feels familiar — like I assembled it in a dream already.",
+    "wardrobe_open": "Cold air from the wardrobe. Paper smell. Memory trying to surface.",
+    "door_opening": "The chain falls. The deadbolt catches for the first time.",
+    "desk_drawer_loot": "Photos, a receipt. Pieces of a day I don't remember living."
+  },
+  "journal_entries": {
+    "calendar_clue": {
+      "title": "Calendar Scrap",
+      "body": "March 17 circled in my own handwriting. Margin note: 3:17. Why would I mark a minute?",
+      "thought": "Time might be the first lock."
+    },
+    "clock_solved": {
+      "title": "Clock Set to 3:17",
+      "body": "The bedroom clock ticks again when set to 3:17. The desk drawer pops open.",
+      "thought": "I chose that time. I must have."
+    },
+    "photo_cipher_solved": {
+      "title": "Photo Backs — STILL",
+      "body": "Rearranging the photo backs spells STILL. Receipt says Stillpoint Sleep Lab intake.",
+      "thought": "Stillpoint. The word sits heavy."
+    },
+    "safe_opened": {
+      "title": "Wall Safe",
+      "body": "Inside the safe: a brass key blade and a note — 'Handle where you rest.'",
+      "thought": "Rest. Nightstand."
+    },
+    "key_assembled": {
+      "title": "Key Assembled",
+      "body": "Blade and wooden handle fit together. Wardrobe lock.",
+      "thought": ""
+    },
+    "wardrobe_open": {
+      "title": "Wardrobe Contents",
+      "body": "Cipher disk and a folded consent letter for Project Stillpoint. My signature.",
+      "thought": "I signed this. I wanted to forget something."
+    },
+    "disk_hint": {
+      "title": "Cipher Disk",
+      "body": "Align STILL with POINT on the disk. The door padlock wants the full passphrase.",
+      "thought": "STILLPOINT. The name of the project."
+    },
+    "door_code": {
+      "title": "Door Unlocked",
+      "body": "Padlock code accepted. Chain slack. Deadbolt finally catches.",
+      "thought": ""
+    },
+    "ending_journal": {
+      "title": "Project Stillpoint",
+      "body": "I volunteered for a lucid-dream containment trial. The bedroom is a reconstructed memory space — not quite real. I hid the exit passphrase from myself until I was ready to remember why I came here. The door opens. The trial ends when I choose to leave."
+    }
+  },
+  "examines": {
+    "bed": {
+      "title": "Bed",
+      "body": "Sheets still warm. A calendar scrap peeks from under the mattress edge.",
+      "journal": "calendar_clue"
+    },
+    "calendar_scrap": {
+      "title": "Calendar Scrap",
+      "body": "March 17 circled. 3:17 written in the margin in my handwriting."
+    },
+    "wall_clock": {
+      "title": "Wall Clock",
+      "body": "Stopped at midnight. The second hand trembles when you touch it, like it wants a time."
+    },
+    "desk": {
+      "title": "Desk",
+      "body": "Sketchbook, lamp, locked drawer. Coffee ring dried into the wood."
+    },
+    "desk_drawer": {
+      "title": "Desk Drawer",
+      "body": "Photo backs and a Stillpoint receipt stub. The word STILL is scrambled across them.",
+      "thought": "desk_drawer_loot"
+    },
+    "sketchbook": {
+      "title": "Sketchbook",
+      "body": "A crow study on the last page — detailed, recent. I don't remember drawing it. Margin reads: STILL → POINT."
+    },
+    "bookshelf": {
+      "title": "Bookshelf",
+      "body": "Paperbacks and a spine labeled 'Dream Cartography.' Flavor of someone who reads to escape."
+    },
+    "nightstand": {
+      "title": "Nightstand",
+      "body": "A wooden key handle in the drawer. It snapped off something heavier."
+    },
+    "key_handle": {
+      "title": "Key Handle",
+      "body": "Worn grip. It belongs with the blade from the safe."
+    },
+    "painting": {
+      "title": "Painting",
+      "body": "A landscape that doesn't match any place I've been. The frame hides something."
+    },
+    "wall_safe": {
+      "title": "Wall Safe",
+      "body": "Small brass safe. Inside: a key blade and a scrap — 'Handle where you rest.'",
+      "journal": "safe_opened"
+    },
+    "wardrobe": {
+      "title": "Wardrobe",
+      "body": "Locked. The assembled key should fit the old brass latch."
+    },
+    "cipher_disk_pickup": {
+      "title": "Cipher Disk",
+      "body": "Cardboard wheel. Windows align STILL with POINT."
+    },
+    "stillpoint_letter": {
+      "title": "Stillpoint Letter",
+      "body": "Consent for Project Stillpoint — voluntary memory containment during lucid REM. My signature at the bottom."
+    },
+    "door": {
+      "title": "Bedroom Door",
+      "body": "Deadbolt spins freely until now. Chain and letter padlock block the way out."
+    },
+    "window": {
+      "title": "Window",
+      "body": "Rain on glass. Street below is wrong — too quiet, no cars. No exit here."
+    },
+    "phone": {
+      "title": "Phone",
+      "body": "No signal. One notification frozen on screen: 'You chose to forget.'"
+    },
+    "combine_station": {
+      "title": "Desk Surface",
+      "body": "Enough space to fit two small objects together."
+    }
+  },
+  "on_flag": {
+    "desk_drawer_unlocked": {
+      "thought": "drawer_unlocked"
+    },
+    "painting_moved": {
+      "thought": "safe_found"
+    },
+    "wardrobe_unlocked": {
+      "thought": "wardrobe_open"
+    },
+    "door_unlocked": {
+      "thought": "door_opening"
+    }
+  },
+  "ending": {
+    "title": "You Remember",
+    "body": "Lonnie steps into the hallway. Fluorescent hum. A voice on a speaker: 'Session complete.'\n\nProject Stillpoint was never a prison — it was a chamber you built to recover a memory too sharp to carry awake. The bedroom dissolves behind you like a page turning.\n\nYou chose to forget. You chose to return.",
+    "journal_id": "ending_journal"
+  }
+}

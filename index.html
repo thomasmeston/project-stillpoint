@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LonnieCrow — Bedroom</title>
+    <link rel="stylesheet" href="/styles/hud.css" />
+  </head>
+  <body>
+    <canvas id="game-canvas"></canvas>
+
+    <div id="hud">
+      <header id="title-bar">
+        <h1>LonnieCrow — Bedroom</h1>
+        <div id="header-controls">
+          <div id="view-controls">
+            <button id="rotate-left" type="button" title="Rotate left (Q / ←)">↺</button>
+            <button id="rotate-right" type="button" title="Rotate right (E / →)">↻</button>
+          </div>
+          <button id="journal-toggle" type="button">Journal</button>
+        </div>
+      </header>
+
+      <div id="cursor-label">Walk</div>
+
+      <div id="thought-toast" class="hidden">
+        <p id="thought-text"></p>
+      </div>
+
+      <div id="examine-panel" class="panel hidden">
+        <h2 id="examine-title">Examine</h2>
+        <p id="examine-body"></p>
+        <button id="examine-close" type="button">Close</button>
+      </div>
+
+      <aside id="journal-panel" class="panel hidden">
+        <h2>Journal</h2>
+        <select id="journal-list" size="5"></select>
+        <p id="journal-detail">Clues appear here.</p>
+      </aside>
+
+      <footer id="inventory-bar"></footer>
+    </div>
+
+    <div id="clock-modal" class="modal hidden">
+      <div class="modal-content panel">
+        <h2>Set the Clock</h2>
+        <label>Hour (1–12) <input id="clock-hour" type="number" min="1" max="12" value="12" /></label>
+        <label>Minute (0–59) <input id="clock-minute" type="number" min="0" max="59" value="0" /></label>
+        <button id="clock-submit" type="button">Set Time</button>
+        <button id="clock-close" type="button">Cancel</button>
+      </div>
+    </div>
+
+    <div id="photo-modal" class="modal hidden">
+      <div class="modal-content panel">
+        <h2>Photo Backs</h2>
+        <p>Click tiles to swap. Spell the word.</p>
+        <div id="photo-tiles"></div>
+        <button id="photo-submit" type="button">Confirm</button>
+        <button id="photo-close" type="button">Cancel</button>
+      </div>
+    </div>
+
+    <div id="combine-modal" class="modal hidden">
+      <div class="modal-content panel">
+        <h2>Combine Items</h2>
+        <select id="combine-a"></select>
+        <select id="combine-b"></select>
+        <button id="combine-submit" type="button">Combine</button>
+        <button id="combine-close" type="button">Cancel</button>
+      </div>
+    </div>
+
+    <div id="padlock-modal" class="modal hidden">
+      <div class="modal-content panel">
+        <h2>Door Padlock</h2>
+        <input id="padlock-entry" type="text" placeholder="STILLPOINT" autocomplete="off" />
+        <button id="padlock-submit" type="button">Unlock</button>
+        <button id="padlock-close" type="button">Cancel</button>
+      </div>
+    </div>
+
+    <div id="win-overlay" class="modal hidden">
+      <div class="modal-content panel win-panel">
+        <h2 id="win-title">Escaped</h2>
+        <p id="win-body"></p>
+        <button id="win-restart" type="button">Play Again</button>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

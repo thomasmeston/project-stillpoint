@@ -1,0 +1,23 @@
+[gd_scene load_steps=7 format=3 uid="uid://main001"]
+
+[ext_resource type="Script" path="res://scripts/main/Main.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://bedroom001" path="res://scenes/rooms/Bedroom.tscn" id="2"]
+[ext_resource type="PackedScene" uid="uid://player001" path="res://scenes/player/Player.tscn" id="3"]
+[ext_resource type="PackedScene" uid="uid://camera001" path="res://scenes/camera/IsoCameraRig.tscn" id="4"]
+[ext_resource type="PackedScene" uid="uid://hud001" path="res://scenes/ui/HUD.tscn" id="5"]
+[ext_resource type="Script" path="res://scripts/player/PlayerInput.gd" id="6"]
+
+[node name="Main" type="Node3D"]
+script = ExtResource("1")
+
+[node name="Bedroom" parent="." instance=ExtResource("2")]
+
+[node name="Player" parent="." instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2)
+
+[node name="IsoCameraRig" parent="." instance=ExtResource("4")]
+
+[node name="PlayerInput" type="Node" parent="."]
+script = ExtResource("6")
+
+[node name="HUD" parent="." instance=ExtResource("5")]

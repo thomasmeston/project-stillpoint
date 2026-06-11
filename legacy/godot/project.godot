@@ -1,0 +1,41 @@
+; Engine configuration file.
+; Godot 4.x project — LonnieCrow Room 1 MVP
+
+config_version=5
+
+[application]
+
+config/name="LonnieCrow"
+config/description="Escape room point-and-click — Room 1: Bedroom"
+run/main_scene="res://scenes/main/Main.tscn"
+config/features=PackedStringArray("4.3", "Forward Plus")
+config/icon="res://icon.svg"
+
+[autoload]
+
+GameState="*res://scripts/autoload/GameState.gd"
+DataLoader="*res://scripts/autoload/DataLoader.gd"
+PuzzleManager="*res://scripts/autoload/PuzzleManager.gd"
+InventoryManager="*res://scripts/autoload/InventoryManager.gd"
+NarrativeManager="*res://scripts/autoload/NarrativeManager.gd"
+SaveLoad="*res://scripts/autoload/SaveLoad.gd"
+AudioManager="*res://scripts/autoload/AudioManager.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+
+[input]
+
+click={
+"deadzone": 0.5,
+"events": [Object(InputEventMouseButton,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"button_mask":1,"position":Vector2(0, 0),"global_position":Vector2(0, 0),"factor":1.0,"button_index":1,"canceled":false,"pressed":true,"double_click":false,"script":null)
+]
+}
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
+environment/defaults/default_clear_color=Color(0.08, 0.09, 0.12, 1)
