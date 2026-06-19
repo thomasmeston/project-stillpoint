@@ -178,4 +178,24 @@ export class PuzzleManager {
       this.events.emit('hotspotStateChanged', id);
     }
   }
+
+  getSaveData() {
+    return {
+      hotspots: Array.from(this.hotspots.entries()).map(([id, def]) => ({
+        id,
+        disabled: def.disabled ?? false,
+      })),
+    };
+  }
+
+  loadSaveData(data: { hotspots: Array<{ id: string; disabled: boolean }> }): void {
+    if (!data || !data.hotspots) return;
+    for (const h of data.hotspots) {
+      const def = this.hotspots.get(h.id);
+      if (def) {
+        def.disabled = h.disabled;
+      }
+    }
+    this.onFlagChanged();
+  }
 }

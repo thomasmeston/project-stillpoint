@@ -5,4 +5,5 @@ if (!canvas) {
   throw new Error('Missing #game-canvas');
 }
 
-new Game(canvas);
+const game = new Game(canvas);
+(window as any).game = game;

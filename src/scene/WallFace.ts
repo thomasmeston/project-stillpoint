@@ -15,11 +15,19 @@ export function oppositeWall(face: WallFace): WallFace | null {
   return OPPOSITE[face];
 }
 
-/** Opposite wall drops; facing and side walls stay raised. */
+const RAISED_WALLS_BY_VIEW: Record<number, WallFace[]> = {
+  0: ['north', 'west'], // Facing north (looking NW): north and west raised
+  1: ['south', 'west'], // Facing east (looking SW): south and west raised
+  2: ['south', 'east'], // Facing south (looking SE): south and east raised
+  3: ['north', 'east'], // Facing west (looking NE): north and east raised
+};
+
+/** Only the two back corner walls stay raised to form a background corner, folding down foreground walls. */
 export function isWallRaised(face: WallFace, viewIndex: number): boolean {
   if (face === 'floor') return true;
-  const facing = VIEW_FACING[viewIndex % 4];
-  return face !== oppositeWall(facing);
+  const index = ((viewIndex % 4) + 4) % 4;
+  const raised = RAISED_WALLS_BY_VIEW[index];
+  return raised.includes(face);
 }
 
 export function inferWallFace(x: number, z: number): WallFace {

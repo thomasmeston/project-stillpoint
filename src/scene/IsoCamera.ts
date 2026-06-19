@@ -4,19 +4,6 @@ import { VIEW_FACING, type WallFace } from './WallFace';
 const ISO_PITCH = THREE.MathUtils.degToRad(-35);
 const ROTATE_DAMP = 9;
 
-type ViewPose = {
-  position: THREE.Vector3;
-  yaw: number;
-};
-
-/** Pre-tuned isometric orbit poses per facing wall. */
-const VIEW_POSES: Record<Exclude<WallFace, 'floor'>, ViewPose> = {
-  north: { position: new THREE.Vector3(0, 6.2, 6.5), yaw: THREE.MathUtils.degToRad(45) },
-  east: { position: new THREE.Vector3(6.5, 6.2, 1), yaw: THREE.MathUtils.degToRad(135) },
-  south: { position: new THREE.Vector3(0, 6.2, -4.5), yaw: THREE.MathUtils.degToRad(225) },
-  west: { position: new THREE.Vector3(-6.5, 6.2, 1), yaw: THREE.MathUtils.degToRad(315) },
-};
-
 export class IsoCamera {
   readonly camera: THREE.OrthographicCamera;
   readonly rig: THREE.Object3D;
@@ -40,7 +27,9 @@ export class IsoCamera {
       0.1,
       100,
     );
+    this.camera.position.set(0, 0, 20); // Offset along local Z axis
     this.rig.add(this.camera);
+
     this.snapToView(0);
     this.currentPos.copy(this.targetPos);
     this.currentYaw = this.targetYaw;
@@ -58,14 +47,14 @@ export class IsoCamera {
   rotateLeft(): void {
     if (this.rotating) return;
     this.viewIndex = (this.viewIndex + 3) % 4;
-    this.updateTarget();
+    this.targetYaw -= Math.PI / 2;
     this.rotating = true;
   }
 
   rotateRight(): void {
     if (this.rotating) return;
     this.viewIndex = (this.viewIndex + 1) % 4;
-    this.updateTarget();
+    this.targetYaw += Math.PI / 2;
     this.rotating = true;
   }
 
@@ -88,7 +77,7 @@ export class IsoCamera {
   }
 
   onWheel(deltaY: number): void {
-    this.size = THREE.MathUtils.clamp(this.size + deltaY * 0.01, 8, 14);
+    this.size = THREE.MathUtils.clamp(this.size + deltaY * 0.01, 4, 15);
     this.resize(window.innerWidth, window.innerHeight);
   }
 
@@ -109,20 +98,28 @@ export class IsoCamera {
     }
   }
 
+  menuRotate(dt: number): void {
+    this.targetYaw += 0.06 * dt;
+    this.currentYaw = this.targetYaw;
+    this.applyRigPose(this.currentPos, this.currentYaw);
+  }
+
   focusOn(_target: THREE.Vector3): void {
-    // Fixed orbit views — no pan.
+    // Fixed orbit views.
   }
 
   private snapToView(index: number): void {
     const facing = VIEW_FACING[index];
-    const pose = VIEW_POSES[facing as Exclude<WallFace, 'floor'>];
-    this.targetPos.copy(pose.position);
-    this.targetYaw = pose.yaw;
+    const yaws: Record<Exclude<WallFace, 'floor'>, number> = {
+      north: THREE.MathUtils.degToRad(45),
+      east: THREE.MathUtils.degToRad(135),
+      south: THREE.MathUtils.degToRad(225),
+      west: THREE.MathUtils.degToRad(315),
+    };
+    this.targetPos.set(0, 0.9, 0.0); // Center of the room
+    this.targetYaw = yaws[facing as Exclude<WallFace, 'floor'>];
   }
 
-  private updateTarget(): void {
-    this.snapToView(this.viewIndex);
-  }
 
   private applyRigPose(pos: THREE.Vector3, yaw: number): void {
     this.rig.position.copy(pos);

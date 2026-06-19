@@ -3,15 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LonnieCrow — Bedroom</title>
+    <title>Project Stillpoint</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/styles/hud.css" />
   </head>
   <body>
     <canvas id="game-canvas"></canvas>
 
-    <div id="hud">
+    <div id="hud" class="hidden">
       <header id="title-bar">
-        <h1>LonnieCrow — Bedroom</h1>
+        <h1>Bedroom</h1>
         <div id="header-controls">
           <div id="view-controls">
             <button id="rotate-left" type="button" title="Rotate left (Q / ←)">↺</button>
@@ -88,6 +91,69 @@
         <button id="win-restart" type="button">Play Again</button>
       </div>
     </div>
+
+    <div id="main-menu" class="menu-overlay">
+      <div class="menu-content">
+        <h1 class="menu-title">Project Stillpoint</h1>
+        
+        <div class="slots-container">
+          <!-- Slot 1 -->
+          <div class="slot-card" id="slot-card-1">
+            <div class="slot-header">Slot 1</div>
+            <div class="slot-info" id="slot-info-1">Empty Slot</div>
+            <div class="slot-actions">
+              <button class="menu-btn new-game-btn" data-slot="1">New Game</button>
+              <button class="menu-btn load-game-btn hidden" data-slot="1">Load Game</button>
+              <button class="menu-btn delete-btn hidden" data-slot="1">Delete</button>
+            </div>
+          </div>
+          <!-- Slot 2 -->
+          <div class="slot-card" id="slot-card-2">
+            <div class="slot-header">Slot 2</div>
+            <div class="slot-info" id="slot-info-2">Empty Slot</div>
+            <div class="slot-actions">
+              <button class="menu-btn new-game-btn" data-slot="2">New Game</button>
+              <button class="menu-btn load-game-btn hidden" data-slot="2">Load Game</button>
+              <button class="menu-btn delete-btn hidden" data-slot="2">Delete</button>
+            </div>
+          </div>
+          <!-- Slot 3 -->
+          <div class="slot-card" id="slot-card-3">
+            <div class="slot-header">Slot 3</div>
+            <div class="slot-info" id="slot-info-3">Empty Slot</div>
+            <div class="slot-actions">
+              <button class="menu-btn new-game-btn" data-slot="3">New Game</button>
+              <button class="menu-btn load-game-btn hidden" data-slot="3">Load Game</button>
+              <button class="menu-btn delete-btn hidden" data-slot="3">Delete</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Escape Menu -->
+    <div id="escape-menu" class="menu-overlay hidden">
+      <div class="menu-content escape-content">
+        <h2 class="menu-title escape-title">Paused</h2>
+        
+        <div class="settings-group">
+          <div class="setting-row">
+            <label for="mute-music">Mute Music</label>
+            <input type="checkbox" id="mute-music" class="menu-checkbox" />
+          </div>
+          
+          <div class="setting-row">
+            <label for="music-volume">Music Volume</label>
+            <input type="range" id="music-volume" min="0" max="1" step="0.05" class="menu-slider" />
+          </div>
+        </div>
+        
+        <button id="resume-btn" class="menu-btn resume-btn">Resume</button>
+      </div>
+    </div>
+
+    <!-- Intro Words Screen -->
+    <div id="intro-words-overlay" class="menu-overlay hidden"></div>
 
     <script type="module" src="/src/main.ts"></script>
   </body>

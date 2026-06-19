@@ -1,28 +1,33 @@
 import type { GameState } from './GameState';
 import type { Inventory } from './Inventory';
 import type { NarrativeManager } from './NarrativeManager';
+import type { PuzzleManager } from './PuzzleManager';
 
-const SAVE_KEY = 'lonniecrow_save_v1';
+const getSaveKey = (slot: number) => `stillpoint_save_slot_${slot}`;
 
 export class SaveLoad {
   save(
     gameState: GameState,
     inventory: Inventory,
     narrative: NarrativeManager,
+    puzzleManager: PuzzleManager,
     playerPosition: { x: number; y: number; z: number },
+    slot: number,
   ): void {
     const data = {
       version: 1,
       gameState: gameState.getSaveData(),
       inventory: inventory.getSaveData(),
       narrative: narrative.getSaveData(),
+      puzzleManager: puzzleManager.getSaveData(),
       playerPosition,
+      timestamp: Date.now()
     };
-    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    localStorage.setItem(getSaveKey(slot), JSON.stringify(data));
   }
 
-  load(): Record<string, unknown> | null {
-    const raw = localStorage.getItem(SAVE_KEY);
+  load(slot: number): Record<string, unknown> | null {
+    const raw = localStorage.getItem(getSaveKey(slot));
     if (!raw) return null;
     try {
       return JSON.parse(raw) as Record<string, unknown>;
@@ -31,11 +36,11 @@ export class SaveLoad {
     }
   }
 
-  delete(): void {
-    localStorage.removeItem(SAVE_KEY);
+  delete(slot: number): void {
+    localStorage.removeItem(getSaveKey(slot));
   }
 
-  hasSave(): boolean {
-    return localStorage.getItem(SAVE_KEY) !== null;
+  hasSave(slot: number): boolean {
+    return localStorage.getItem(getSaveKey(slot)) !== null;
   }
 }

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
-const MODEL_URL = '/models/characters/man-in-suit.glb';
+const MODEL_URL = '/models/characters/man-casual.glb';
 const WALK_CLIP = 'HumanArmature|Man_Walk';
 const IDLE_CLIP = 'HumanArmature|Man_Idle';
 const TARGET_HEIGHT = 1.7;
@@ -28,6 +28,20 @@ export class PlayerMover {
         if ((child as THREE.Mesh).isMesh) {
           child.castShadow = true;
           child.receiveShadow = true;
+
+          const mesh = child as THREE.Mesh;
+          if (mesh.material && !Array.isArray(mesh.material)) {
+            const mat = mesh.material as THREE.MeshStandardMaterial;
+            if (mat.name === 'Shirt') {
+              mat.color.set('#294266'); // Muted blue jacket/coat
+            } else if (mat.name === 'Pants') {
+              mat.color.set('#2d2330'); // Dark wine/purple pants
+            } else if (mat.name === 'Details') {
+              mat.color.set('#8e9196'); // Gray inner shirt
+            } else if (mat.name === 'TieTexture') {
+              mesh.visible = false; // Hide the tie
+            }
+          }
         }
       });
 
@@ -106,5 +120,15 @@ export class PlayerMover {
 
   get position(): THREE.Vector3 {
     return this.root.position;
+  }
+
+  get isMoving(): boolean {
+    return this.moving;
+  }
+
+  setPosition(pos: { x: number; y: number; z: number }): void {
+    this.root.position.set(pos.x, pos.y, pos.z);
+    this.target = null;
+    this.setMoving(false);
   }
 }

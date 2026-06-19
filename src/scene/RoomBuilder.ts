@@ -33,6 +33,7 @@ export class RoomBuilder {
   readonly floorMeshes: THREE.Object3D[] = [];
 
   private palette: Record<string, string>;
+  private wallMeshes = new Map<WallFace, THREE.Mesh>();
 
   constructor(private wallCtrl: ViewWallController) {
     const data = roomData as unknown as RoomFile;
@@ -43,6 +44,11 @@ export class RoomBuilder {
     this.buildProps(data.props);
     this.buildHotspots(data.hotspots);
     this.buildLighting(data.lighting ?? {});
+
+    // Register walls with wallCtrl AFTER everything is parented and in rest position!
+    for (const [face, wall] of this.wallMeshes) {
+      this.wallCtrl.register(wall, face);
+    }
   }
 
   private color(value: string): THREE.Color {
@@ -68,18 +74,18 @@ export class RoomBuilder {
   }
 
   private buildShell(shell: RoomFile['shell']): void {
+    const centerZ = 0;
     const floor = this.makeBox(
       new THREE.Vector3(shell.size.x, 0.1, shell.size.z),
       this.color(shell.floor_color),
       true,
     );
-    floor.position.set(0, -0.05, 1);
+    floor.position.set(0, -0.05, centerZ);
     this.root.add(floor);
 
     const wallH = shell.wall_height;
     const halfX = shell.size.x / 2;
     const halfZ = shell.size.z / 2;
-    const centerZ = 1;
 
     const walls: Array<{ id: string; face: WallFace; pos: [number, number, number]; size: [number, number, number] }> = [
       { id: 'wall_north', face: 'north', pos: [0, wallH / 2, centerZ - halfZ], size: [shell.size.x, wallH, 0.15] },
@@ -97,7 +103,7 @@ export class RoomBuilder {
       wall.name = w.id;
       wall.userData.wallFace = w.face;
       this.root.add(wall);
-      this.wallCtrl.register(wall, w.face);
+      this.wallMeshes.set(w.face, wall);
     }
   }
 
@@ -130,9 +136,16 @@ export class RoomBuilder {
       mesh.name = prop.id;
       const face = prop.wall ?? inferWallFace(prop.position[0], prop.position[2]);
       mesh.userData.wallFace = face;
-      this.propsRoot.add(mesh);
       if (face !== 'floor') {
-        this.wallCtrl.register(mesh, face);
+        const wallMesh = this.wallMeshes.get(face);
+        if (wallMesh) {
+          mesh.position.sub(wallMesh.position);
+          wallMesh.add(mesh);
+        } else {
+          this.propsRoot.add(mesh);
+        }
+      } else {
+        this.propsRoot.add(mesh);
       }
     }
   }
@@ -142,10 +155,18 @@ export class RoomBuilder {
       const hotspot = new Hotspot(hs);
       const face = hs.wall ?? inferWallFace(hs.position[0], hs.position[2]);
       hotspot.mesh.userData.wallFace = face;
+      hotspot.mesh.userData.isHotspot = true;
       this.hotspots.push(hotspot);
-      this.hotspotsRoot.add(hotspot.mesh);
       if (face !== 'floor') {
-        this.wallCtrl.register(hotspot.mesh, face, true);
+        const wallMesh = this.wallMeshes.get(face);
+        if (wallMesh) {
+          hotspot.mesh.position.sub(wallMesh.position);
+          wallMesh.add(hotspot.mesh);
+        } else {
+          this.hotspotsRoot.add(hotspot.mesh);
+        }
+      } else {
+        this.hotspotsRoot.add(hotspot.mesh);
       }
     }
   }

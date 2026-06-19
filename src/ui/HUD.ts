@@ -72,7 +72,7 @@ export class HUD {
     if (!this.journalPanel.classList.contains('hidden')) this.refreshJournal();
   }
 
-  private refreshJournal(): void {
+  refreshJournal(): void {
     const entries = this.narrative.getJournalList();
     this.journalList.innerHTML = '';
     for (const entry of entries) {

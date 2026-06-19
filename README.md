@@ -23,8 +23,9 @@ npm run package:itch  # build + lonniecrow-itch.zip
 | Left click (object) | Examine / take / use |
 | Inventory bar | Select item, then click target |
 | Journal (top-right) | Open clue log |
+| Middle mouse drag or ↺ / ↻ or Q/E or ←/→ | Rotate view |
+| Shift + mouse wheel | Rotate view |
 | Mouse wheel | Zoom |
-| Middle mouse drag | Pan camera |
 
 ## Puzzle flow
 
