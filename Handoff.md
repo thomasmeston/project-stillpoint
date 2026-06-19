@@ -25,7 +25,7 @@ LonnieCrow Room 1 rebuilt as a browser game (Vite + TypeScript + Three.js). Godo
 - Created a premium glassmorphic **Main Menu** overlay with 3 save slots, a slow 3D orbit camera showcase rotating the bedroom scene, and support to load, delete, or reset slots.
 - Implemented **Autosave** functionality, writing slot metadata (timestamp, screenshot, game flags, inventory, journal logs, room status, player position) to local storage automatically on gameplay changes (flag changed, puzzle solved, inventory updated, journal log appended, player stopping walk, and hotspot interaction).
 - Added a paused **Escape Menu** overlay (ESC key) allowing background music volume adjustment and muting using Howler, blocking all movement and keyboard rotation inputs while active.
-- Added a **Floating Words Intro Sequence** overlay on new games, displaying 13 floating words (fuzzy, tired, memory, gone, etc.) using the Outfit font and subtle float animations. The player must click 5 words to clear the intro, playing tick sounds and causing the rest of the words/overlay to fade out. Persisted under the `intro_words_cleared` flag to skip on loaded sessions.
+- Added a **Floating Words Intro Sequence** overlay on new games, displaying 65 floating words (original 13 words + 52 themed synonyms/similar words, a 5x increase) using the Outfit font and subtle float animations. The "focus your mind" helper title is removed to offer a cleaner design, and words are spaced via an 8x9 grid to prevent cluttered overlaps. Sizes vary dramatically (ranging from 0.7rem to 5.5rem). The player clicks 5 words to clear the overlay, playing tick sounds and triggering a smooth fade-out. Persisted under the `intro_words_cleared` flag to skip on loaded sessions.
 
 ## Next
 

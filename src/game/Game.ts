@@ -39,8 +39,18 @@ export class Game {
   private introActive = false;
   private wordsClickedCount = 0;
   private readonly INTRO_WORDS = [
+    // Original 13 words
     'fuzzy', 'tired', 'memory', 'gone', 'here', 'nowhere',
-    'fear', 'peace', 'sleep', 'wake', 'dream', 'calm', 'alone'
+    'fear', 'peace', 'sleep', 'wake', 'dream', 'calm', 'alone',
+    // 52 additional similar words (total 65)
+    'hazy', 'exhausted', 'mind', 'lost', 'away', 'everywhere',
+    'dread', 'quiet', 'rest', 'arise', 'vision', 'still', 'isolated',
+    'shadow', 'dark', 'light', 'illusion', 'forgotten', 'remember',
+    'hollow', 'numb', 'heavy', 'drift', 'float', 'daze', 'mist',
+    'flicker', 'weary', 'fading', 'vanished', 'empty', 'void', 'somewhere',
+    'panic', 'terror', 'serenity', 'tranquil', 'slumber', 'alert', 'awake',
+    'fantasy', 'nightmare', 'silent', 'peaceful', 'solitude', 'deserted',
+    'apart', 'detached', 'confused', 'blurred', 'dim', 'faint'
   ];
 
   get isInputBlocked(): boolean {
@@ -461,19 +471,13 @@ export class Game {
     overlay.classList.remove('hidden');
     overlay.classList.remove('fade-out');
 
-    const hint = document.createElement('div');
-    hint.id = 'intro-hint';
-    hint.textContent = 'Focus your mind: click 5 words';
-    overlay.appendChild(hint);
-
     this.spawnIntroWords(overlay);
   }
-
   private spawnIntroWords(overlay: HTMLElement): void {
-    // Generate grid slots (4x4) to avoid overlapping
+    // Generate grid slots (8x9 = 72 slots) to avoid overlapping 65 words
     const slots: { col: number; row: number }[] = [];
-    for (let c = 0; c < 4; c++) {
-      for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 8; c++) {
+      for (let r = 0; r < 9; r++) {
         slots.push({ col: c, row: r });
       }
     }
@@ -488,54 +492,57 @@ export class Game {
       if (idx >= slots.length) return;
       const slot = slots[idx];
 
-      const wordEl = document.createElement('div');
+      const containerEl = document.createElement('div');
+      containerEl.className = 'intro-word-container';
+
+      const wordEl = document.createElement('span');
       wordEl.className = 'intro-word';
       wordEl.textContent = word;
 
       // Randomize coordinates within slot boundaries
-      const minX = 5 + slot.col * 25;
-      const maxX = 18 + slot.col * 25;
-      const left = minX + Math.random() * (maxX - minX);
+      // Column width: 100/8 = 12.5%. Keep X between 2% and 94% total.
+      const left = 2 + slot.col * 12 + Math.random() * 8;
 
-      const minY = 15 + slot.row * 18;
-      const maxY = 28 + slot.row * 18;
-      const top = minY + Math.random() * (maxY - minY);
+      // Row height: 100/9 = 11.1%. Keep Y between 5% and 92% total.
+      const top = 5 + slot.row * 10 + Math.random() * 6;
 
-      wordEl.style.left = `${left}%`;
-      wordEl.style.top = `${top}%`;
+      containerEl.style.left = `${left}%`;
+      containerEl.style.top = `${top}%`;
 
-      // Random size: between 1.6rem and 3.4rem
-      const fontSize = 1.6 + Math.random() * 1.8;
+      // Random size with a wide difference: between 0.7rem (very small) and 5.5rem (very large)
+      // ~33% very small, ~33% medium, ~34% very large (about 1/3 very large)
+      const randVal = Math.random();
+      let fontSize = 1.8; // Default medium size
+      if (randVal < 0.33) {
+        // ~33% chance of being very small: 0.7rem to 1.2rem
+        fontSize = 0.7 + Math.random() * 0.5;
+      } else if (randVal < 0.66) {
+        // ~33% chance of being medium: 1.4rem to 3.0rem
+        fontSize = 1.4 + Math.random() * 1.6;
+      } else {
+        // ~34% chance of being very large: 3.5rem to 5.5rem
+        fontSize = 3.5 + Math.random() * 2.0;
+      }
       wordEl.style.fontSize = `${fontSize}rem`;
 
-      // Randomize float animation properties
+      // Randomize float animation properties on the container
       const duration = 8 + Math.random() * 8; // 8s to 16s
       const delay = -Math.random() * duration; // Negative delay so they start animated
-      wordEl.style.animationDuration = `${duration}s`;
-      wordEl.style.animationDelay = `${delay}s`;
+      containerEl.style.animationDuration = `${duration}s`;
+      containerEl.style.animationDelay = `${delay}s`;
 
       wordEl.addEventListener('click', () => this.handleIntroWordClick(wordEl));
 
-      overlay.appendChild(wordEl);
+      containerEl.appendChild(wordEl);
+      overlay.appendChild(containerEl);
     });
   }
-
   private handleIntroWordClick(wordEl: HTMLElement): void {
     if (wordEl.classList.contains('clicked')) return;
     wordEl.classList.add('clicked');
     this.audio.playSfx('click');
 
     this.wordsClickedCount++;
-
-    const hint = document.getElementById('intro-hint');
-    if (hint) {
-      const remaining = 5 - this.wordsClickedCount;
-      if (remaining > 0) {
-        hint.textContent = `Focus your mind: click ${remaining} more`;
-      } else {
-        hint.textContent = 'Your mind clears...';
-      }
-    }
 
     if (this.wordsClickedCount >= 5) {
       this.completeIntroSequence();
