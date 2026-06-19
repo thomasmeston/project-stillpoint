@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { publicUrl } from '../utils/publicUrl';
 
-const MODEL_URL = '/models/characters/man-casual.glb';
+const MODEL_URL = publicUrl('models/characters/man-casual.glb');
 const WALK_CLIP = 'HumanArmature|Man_Walk';
 const IDLE_CLIP = 'HumanArmature|Man_Idle';
 const TARGET_HEIGHT = 1.7;
