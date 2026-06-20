@@ -146,7 +146,7 @@
           
           <div class="setting-row">
             <label for="music-volume">Music Volume</label>
-            <input type="range" id="music-volume" min="0" max="1" step="0.05" class="menu-slider" />
+            <input type="range" id="music-volume" min="0" max="1" step="0.05" value="0.2" class="menu-slider" />
           </div>
 
           <div class="dev-toggle-row">
@@ -165,9 +165,15 @@
     <div id="dev-panel" class="hidden">
       <div class="dev-header">
         <h3>Dev Mode</h3>
-        <span class="dev-indicator">Editor</span>
+        <span id="dev-mode-indicator" class="dev-indicator">Layout</span>
       </div>
-      
+
+      <div class="dev-mode-tabs" role="tablist">
+        <button type="button" id="dev-mode-layout" class="dev-mode-tab active" role="tab" aria-selected="true">Layout</button>
+        <button type="button" id="dev-mode-text" class="dev-mode-tab" role="tab" aria-selected="false">Text</button>
+      </div>
+
+      <div id="dev-layout-section">
       <div class="dev-selection-status">
         Selected: <span id="dev-selected-name">None</span>
       </div>
@@ -213,14 +219,46 @@
           </div>
         </div>
       </div>
-      
-      <div class="dev-actions">
+
+      <div class="dev-layout-actions">
         <div class="dev-row-buttons">
           <button id="dev-undo" class="dev-btn" title="Undo (Ctrl+Z)" disabled>Undo</button>
           <button id="dev-redo" class="dev-btn" title="Redo (Ctrl+Y)" disabled>Redo</button>
         </div>
         <button id="dev-copy-json" class="dev-btn dev-btn-primary">Copy Layout JSON</button>
         <button id="dev-reset-layout" class="dev-btn dev-btn-danger">Reset Layout</button>
+      </div>
+      </div>
+
+      <div id="dev-content-section" class="dev-content-section hidden">
+        <div class="dev-selection-status">
+          Editing: <span id="dev-content-selected-name">None</span>
+        </div>
+        <p class="dev-mode-hint">Click an orange hotspot box or pick from the dropdowns below.</p>
+        <div class="dev-row dev-row-select">
+          <label for="dev-hotspot-picker">Hotspot</label>
+          <select id="dev-hotspot-picker" class="dev-select"></select>
+        </div>
+        <div class="dev-row dev-row-select">
+          <label for="dev-item-picker">Item</label>
+          <select id="dev-item-picker" class="dev-select"></select>
+        </div>
+        <label class="dev-field-label" for="dev-examine-title">Examine title</label>
+        <input type="text" id="dev-examine-title" class="dev-text-input" />
+        <label class="dev-field-label" for="dev-examine-body">Examine body</label>
+        <textarea id="dev-examine-body" class="dev-textarea dev-textarea-lg" rows="6"></textarea>
+        <label class="dev-field-label" for="dev-examine-thought">Inner voice (first examine)</label>
+        <textarea id="dev-examine-thought" class="dev-textarea" rows="4"></textarea>
+        <label class="dev-field-label" for="dev-item-label">Item label</label>
+        <input type="text" id="dev-item-label" class="dev-text-input" />
+        <label class="dev-field-label" for="dev-item-description">Item description</label>
+        <textarea id="dev-item-description" class="dev-textarea" rows="4"></textarea>
+        <button id="dev-apply-content" class="dev-btn dev-btn-primary" type="button">Apply Text Changes</button>
+        <button id="dev-copy-content" class="dev-btn" type="button">Copy Content JSON</button>
+        <button id="dev-reset-content" class="dev-btn dev-btn-danger" type="button">Reset Text Overrides</button>
+      </div>
+      
+      <div class="dev-actions">
         <button id="dev-close-btn" class="dev-btn">Exit Dev Mode</button>
       </div>
     </div>

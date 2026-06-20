@@ -13,6 +13,8 @@ import { ViewWallController } from '../scene/ViewWallController';
 import { HUD } from '../ui/HUD';
 import { PuzzleUI } from '../ui/PuzzleUI';
 import { DevMover } from './DevMover';
+import { DeskSketchSpread } from '../scene/DeskSketchSpread';
+import { getWallNotesFocusOnWall } from '../scene/WallNotesCluster';
 
 export class Game {
   private renderer: THREE.WebGLRenderer;
@@ -24,6 +26,8 @@ export class Game {
   private player: PlayerMover;
   private input: InputController;
   private devMover: DevMover;
+  private deskSketchSpread: DeskSketchSpread;
+  private detailZoomRaycaster = new THREE.Raycaster();
 
   readonly gameState = new GameState();
   readonly inventory = new Inventory();
@@ -39,6 +43,7 @@ export class Game {
   private inMenu = true;
   private escapeMenuOpen = false;
   private isDeskZoomed = false;
+  private isWallNotesZoomed = false;
   private introActive = false;
   private wordsClickedCount = 0;
   private readonly INTRO_WORDS = [
@@ -55,6 +60,10 @@ export class Game {
     'fantasy', 'nightmare', 'silent', 'peaceful', 'solitude', 'deserted',
     'apart', 'detached', 'confused', 'blurred', 'dim', 'faint'
   ];
+
+  get isDetailZoomed(): boolean {
+    return this.isDeskZoomed || this.isWallNotesZoomed;
+  }
 
   get isInputBlocked(): boolean {
     return this.inMenu || this.escapeMenuOpen || this.introActive || (this.devMover && this.devMover.isActive());
@@ -104,6 +113,9 @@ export class Game {
       }
     );
 
+    this.deskSketchSpread = new DeskSketchSpread(new THREE.Vector3(1.6, 0, -0.1));
+    this.room.propsRoot.add(this.deskSketchSpread.group);
+
     this.wireInput();
     this.wireViewRotation();
 
@@ -113,9 +125,17 @@ export class Game {
     });
 
     // Wire up autosave event listeners
-    this.gameState.events.on('flagChanged', () => this.saveGame());
+    this.gameState.events.on('flagChanged', ({ flag }) => {
+      if (flag === 'painting_moved' || flag === 'safe_unlocked') {
+        this.syncSafeVisuals();
+      }
+      this.saveGame();
+    });
     this.gameState.events.on('puzzleSolved', () => this.saveGame());
-    this.inventory.events.on('changed', () => this.saveGame());
+    this.inventory.events.on('changed', () => {
+      this.syncSafeVisuals();
+      this.saveGame();
+    });
     this.narrative.events.on('journalUpdated', () => this.saveGame());
     this.puzzleManager.events.on('hotspotStateChanged', () => this.saveGame());
 
@@ -160,20 +180,14 @@ export class Game {
   }
 
   private wireInput(): void {
-    this.hud.onZoomBack = () => this.zoomOutFromDesk();
+    this.hud.onZoomBack = () => this.zoomOutFromDetail();
 
     this.input.onFirstInput = () => {
       this.narrative.onFirstInput();
       this.audio.startOnFirstInteraction();
     };
     this.input.onMove = (point) => {
-      if (this.isDeskZoomed) {
-        this.zoomOutFromDesk();
-        return;
-      }
-      if (this.player.isSitting) {
-        this.standUp();
-      }
+      if (this.isDetailZoomed) return;
       this.player.moveTo(point);
     };
     this.input.onHotspot = (id) => this.handleHotspot(id);
@@ -199,13 +213,20 @@ export class Game {
     this.canvas.addEventListener('click', (e) => {
       if (this.isInputBlocked) return;
       if (e.button !== 0) return;
+      if (this.isDetailZoomed) {
+        this.handleDetailZoomClick(e.clientX, e.clientY);
+        return;
+      }
       this.audio.startOnFirstInteraction();
       this.input.handleClick(e.clientX, e.clientY);
     });
 
     this.canvas.addEventListener('mousemove', (e) => {
       if (this.isInputBlocked) return;
-      if (this.isDeskZoomed) return; // Block rotation drag when zoomed top-down
+      if (this.isDetailZoomed) {
+        this.hud.setCursorHintVisible(false);
+        return;
+      }
       if (isMiddleDragging) {
         this.hud.setCursorHint('', e.clientX, e.clientY);
         const deltaX = e.clientX - middleDragStartX;
@@ -240,7 +261,7 @@ export class Game {
 
     this.canvas.addEventListener('wheel', (e) => {
       if (this.isInputBlocked) return;
-      if (this.isDeskZoomed) return; // Block wheel zoom when zoomed top-down
+      if (this.isDeskZoomed) return;
       e.preventDefault();
       if (e.shiftKey) {
         if (e.deltaY > 0) this.rotateView('right');
@@ -265,15 +286,7 @@ export class Game {
       if (this.inMenu) return;
       if (e.repeat) return;
 
-      if (this.isDeskZoomed) {
-        if (e.key === 'Escape') {
-          this.zoomOutFromDesk();
-          return;
-        }
-        if (e.key === 'q' || e.key === 'Q' || e.key === 'e' || e.key === 'E' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-          return; // Block rotation
-        }
-      }
+      if (this.isDeskZoomed) return;
 
       if (e.key === 'Escape') {
         if (this.introActive) return;
@@ -298,8 +311,8 @@ export class Game {
 
   private toggleDevMode(): void {
     if (this.inMenu || this.introActive) return;
-    if (this.player.isSitting) {
-      this.standUp();
+    if (this.isDeskZoomed) {
+      this.zoomOutFromDesk();
     }
     const active = !this.devMover.isActive();
     this.devMover.setActive(active);
@@ -307,10 +320,8 @@ export class Game {
 
   private rotateView(direction: 'left' | 'right'): void {
     if (this.inMenu || this.escapeMenuOpen || this.introActive) return;
+    if (this.isDeskZoomed) return;
     if (this.wallCtrl.isAnimating() || this.isoCamera.isRotating()) return;
-    if (this.player.isSitting) {
-      this.standUp();
-    }
     this.audio.playSfx('rotate');
     if (direction === 'left') {
       this.isoCamera.rotateLeft();
@@ -325,7 +336,7 @@ export class Game {
     this.audio.playSfx('click');
     const action = this.puzzleManager.getHotspotAction(hotspotId);
     if (action === 'locked') {
-      this.narrative.showThought('locked_hint');
+      this.narrative.showThought(hotspotId === 'door' ? 'door_locked' : 'locked_hint');
       return;
     }
     let handled = false;
@@ -335,6 +346,11 @@ export class Game {
       }
     }
     if (!handled) {
+      if (hotspotId === 'wall_safe') {
+        this.handleWallSafe();
+        this.saveGame();
+        return;
+      }
       switch (action) {
         case 'pickup':
           this.handlePickup(hotspotId);
@@ -347,17 +363,12 @@ export class Game {
           break;
         case 'examine':
           if (hotspotId === 'desk') {
-            if (this.player.isSitting) {
-              this.zoomToDesk();
-            } else {
-              this.handleSit(true);
-            }
+            this.handleDeskExamine();
+          } else if (hotspotId === 'wall_notes') {
+            this.handleWallNotesExamine();
           } else {
             this.handleExamine(hotspotId);
           }
-          break;
-        case 'sit':
-          this.handleSit();
           break;
         default:
           this.narrative.onExamine(hotspotId);
@@ -367,14 +378,67 @@ export class Game {
   }
 
   private handleExamine(hotspotId: string): void {
+    if (hotspotId === 'painting') {
+      this.handlePaintingExamine();
+      return;
+    }
     if (hotspotId === 'desk_drawer' && this.gameState.hasFlag('desk_drawer_unlocked')) {
       if (!this.inventory.hasItem('photo_set')) this.inventory.addItem('photo_set');
       if (!this.inventory.hasItem('receipt_stub')) this.inventory.addItem('receipt_stub');
     }
-    if (hotspotId === 'wall_safe' && this.gameState.hasFlag('painting_moved')) {
-      if (!this.inventory.hasItem('key_blade')) this.inventory.addItem('key_blade');
-    }
     this.narrative.onExamine(hotspotId);
+  }
+
+  private handleWallSafe(): void {
+    if (!this.gameState.hasFlag('painting_moved')) return;
+
+    if (this.gameState.hasFlag('safe_unlocked')) {
+      if (!this.inventory.hasItem('key_blade')) this.inventory.addItem('key_blade');
+      if (!this.inventory.hasItem('phone')) this.inventory.addItem('phone');
+      this.syncSafeVisuals();
+      this.narrative.onExamine('wall_safe');
+      return;
+    }
+
+    if (this.gameState.hasFlag('safe_combo_known')) {
+      this.puzzleManager.requestPuzzle('wall_safe_lock');
+      return;
+    }
+
+    this.narrative.onExamine('wall_safe_locked');
+  }
+
+  private syncSafeVisuals(): void {
+    this.room.syncSafeContents(
+      this.gameState.hasFlag('painting_moved'),
+      this.gameState.hasFlag('safe_unlocked'),
+      this.inventory.hasItem('phone'),
+    );
+  }
+
+  private handlePaintingExamine(): void {
+    const openPhotoIfReady = (): void => {
+      if (
+        this.inventory.hasItem('photo_set')
+        && !this.gameState.isPuzzleSolved('photo_cipher')
+      ) {
+        this.puzzleManager.requestPuzzle('photo_cipher');
+      }
+    };
+
+    this.narrative.onExamine('painting');
+
+    if (this.gameState.hasFlag('painting_moved')) {
+      openPhotoIfReady();
+      return;
+    }
+
+    if (this.room.paintingReveal.isAnimating()) return;
+
+    this.room.paintingReveal.swingOpen(() => {
+      this.puzzleManager.applyConsequence('set_flag:painting_moved');
+      openPhotoIfReady();
+    });
   }
 
   private handlePickup(hotspotId: string): void {
@@ -390,104 +454,152 @@ export class Game {
     }
   }
 
-  private handleSit(zoomTopDown = false): void {
-    const chairMesh = this.room.propsRoot.getObjectByName('Chair') || this.room.root.getObjectByName('Chair');
-    if (!chairMesh) return;
+  private handleDetailZoomClick(clientX: number, clientY: number): void {
+    const mouse = new THREE.Vector2(
+      (clientX / window.innerWidth) * 2 - 1,
+      -(clientY / window.innerHeight) * 2 + 1,
+    );
+    this.detailZoomRaycaster.setFromCamera(mouse, this.isoCamera.camera);
 
-    // Get chair world position and rotation
-    chairMesh.updateMatrixWorld(true);
-    const chairWorldPos = new THREE.Vector3();
-    chairMesh.getWorldPosition(chairWorldPos);
-    
-    // Copy chair rotation
-    const chairRotation = chairMesh.rotation.clone();
-
-    // Get chair's forward direction to offset the ready-to-sit position in front of it
-    const forward = new THREE.Vector3();
-    chairMesh.getWorldDirection(forward);
-    
-    const sitFrontPos = chairWorldPos.clone().addScaledVector(forward, 0.45);
-    sitFrontPos.y = 0; // Walk target is on the floor
-
-    // Walk the player to the front of the chair first
-    this.player.moveTo(sitFrontPos, () => {
-      // Orient the player to match the chair's rotation before sitting down
-      this.player.root.rotation.copy(chairRotation);
-      this.player.root.rotation.x = 0;
-      this.player.root.rotation.z = 0;
-
-      // Make player sit
-      this.player.sitOn(chairWorldPos, chairRotation);
-
-      if (zoomTopDown) {
-        this.zoomToDesk();
-      } else {
-        // Get Desk mesh world position to zoom onto it
-        const deskMesh = this.room.propsRoot.getObjectByName('Desk') || this.room.root.getObjectByName('Desk');
-        const deskTarget = new THREE.Vector3();
-        if (deskMesh) {
-          deskMesh.updateMatrixWorld(true);
-          deskMesh.getWorldPosition(deskTarget);
-          deskTarget.y += 0.475; // Focus on the desk top
-        } else {
-          deskTarget.set(1.8, 0.85, 0.0);
+    if (this.isDeskZoomed) {
+      const hit = this.deskSketchSpread.raycastHit(this.detailZoomRaycaster);
+      if (!hit) {
+        if (this.deskSketchSpread.isInspecting()) {
+          this.deskSketchSpread.dismissInspect();
         }
-
-        // Zoom camera to the desk top
-        this.isoCamera.zoomTo(deskTarget, 3.5);
+        return;
       }
+      if (hit.type === 'sketchbook') {
+        this.audio.playSfx('click');
+        this.deskSketchSpread.toggleNotebook();
+        return;
+      }
+      if (hit.type === 'paper') {
+        this.audio.playSfx('click');
+        this.deskSketchSpread.inspectPaper(hit.index);
+      }
+      return;
+    }
+
+    if (this.isWallNotesZoomed) {
+      const hit = this.room.wallNotesCluster.raycastHit(this.detailZoomRaycaster);
+      if (!hit) {
+        if (this.room.wallNotesCluster.isInspecting()) {
+          this.room.wallNotesCluster.dismissInspect();
+        }
+        return;
+      }
+      if (hit.type === 'paper') {
+        this.audio.playSfx('click');
+        this.room.wallNotesCluster.inspectPaper(hit.index);
+      }
+    }
+  }
+
+  private handleDeskExamine(): void {
+    if (this.isDetailZoomed) return;
+
+    const approach = this.getDeskApproachPosition();
+
+    this.player.moveTo(approach, () => {
+      this.zoomToDesk();
     });
   }
 
-  private standUp(): void {
-    if (!this.player.isSitting) return;
-    this.isDeskZoomed = false;
-    this.player.standUp();
-    this.isoCamera.resetZoom();
+  private handleWallNotesExamine(): void {
+    if (this.isDetailZoomed) return;
+
+    this.narrative.onExamine('wall_notes');
+    this.player.moveTo(this.getWallNotesApproachPosition(), () => {
+      this.zoomToWallNotes();
+    });
+  }
+
+  private getWallNotesApproachPosition(): THREE.Vector3 {
+    const focus = getWallNotesFocusOnWall();
+    return new THREE.Vector3(focus.x, 0, 1.05);
+  }
+
+  private getWallNotesTarget(): THREE.Vector3 {
+    const northWall = this.room.wallMeshes.get('north');
+    const localTarget = getWallNotesFocusOnWall();
+    if (northWall) {
+      northWall.updateMatrixWorld(true);
+      return localTarget.applyMatrix4(northWall.matrixWorld);
+    }
+    return new THREE.Vector3(localTarget.x, 1.55, -2.92);
+  }
+
+  private zoomToWallNotes(): void {
+    this.isWallNotesZoomed = true;
+    this.player.root.visible = false;
+    this.isoCamera.zoomTo(this.getWallNotesTarget(), 1.15, 0, 0);
+    this.hud.showZoomControls(true);
+    this.hud.setCursorHintVisible(false);
+  }
+
+  private zoomOutFromWallNotes(): void {
+    if (!this.isWallNotesZoomed) return;
+    this.isWallNotesZoomed = false;
+    this.player.root.visible = true;
+    this.room.wallNotesCluster.resetInspect();
+
+    const currentViewYaw = this.isoCamera.getYawForViewIndex(this.isoCamera.getViewIndex());
+    const ISO_PITCH = THREE.MathUtils.degToRad(-35);
+    this.isoCamera.zoomTo(new THREE.Vector3(0, 0.9, 0.0), 10, ISO_PITCH, currentViewYaw);
     this.hud.showZoomControls(false);
+    this.hud.setCursorHintVisible(true);
+  }
+
+  private zoomOutFromDetail(): void {
+    if (this.isDeskZoomed) this.zoomOutFromDesk();
+    else if (this.isWallNotesZoomed) this.zoomOutFromWallNotes();
+  }
+
+  private getDeskApproachPosition(): THREE.Vector3 {
+    const deskMesh = this.room.propsRoot.getObjectByName('Desk') || this.room.root.getObjectByName('Desk');
+    if (deskMesh) {
+      deskMesh.updateMatrixWorld(true);
+      const deskPos = new THREE.Vector3();
+      deskMesh.getWorldPosition(deskPos);
+      // Stand south of the desk (+Z), clear of chair/desk collision boxes
+      return new THREE.Vector3(deskPos.x - 0.3, 0, deskPos.z + 0.85);
+    }
+    return new THREE.Vector3(1.5, 0, 0.85);
+  }
+
+  private getDeskSurfaceTarget(): THREE.Vector3 {
+    const deskMesh = this.room.propsRoot.getObjectByName('Desk') || this.room.root.getObjectByName('Desk');
+    const deskTarget = new THREE.Vector3();
+    if (deskMesh) {
+      deskMesh.updateMatrixWorld(true);
+      deskMesh.getWorldPosition(deskTarget);
+      deskTarget.y += 0.375;
+    } else {
+      deskTarget.set(1.8, 0.75, 0.0);
+    }
+    return deskTarget;
   }
 
   private zoomToDesk(): void {
     this.isDeskZoomed = true;
-
-    // Zoom top-down on desk center
-    const deskMesh = this.room.propsRoot.getObjectByName('Desk') || this.room.root.getObjectByName('Desk');
-    const deskTarget = new THREE.Vector3();
-    if (deskMesh) {
-      deskMesh.updateMatrixWorld(true);
-      deskMesh.getWorldPosition(deskTarget);
-      deskTarget.y += 0.375; // Surface at Y = 0.75
-    } else {
-      deskTarget.set(1.8, 0.75, 0.0);
-    }
-
-    // Pitch = -Math.PI / 2 (top down), Yaw = 0 (aligned)
-    this.isoCamera.zoomTo(deskTarget, 1.4, -Math.PI / 2, 0);
-
-    // Update HUD controls
+    this.isoCamera.zoomTo(this.getDeskSurfaceTarget(), 1.4, -Math.PI / 2, 0);
     this.hud.showZoomControls(true);
+    this.hud.setCursorHintVisible(false);
   }
 
   private zoomOutFromDesk(): void {
+    if (!this.isDeskZoomed) return;
     this.isDeskZoomed = false;
+    this.deskSketchSpread.reset();
 
-    // Zoom back to seated isometric view
-    const deskMesh = this.room.propsRoot.getObjectByName('Desk') || this.room.root.getObjectByName('Desk');
-    const deskTarget = new THREE.Vector3();
-    if (deskMesh) {
-      deskMesh.updateMatrixWorld(true);
-      deskMesh.getWorldPosition(deskTarget);
-      deskTarget.y += 0.475;
-    } else {
-      deskTarget.set(1.8, 0.85, 0.0);
-    }
-
+    const deskTarget = this.getDeskSurfaceTarget();
+    deskTarget.y += 0.1;
     const currentViewYaw = this.isoCamera.getYawForViewIndex(this.isoCamera.getViewIndex());
     const ISO_PITCH = THREE.MathUtils.degToRad(-35);
     this.isoCamera.zoomTo(deskTarget, 3.5, ISO_PITCH, currentViewYaw);
-
-    // Update HUD controls
     this.hud.showZoomControls(false);
+    this.hud.setCursorHintVisible(true);
   }
 
   private openPuzzle(hotspotId: string): void {
@@ -568,6 +680,7 @@ export class Game {
   private startNewGame(slot: number): void {
     this.saveLoad.delete(slot);
     this.currentSlot = slot;
+    this.player.setPosition(this.room.playerSpawn);
     this.transitionToGame();
     this.saveGame();
   }
@@ -603,6 +716,12 @@ export class Game {
         this.room.setHotspotVisible(id, !def.disabled);
       }
     }
+
+    this.room.syncPaintingReveal(
+      this.gameState.hasFlag('painting_moved'),
+      this.gameState.hasFlag('safe_unlocked'),
+      this.inventory.hasItem('phone'),
+    );
 
     this.transitionToGame();
   }
@@ -746,6 +865,7 @@ export class Game {
 
     this.introActive = false;
     this.gameState.setFlag('intro_words_cleared', true);
+    this.narrative.showThought('wake_beside_bed');
     this.saveGame();
 
     const hudEl = document.getElementById('hud');
@@ -780,6 +900,9 @@ export class Game {
     const wasMoving = this.player.isMoving;
     this.isoCamera.update(dt);
     this.wallCtrl.update(dt);
+    this.deskSketchSpread.update(dt);
+    this.room.paintingReveal.update(dt);
+    this.room.wallNotesCluster.update(dt);
     this.player.update(dt, this.room.obstacles, this.room.shellSize);
 
     if (wasMoving && !this.player.isMoving) {

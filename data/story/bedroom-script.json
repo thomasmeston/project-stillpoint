@@ -1,13 +1,29 @@
 {
-  "opening_thought": "My head is thick with static. The door should open. It doesn't. Nothing in this room feels quite mine.",
+  "opening_thought": "Static in my skull. The door should open — I know it should — but my body won't believe it yet.",
   "thoughts": {
+    "wake_beside_bed": "I'm on my feet beside the bed. Sheets still warm. Like I lay down and forgot I was asleep.",
     "locked_hint": "That won't budge yet. There has to be another way in.",
+    "door_locked": "Won't budge. There has to be another way out.",
     "drawer_unlocked": "The drawer clicks. Someone wanted me to find what's inside.",
     "safe_found": "The painting shifts. A safe sits in the wall like a secret I forgot on purpose.",
     "key_ready": "The key feels familiar — like I assembled it in a dream already.",
     "wardrobe_open": "Cold air from the wardrobe. Paper smell. Memory trying to surface.",
     "door_opening": "The chain falls. The deadbolt catches for the first time.",
-    "desk_drawer_loot": "Photos, a receipt. Pieces of a day I don't remember living."
+    "desk_drawer_loot": "Photos, a receipt. Pieces of a day I don't remember living.",
+    "safe_opened": "The safe clicks open. Key blade, a note about rest — and my phone, locked away in there.",
+    "bed_musings": "The mattress remembers my weight. I slept here — or something like sleep.",
+    "clock_musings": "Midnight on the face. Time won't move until I choose where it stops.",
+    "desk_musings": "Coffee ring, open sketchbook. Whoever sat here was halfway through a thought.",
+    "sketchbook_musings": "The crow again. I draw it when I'm close to remembering.",
+    "wall_notes_musings": "My handwriting on every scrap. I don't recall pinning them — but the shapes feel true.",
+    "painting_musings": "That oak tree. I've stood under it somewhere real.",
+    "window_musings": "Paradise out there. Too bright to trust.",
+    "nightstand_musings": "The drawer handle is worn. Something snapped off and got hidden here.",
+    "bookshelf_musings": "Dream Cartography. Of course that's what I was reading.",
+    "wardrobe_musings": "Cold wood. Whatever I locked in there, I wasn't ready to face it awake.",
+    "lamp_musings": "Warm light. For a second the room feels almost mine.",
+    "chair_musings": "The chair knows my weight. Muscle memory of sitting, waiting, thinking.",
+    "door_musings": "Chain, padlock, deadbolt. I stacked every layer myself — and hid the code where I'd have to earn it."
   },
   "journal_entries": {
     "calendar_clue": {
@@ -59,6 +75,7 @@
     "bed": {
       "title": "Bed",
       "body": "Sheets still warm. A calendar scrap peeks from under the mattress edge.",
+      "thought": "bed_musings",
       "journal": "calendar_clue"
     },
     "calendar_scrap": {
@@ -67,11 +84,13 @@
     },
     "wall_clock": {
       "title": "Wall Clock",
-      "body": "Stopped at midnight. The second hand trembles when you touch it, like it wants a time."
+      "body": "Stopped at midnight. The second hand trembles when you touch it, like it wants a time.",
+      "thought": "clock_musings"
     },
     "desk": {
       "title": "Desk",
-      "body": "Sketchbook, lamp, locked drawer. Coffee ring dried into the wood."
+      "body": "Sketchbook, lamp, mug of pens, locked drawer. Coffee ring dried into the wood.",
+      "thought": "desk_musings"
     },
     "desk_drawer": {
       "title": "Desk Drawer",
@@ -80,23 +99,32 @@
     },
     "sketchbook": {
       "title": "Sketchbook",
-      "body": "A crow study on the last page — detailed, recent. I don't remember drawing it. Margin reads: STILL → POINT."
+      "body": "A crow study on the last page — detailed, recent. I don't remember drawing it. Margin reads: STILL → POINT.",
+      "thought": "sketchbook_musings"
     },
     "bookshelf": {
       "title": "Bookshelf",
-      "body": "Paperbacks and a spine labeled 'Dream Cartography.' Flavor of someone who reads to escape."
+      "body": "Paperbacks and a spine labeled 'Dream Cartography.' Flavor of someone who reads to escape.",
+      "thought": "bookshelf_musings"
     },
     "nightstand": {
       "title": "Nightstand",
-      "body": "A wooden key handle in the drawer. It snapped off something heavier."
+      "body": "A wooden key handle in the drawer. It snapped off something heavier.",
+      "thought": "nightstand_musings"
     },
     "key_handle": {
       "title": "Key Handle",
       "body": "Worn grip. It belongs with the blade from the safe."
     },
     "painting": {
-      "title": "Painting",
-      "body": "A landscape that doesn't match any place I've been. The frame hides something."
+      "title": "Framed Painting",
+      "body": "An old oil painting of a massive oak tree — branches spread wide against a pale sky. The place doesn't match anywhere you've been, but the tree feels familiar.",
+      "thought": "painting_musings"
+    },
+    "wall_notes": {
+      "title": "Pinned Notes",
+      "body": "Cryptic sketches and half-sentences pinned across the wall — portals, spirals, diagrams. Someone mapped a maze in pencil and never took it down.",
+      "thought": "wall_notes_musings"
     },
     "wall_safe": {
       "title": "Wall Safe",
@@ -105,7 +133,8 @@
     },
     "wardrobe": {
       "title": "Wardrobe",
-      "body": "Locked. The assembled key should fit the old brass latch."
+      "body": "Locked. The assembled key should fit the old brass latch.",
+      "thought": "wardrobe_musings"
     },
     "cipher_disk_pickup": {
       "title": "Cipher Disk",
@@ -117,15 +146,13 @@
     },
     "door": {
       "title": "Bedroom Door",
-      "body": "Deadbolt spins freely until now. Chain and letter padlock block the way out."
+      "body": "Deadbolt spins freely until now. Chain and letter padlock block the way out.",
+      "thought": "door_musings"
     },
     "window": {
       "title": "Window",
-      "body": "It's a paradise out there. Too bad I'm couped up in here."
-    },
-    "phone": {
-      "title": "Phone",
-      "body": "No signal. One notification frozen on screen: 'You chose to forget.'"
+      "body": "It's a paradise out there. Too bad I'm couped up in here.",
+      "thought": "window_musings"
     },
     "combine_station": {
       "title": "Desk Surface",
@@ -133,11 +160,13 @@
     },
     "lamp": {
       "title": "Lamp",
-      "body": "A heavy metal desk lamp. It casts a warm pool of light over the desk. The bulb is hot to the touch."
+      "body": "A heavy metal desk lamp. It casts a warm pool of light over the desk. The bulb is hot to the touch.",
+      "thought": "lamp_musings"
     },
     "chair": {
       "title": "Chair",
-      "body": "A simple wooden desk chair. It looks comfortable enough."
+      "body": "A simple wooden desk chair. It looks comfortable enough.",
+      "thought": "chair_musings"
     }
   },
   "on_flag": {

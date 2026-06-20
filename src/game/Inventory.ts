@@ -1,5 +1,6 @@
 import itemsData from '../../data/items.json';
 import { EventBus } from '../utils/EventBus';
+import { getEffectiveItemDescription, getEffectiveItemLabel } from './DevContentOverrides';
 import type { PuzzleManager } from './PuzzleManager';
 
 export type InventoryEvents = {
@@ -13,7 +14,6 @@ export class Inventory {
 
   items: string[] = [];
   selectedItem = '';
-  private defs = itemsData.items as Record<string, { label: string; description?: string }>;
   private combineRules = itemsData.combine_rules;
   private puzzleManager: PuzzleManager | null = null;
 
@@ -22,7 +22,11 @@ export class Inventory {
   }
 
   getLabel(itemId: string): string {
-    return this.defs[itemId]?.label ?? itemId;
+    return getEffectiveItemLabel(itemId);
+  }
+
+  getDescription(itemId: string): string {
+    return getEffectiveItemDescription(itemId);
   }
 
   hasItem(itemId: string): boolean {

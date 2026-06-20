@@ -5,6 +5,10 @@ import { inferWallFace, type WallFace } from './WallFace';
 import type { ViewWallController } from './ViewWallController';
 import { publicUrl } from '../utils/publicUrl';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { WallNotesCluster } from './WallNotesCluster';
+import { PaintingRevealController } from './PaintingRevealController';
+import { buildDeskMug } from './DeskMugProp';
+import { buildBedsideLamp } from './BedsideLampProp';
 
 
 type RoomFile = {
@@ -26,6 +30,7 @@ type RoomFile = {
   }>;
   hotspots: Array<HotspotData & { wall?: WallFace }>;
   lighting?: Record<string, { position: number[]; color: string; energy: number }>;
+  spawn?: { player: [number, number, number] };
 };
 
 const FLOOR_ONLY_PROPS = new Set([
@@ -39,7 +44,6 @@ const FLOOR_ONLY_PROPS = new Set([
   'Nightstand',
   'LampBase',
   'LampShade',
-  'Phone',
   'Sketchbook',
   'CrowFigurine'
 ]);
@@ -52,7 +56,6 @@ const FLOOR_ONLY_HOTSPOTS = new Set([
   'sketchbook',
   'nightstand',
   'key_handle',
-  'phone',
   'combine_station',
   'chair'
 ]);
@@ -65,11 +68,16 @@ export class RoomBuilder {
   readonly floorMeshes: THREE.Object3D[] = [];
   readonly obstacles: THREE.Box3[] = [];
   readonly shellSize = new THREE.Vector2();
+  readonly playerSpawn = new THREE.Vector3();
   readonly propsData: RoomFile['props'] = [];
   readonly hotspotsData: RoomFile['hotspots'] = [];
   readonly lightingData: RoomFile['lighting'] = {};
   readonly wallMeshes = new Map<WallFace, THREE.Mesh>();
   readonly lights = new Map<string, THREE.PointLight>();
+  readonly paintingReveal: PaintingRevealController;
+  readonly wallNotesCluster: WallNotesCluster;
+  wallSafeMesh: THREE.Object3D | null = null;
+  phoneInSafeMesh: THREE.Object3D | null = null;
 
   private palette: Record<string, string>;
 
@@ -77,8 +85,15 @@ export class RoomBuilder {
     const data = roomData as unknown as RoomFile;
     this.palette = data.palette;
     this.shellSize.set(data.shell.size.x, data.shell.size.z);
+    const spawn = data.spawn?.player ?? [0, 0, 2];
+    this.playerSpawn.set(spawn[0], spawn[1], spawn[2]);
     this.root.add(this.propsRoot);
     this.root.add(this.hotspotsRoot);
+    this.paintingReveal = new PaintingRevealController(
+      new THREE.Vector3(0.9, 0.7, 0.05),
+      this.color('wood_dark'),
+    );
+    this.wallNotesCluster = new WallNotesCluster();
     this.buildShell(data.shell);
 
     // Load custom layout from localStorage if it exists
@@ -130,6 +145,11 @@ export class RoomBuilder {
     this.buildProps(this.propsData);
     this.buildHotspots(this.hotspotsData);
     this.buildLighting(this.lightingData);
+
+    const northWall = this.wallMeshes.get('north');
+    if (northWall) {
+      this.wallNotesCluster.attachToWall(northWall);
+    }
 
     // Register walls with wallCtrl AFTER everything is parented and in rest position!
     for (const [face, wall] of this.wallMeshes) {
@@ -197,6 +217,62 @@ export class RoomBuilder {
     const loader = new GLTFLoader();
 
     for (const prop of props) {
+      if (prop.id === 'Painting') {
+        const group = this.paintingReveal.group;
+        group.position.set(prop.position[0], prop.position[1], prop.position[2]);
+        if (prop.rotation) {
+          group.rotation.set(
+            THREE.MathUtils.degToRad(prop.rotation[0]),
+            THREE.MathUtils.degToRad(prop.rotation[1]),
+            THREE.MathUtils.degToRad(prop.rotation[2]),
+          );
+        }
+        const face = prop.wall ?? inferWallFace(prop.position[0], prop.position[2]);
+        group.userData.wallFace = face;
+        if (face !== 'floor') {
+          const wallMesh = this.wallMeshes.get(face);
+          if (wallMesh) {
+            group.position.sub(wallMesh.position);
+            wallMesh.add(group);
+          } else {
+            this.propsRoot.add(group);
+          }
+        } else {
+          this.propsRoot.add(group);
+        }
+        continue;
+      }
+
+      if (prop.id === 'DeskMug') {
+        const group = buildDeskMug();
+        group.position.set(prop.position[0], prop.position[1], prop.position[2]);
+        if (prop.rotation) {
+          group.rotation.set(
+            THREE.MathUtils.degToRad(prop.rotation[0]),
+            THREE.MathUtils.degToRad(prop.rotation[1]),
+            THREE.MathUtils.degToRad(prop.rotation[2]),
+          );
+        }
+        group.userData.wallFace = 'floor';
+        this.propsRoot.add(group);
+        continue;
+      }
+
+      if (prop.id === 'BedsideLamp') {
+        const group = buildBedsideLamp();
+        group.position.set(prop.position[0], prop.position[1], prop.position[2]);
+        if (prop.rotation) {
+          group.rotation.set(
+            THREE.MathUtils.degToRad(prop.rotation[0]),
+            THREE.MathUtils.degToRad(prop.rotation[1]),
+            THREE.MathUtils.degToRad(prop.rotation[2]),
+          );
+        }
+        group.userData.wallFace = 'floor';
+        this.propsRoot.add(group);
+        continue;
+      }
+
       if (prop.mesh && (prop.mesh.endsWith('.glb') || prop.mesh.endsWith('.gltf'))) {
         loader.load(publicUrl(prop.mesh), (gltf) => {
           const model = gltf.scene;
@@ -296,6 +372,16 @@ export class RoomBuilder {
             roughness: 0.1,
             metalness: 0.1
           });
+        }
+
+        if (prop.id === 'WallSafe') {
+          mesh.visible = false;
+          this.wallSafeMesh = mesh;
+        }
+
+        if (prop.id === 'Phone') {
+          mesh.visible = false;
+          this.phoneInSafeMesh = mesh;
         }
 
         mesh.position.set(prop.position[0], prop.position[1], prop.position[2]);
@@ -433,5 +519,25 @@ export class RoomBuilder {
         this.obstacles.push(new THREE.Box3(min, max));
       }
     }
+  }
+
+  revealWallSafe(): void {
+    if (this.wallSafeMesh) this.wallSafeMesh.visible = true;
+  }
+
+  syncSafeContents(paintingMoved: boolean, safeUnlocked: boolean, phoneTaken: boolean): void {
+    if (this.wallSafeMesh) this.wallSafeMesh.visible = paintingMoved;
+    if (this.phoneInSafeMesh) {
+      this.phoneInSafeMesh.visible = paintingMoved && safeUnlocked && !phoneTaken;
+    }
+  }
+
+  syncPaintingReveal(moved: boolean, safeUnlocked = false, phoneTaken = false): void {
+    if (moved) {
+      this.paintingReveal.setOpenImmediate();
+    } else {
+      this.paintingReveal.resetClosed();
+    }
+    this.syncSafeContents(moved, safeUnlocked, phoneTaken);
   }
 }

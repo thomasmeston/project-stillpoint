@@ -67,6 +67,10 @@ export class PuzzleUI {
 
   openPadlock(puzzleId: string): void {
     this.activePuzzleId = puzzleId;
+    const titleEl = document.querySelector('#padlock-modal h2');
+    const isSafe = puzzleId === 'wall_safe_lock';
+    if (titleEl) titleEl.textContent = isSafe ? 'Wall Safe Dial' : 'Door Padlock';
+    this.padlockEntry.placeholder = isSafe ? 'STILL' : 'STILLPOINT';
     this.padlockEntry.value = '';
     this.padlockModal.classList.remove('hidden');
     this.padlockEntry.focus();

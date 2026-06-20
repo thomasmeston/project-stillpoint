@@ -50,6 +50,10 @@ export class HUD {
     this.cursorLabel.style.top = `${y + 16}px`;
   }
 
+  setCursorHintVisible(visible: boolean): void {
+    this.cursorLabel.classList.toggle('hidden', !visible);
+  }
+
   private showExamine(title: string, body: string): void {
     this.examineTitle.textContent = title;
     this.examineBody.textContent = body;
@@ -120,7 +124,6 @@ export class HUD {
       case 'pickup': return 'Take';
       case 'open_puzzle': return 'Use';
       case 'combine': return 'Combine';
-      case 'sit': return 'Sit';
       default: return 'Examine';
     }
   }

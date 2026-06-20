@@ -6,7 +6,7 @@ export class AudioManager {
   private ctx: AudioContext | null = null;
   private bgm: Howl | null = null;
 
-  private bgmVolume = 0.4;
+  private bgmVolume = 0.2;
   private bgmMuted = false;
 
   private initCtx(): AudioContext {

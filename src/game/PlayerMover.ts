@@ -22,32 +22,10 @@ export class PlayerMover {
   // Animation state tracking
   private time = 0;
   private walkWeight = 0;
-  private _isSitting = false;
-  isSittingTransition = false;
-  isStandingTransition = false;
-
-  private sitTransitionTime = 0;
-  private sitTransitionDuration = 0.8; // 0.8 seconds to sit down
-  private standTransitionDuration = 0.7; // 0.7 seconds to stand up
-
-  private sitStartPos = new THREE.Vector3();
-  private sitStartRotationY = 0;
-  private sitTargetPos = new THREE.Vector3();
-  private sitTargetRotationY = 0;
-
-  private savedBoneRotations = new Map<string, THREE.Euler>();
   private onArrival: (() => void) | null = null;
 
-  get isSitting(): boolean {
-    return this._isSitting || this.isSittingTransition;
-  }
-
-  set isSitting(val: boolean) {
-    this._isSitting = val;
-  }
-
   constructor() {
-    this.root.position.set(0, 0, 2);
+    this.root.position.set(-1.35, 0, 1.05);
     this.loadModel();
   }
 
@@ -141,20 +119,6 @@ export class PlayerMover {
 
   update(dt: number, obstacles?: THREE.Box3[], shellSize?: THREE.Vector2): void {
     const clampedDt = Math.min(dt, 0.1);
-
-    if (this.isSittingTransition) {
-      this.updateSittingTransition(clampedDt);
-      return;
-    }
-    if (this._isSitting) {
-      this.poseSitting();
-      return;
-    }
-    if (this.isStandingTransition) {
-      this.updateStandingTransition(clampedDt);
-      return;
-    }
-
     this.time += clampedDt;
 
     // Smoothly transition walk weight (0 = idle, 1 = walk) for secondary animations
@@ -211,12 +175,17 @@ export class PlayerMover {
       const resolvedPos = this.resolveCollisions(proposedPos, obstacles, shellSize);
       this.root.position.copy(resolvedPos);
 
-      // Blocked check: if we barely moved, cancel target
+      // Blocked check: if we barely moved, cancel target unless close enough to finish
       const actualMove = this.root.position.distanceTo(startPos);
       if (step > 0.001 && actualMove < 0.01) {
+        const remaining = this.target ? this.root.position.distanceTo(this.target) : Infinity;
+        const cb = this.onArrival;
         this.target = null;
         this.setMoving(false);
         this.onArrival = null;
+        if (cb && remaining < 1.0) {
+          cb();
+        }
         return;
       }
     } else {
@@ -307,255 +276,5 @@ export class PlayerMover {
     this.root.position.set(pos.x, pos.y, pos.z);
     this.target = null;
     this.setMoving(false);
-  }
-
-  sitOn(chairPos: THREE.Vector3, chairRotation: THREE.Euler): void {
-    this.isSittingTransition = true;
-    this._isSitting = false;
-    this.isStandingTransition = false;
-    this.sitTransitionTime = 0.0;
-
-    // Save starting state
-    this.sitStartPos.copy(this.root.position);
-    this.sitStartRotationY = this.root.rotation.y;
-
-    // Save target state
-    this.sitTargetPos.copy(chairPos);
-    this.sitTargetPos.y = 0; // Keep root Y on floor
-    this.sitTargetRotationY = chairRotation.y;
-
-    this.saveCurrentBoneRotations();
-
-    this.target = null;
-    this.setMoving(false);
-  }
-
-  standUp(): void {
-    if (!this.isSitting) return;
-
-    // Start stand transition
-    this.isStandingTransition = true;
-    this.isSittingTransition = false;
-    this._isSitting = false;
-    this.sitTransitionTime = 0.0;
-
-    this.saveCurrentBoneRotations();
-
-    this.sitStartPos.copy(this.root.position);
-    this.sitStartRotationY = this.root.rotation.y;
-    
-    // Step out of the chair slightly forward along the local forward direction
-    this.sitTargetPos.copy(this.root.position);
-    const forward = new THREE.Vector3();
-    this.root.getWorldDirection(forward);
-    this.sitTargetPos.addScaledVector(forward, 0.45);
-    
-    this.sitTargetRotationY = this.root.rotation.y;
-  }
-
-  private saveCurrentBoneRotations(): void {
-    if (!this.characterModel) return;
-    const bones = ['LeftUpLeg', 'RightUpLeg', 'LeftLeg', 'RightLeg', 'LeftArm', 'RightArm', 'Spine'];
-    this.savedBoneRotations.clear();
-    for (const name of bones) {
-      const bone = this.characterModel.getObjectByName(name);
-      if (bone) {
-        this.savedBoneRotations.set(name, bone.rotation.clone());
-      }
-    }
-  }
-
-  private updateSittingTransition(dt: number): void {
-    this.sitTransitionTime += dt;
-    const t = Math.min(this.sitTransitionTime / this.sitTransitionDuration, 1.0);
-
-    // Easing: easeInOutCubic
-    const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-
-    // Position interpolation
-    this.root.position.lerpVectors(this.sitStartPos, this.sitTargetPos, ease);
-
-    // Rotation interpolation using quaternions
-    const startQ = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, this.sitStartRotationY, 0));
-    const targetQ = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, this.sitTargetRotationY, 0));
-    startQ.slerp(targetQ, ease);
-    this.root.quaternion.copy(startQ);
-
-    if (this.characterModel) {
-      // Lower pelvis
-      this.characterModel.position.y = THREE.MathUtils.lerp(this.baseModelY, this.baseModelY - 0.45, ease);
-
-      // Animate bones
-      this.animateSittingBones(ease);
-    }
-
-    if (t >= 1.0) {
-      this.isSittingTransition = false;
-      this._isSitting = true;
-    }
-  }
-
-  private updateStandingTransition(dt: number): void {
-    this.sitTransitionTime += dt;
-    const t = Math.min(this.sitTransitionTime / this.standTransitionDuration, 1.0);
-
-    // Easing: easeInOutCubic
-    const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-
-    // Position interpolation during standing up
-    this.root.position.lerpVectors(this.sitStartPos, this.sitTargetPos, ease);
-
-    if (this.characterModel) {
-      // Raise pelvis
-      this.characterModel.position.y = THREE.MathUtils.lerp(this.baseModelY - 0.45, this.baseModelY, ease);
-
-      // Animate bones back to standing
-      this.animateStandingBones(ease);
-    }
-
-    if (t >= 1.0) {
-      this.isStandingTransition = false;
-      this.resetBonesToNeutral();
-    }
-  }
-
-  private animateSittingBones(ease: number): void {
-    if (!this.characterModel) return;
-
-    const leftUpLeg = this.characterModel.getObjectByName('LeftUpLeg');
-    const rightUpLeg = this.characterModel.getObjectByName('RightUpLeg');
-    const leftLeg = this.characterModel.getObjectByName('LeftLeg');
-    const rightLeg = this.characterModel.getObjectByName('RightLeg');
-    const leftArm = this.characterModel.getObjectByName('LeftArm');
-    const rightArm = this.characterModel.getObjectByName('RightArm');
-    const spine = this.characterModel.getObjectByName('Spine');
-
-    // 1. Torso leans forward for center-of-mass balance during descent, then leans back slightly
-    const baseSpineX = THREE.MathUtils.lerp(this.savedBoneRotations.get('Spine')?.x || 0.0, 0.08, ease);
-    const forwardLeanAmount = -Math.PI / 6 * Math.sin(ease * Math.PI); // Lean forward up to 30 deg
-    if (spine) {
-      spine.rotation.x = baseSpineX + forwardLeanAmount;
-    }
-
-    // 2. Thighs bend forward (90 deg)
-    if (leftUpLeg) {
-      const startRot = this.savedBoneRotations.get('LeftUpLeg') || new THREE.Euler();
-      leftUpLeg.rotation.x = THREE.MathUtils.lerp(startRot.x, Math.PI / 2, ease);
-    }
-    if (rightUpLeg) {
-      const startRot = this.savedBoneRotations.get('RightUpLeg') || new THREE.Euler();
-      rightUpLeg.rotation.x = THREE.MathUtils.lerp(startRot.x, Math.PI / 2, ease);
-    }
-
-    // 3. Calves bend backward (90 deg)
-    if (leftLeg) {
-      const startRot = this.savedBoneRotations.get('LeftLeg') || new THREE.Euler();
-      leftLeg.rotation.x = THREE.MathUtils.lerp(startRot.x, Math.PI / 2, ease);
-    }
-    if (rightLeg) {
-      const startRot = this.savedBoneRotations.get('RightLeg') || new THREE.Euler();
-      rightLeg.rotation.x = THREE.MathUtils.lerp(startRot.x, Math.PI / 2, ease);
-    }
-
-    // 4. Arms relax forward (45 deg)
-    if (leftArm) {
-      const startRot = this.savedBoneRotations.get('LeftArm') || new THREE.Euler();
-      leftArm.rotation.x = THREE.MathUtils.lerp(startRot.x, Math.PI / 4, ease);
-      leftArm.rotation.z = THREE.MathUtils.lerp(startRot.z, -Math.PI / 12, ease);
-    }
-    if (rightArm) {
-      const startRot = this.savedBoneRotations.get('RightArm') || new THREE.Euler();
-      rightArm.rotation.x = THREE.MathUtils.lerp(startRot.x, Math.PI / 4, ease);
-      rightArm.rotation.z = THREE.MathUtils.lerp(startRot.z, Math.PI / 12, ease);
-    }
-  }
-
-  private animateStandingBones(ease: number): void {
-    if (!this.characterModel) return;
-
-    const leftUpLeg = this.characterModel.getObjectByName('LeftUpLeg');
-    const rightUpLeg = this.characterModel.getObjectByName('RightUpLeg');
-    const leftLeg = this.characterModel.getObjectByName('LeftLeg');
-    const rightLeg = this.characterModel.getObjectByName('RightLeg');
-    const leftArm = this.characterModel.getObjectByName('LeftArm');
-    const rightArm = this.characterModel.getObjectByName('RightArm');
-    const spine = this.characterModel.getObjectByName('Spine');
-
-    // Torso leans forward to transfer momentum as we push up
-    const baseSpineX = THREE.MathUtils.lerp(this.savedBoneRotations.get('Spine')?.x || 0.0, 0.0, ease);
-    const forwardLeanAmount = -Math.PI / 6 * Math.sin(ease * Math.PI); // Lean forward up to 30 deg
-    if (spine) {
-      spine.rotation.x = baseSpineX + forwardLeanAmount;
-    }
-
-    if (leftUpLeg) {
-      const startRot = this.savedBoneRotations.get('LeftUpLeg') || new THREE.Euler();
-      leftUpLeg.rotation.x = THREE.MathUtils.lerp(startRot.x, 0, ease);
-    }
-    if (rightUpLeg) {
-      const startRot = this.savedBoneRotations.get('RightUpLeg') || new THREE.Euler();
-      rightUpLeg.rotation.x = THREE.MathUtils.lerp(startRot.x, 0, ease);
-    }
-    if (leftLeg) {
-      const startRot = this.savedBoneRotations.get('LeftLeg') || new THREE.Euler();
-      leftLeg.rotation.x = THREE.MathUtils.lerp(startRot.x, 0, ease);
-    }
-    if (rightLeg) {
-      const startRot = this.savedBoneRotations.get('RightLeg') || new THREE.Euler();
-      rightLeg.rotation.x = THREE.MathUtils.lerp(startRot.x, 0, ease);
-    }
-
-    if (leftArm) {
-      const startRot = this.savedBoneRotations.get('LeftArm') || new THREE.Euler();
-      leftArm.rotation.x = THREE.MathUtils.lerp(startRot.x, 0, ease);
-      leftArm.rotation.z = THREE.MathUtils.lerp(startRot.z, 0, ease);
-    }
-    if (rightArm) {
-      const startRot = this.savedBoneRotations.get('RightArm') || new THREE.Euler();
-      rightArm.rotation.x = THREE.MathUtils.lerp(startRot.x, 0, ease);
-      rightArm.rotation.z = THREE.MathUtils.lerp(startRot.z, 0, ease);
-    }
-  }
-
-  private resetBonesToNeutral(): void {
-    if (!this.characterModel) return;
-    const bones = ['LeftUpLeg', 'RightUpLeg', 'LeftLeg', 'RightLeg', 'LeftArm', 'RightArm', 'Spine'];
-    for (const name of bones) {
-      const bone = this.characterModel.getObjectByName(name);
-      if (bone) {
-        bone.rotation.set(0, 0, 0);
-      }
-    }
-  }
-
-  private poseSitting(): void {
-    if (!this.characterModel) return;
-
-    this.characterModel.position.y = this.baseModelY - 0.45;
-
-    const leftUpLeg = this.characterModel.getObjectByName('LeftUpLeg');
-    const rightUpLeg = this.characterModel.getObjectByName('RightUpLeg');
-    const leftLeg = this.characterModel.getObjectByName('LeftLeg');
-    const rightLeg = this.characterModel.getObjectByName('RightLeg');
-    const leftArm = this.characterModel.getObjectByName('LeftArm');
-    const rightArm = this.characterModel.getObjectByName('RightArm');
-    const spine = this.characterModel.getObjectByName('Spine');
-
-    if (spine) spine.rotation.x = 0.08; // Slighly leaned back
-
-    if (leftUpLeg) leftUpLeg.rotation.x = Math.PI / 2;
-    if (rightUpLeg) rightUpLeg.rotation.x = Math.PI / 2;
-
-    if (leftLeg) leftLeg.rotation.x = Math.PI / 2;
-    if (rightLeg) rightLeg.rotation.x = Math.PI / 2;
-
-    if (leftArm) {
-      leftArm.rotation.x = Math.PI / 4;
-      leftArm.rotation.z = -Math.PI / 12;
-    }
-    if (rightArm) {
-      rightArm.rotation.x = Math.PI / 4;
-      rightArm.rotation.z = Math.PI / 12;
-    }
   }
 }

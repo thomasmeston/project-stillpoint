@@ -16,9 +16,17 @@
       "solution": "STILL",
       "on_success": [
         "set_flag:safe_combo_known",
-        "set_flag:painting_moved",
-        "journal:photo_cipher_solved",
-        "thought:safe_found"
+        "journal:photo_cipher_solved"
+      ]
+    },
+    {
+      "id": "wall_safe_lock",
+      "type": "padlock",
+      "solution": "STILL",
+      "on_success": [
+        "set_flag:safe_unlocked",
+        "journal:safe_opened",
+        "thought:safe_opened"
       ]
     },
     {
@@ -72,17 +80,17 @@
     { "id": "bookshelf", "action": "examine" },
     { "id": "nightstand", "action": "examine" },
     { "id": "key_handle", "action": "pickup", "item": "key_handle" },
-    { "id": "painting", "action": "open_puzzle", "puzzle": "photo_cipher" },
+    { "id": "painting", "action": "examine" },
+    { "id": "wall_notes", "action": "examine" },
     { "id": "wall_safe", "action": "examine" },
     { "id": "wardrobe", "action": "examine" },
     { "id": "cipher_disk_pickup", "action": "pickup", "item": "cipher_disk" },
     { "id": "stillpoint_letter", "action": "pickup", "item": "stillpoint_letter" },
     { "id": "door", "action": "open_puzzle", "puzzle": "padlock" },
     { "id": "window", "action": "examine" },
-    { "id": "phone", "action": "examine" },
     { "id": "combine_station", "action": "combine" },
     { "id": "lamp", "action": "examine" },
-    { "id": "chair", "action": "sit" }
+    { "id": "chair", "action": "examine" }
   ],
   "item_uses": [
     {

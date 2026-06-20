@@ -1,5 +1,9 @@
 import storyData from '../../data/story/bedroom-script.json';
 import { EventBus } from '../utils/EventBus';
+import {
+  mergeExamineEntry,
+  resolveThoughtText,
+} from './DevContentOverrides';
 import type { GameState } from './GameState';
 
 type StoryFile = {
@@ -38,7 +42,7 @@ export class NarrativeManager {
   }
 
   onExamine(hotspotId: string): void {
-    const entry = this.data.examines[hotspotId];
+    const entry = mergeExamineEntry(hotspotId, this.data.examines[hotspotId]);
     if (!entry) return;
     this.events.emit('examineShown', { title: entry.title, body: entry.body });
     this.fireTrigger(`examine:${hotspotId}`, entry);
@@ -57,7 +61,7 @@ export class NarrativeManager {
 
   showThought(thoughtId: string): void {
     if (!thoughtId) return;
-    const text = this.data.thoughts[thoughtId] ?? thoughtId;
+    const text = resolveThoughtText(thoughtId);
     this.events.emit('thoughtShown', text);
   }
 
@@ -80,8 +84,11 @@ export class NarrativeManager {
     key: string,
     entry: { thought?: string; journal?: string },
   ): void {
-    if (!this.triggered.has(key)) this.triggered.add(key);
-    if (entry.thought) this.showThought(entry.thought);
+    if (this.triggered.has(key)) return;
+    this.triggered.add(key);
+    if (entry.thought) {
+      this.events.emit('thoughtShown', entry.thought);
+    }
     if (entry.journal) this.addJournalEntry(entry.journal);
   }
 

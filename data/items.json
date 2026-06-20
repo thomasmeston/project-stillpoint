@@ -31,6 +31,10 @@
     "stillpoint_letter": {
       "label": "Stillpoint Letter",
       "description": "Folded consent letter for Project Stillpoint. Your signature is at the bottom."
+    },
+    "phone": {
+      "label": "Phone",
+      "description": "No signal. One notification frozen on screen: 'You chose to forget.'"
     }
   },
   "combine_rules": [
