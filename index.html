@@ -225,8 +225,10 @@
           <button id="dev-undo" class="dev-btn" title="Undo (Ctrl+Z)" disabled>Undo</button>
           <button id="dev-redo" class="dev-btn" title="Redo (Ctrl+Y)" disabled>Redo</button>
         </div>
-        <button id="dev-copy-json" class="dev-btn dev-btn-primary">Copy Layout JSON</button>
+        <button id="dev-save-layout" class="dev-btn dev-btn-primary" type="button">Save Layout</button>
+        <button id="dev-copy-json" class="dev-btn">Copy Layout JSON</button>
         <button id="dev-reset-layout" class="dev-btn dev-btn-danger">Reset Layout</button>
+        <p class="dev-mode-hint">Save Layout writes to <code>data/rooms/bedroom.json</code> (local dev server).</p>
       </div>
       </div>
 
@@ -253,9 +255,11 @@
         <input type="text" id="dev-item-label" class="dev-text-input" />
         <label class="dev-field-label" for="dev-item-description">Item description</label>
         <textarea id="dev-item-description" class="dev-textarea" rows="4"></textarea>
-        <button id="dev-apply-content" class="dev-btn dev-btn-primary" type="button">Apply Text Changes</button>
+        <button id="dev-save-content" class="dev-btn dev-btn-primary" type="button">Save Text</button>
+        <button id="dev-apply-content" class="dev-btn" type="button">Preview Text (local)</button>
         <button id="dev-copy-content" class="dev-btn" type="button">Copy Content JSON</button>
         <button id="dev-reset-content" class="dev-btn dev-btn-danger" type="button">Reset Text Overrides</button>
+        <p class="dev-mode-hint">Save Text writes to <code>data/story/bedroom-script.json</code> and <code>data/items.json</code>.</p>
       </div>
       
       <div class="dev-actions">

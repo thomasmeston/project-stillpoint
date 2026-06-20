@@ -108,6 +108,61 @@ export function getEffectiveItemDescription(itemId: string): string {
   return overrides.items[itemId]?.description ?? baseItems[itemId]?.description ?? '';
 }
 
+export function buildMergedStoryJson(): Record<string, unknown> {
+  const merged = JSON.parse(JSON.stringify(storyData)) as {
+    examines: Record<string, { title: string; body: string; thought?: string; journal?: string }>;
+    thoughts: Record<string, string>;
+  };
+
+  for (const [hotspotId, ov] of Object.entries(overrides.examines)) {
+    const entry = merged.examines[hotspotId];
+    if (!entry) {
+      if (ov.title || ov.body || ov.thought) {
+        merged.examines[hotspotId] = {
+          title: ov.title ?? hotspotId,
+          body: ov.body ?? '',
+        };
+        if (ov.thought) {
+          const thoughtKey = `${hotspotId}_musings`;
+          merged.examines[hotspotId].thought = thoughtKey;
+          merged.thoughts[thoughtKey] = ov.thought;
+        }
+      }
+      continue;
+    }
+
+    if (ov.title !== undefined) entry.title = ov.title;
+    if (ov.body !== undefined) entry.body = ov.body;
+    if (ov.thought !== undefined) {
+      const thoughtKey = entry.thought;
+      if (thoughtKey) {
+        merged.thoughts[thoughtKey] = ov.thought;
+      } else {
+        const newKey = `${hotspotId}_musings`;
+        entry.thought = newKey;
+        merged.thoughts[newKey] = ov.thought;
+      }
+    }
+  }
+
+  return merged;
+}
+
+export function buildMergedItemsJson(): Record<string, unknown> {
+  const merged = JSON.parse(JSON.stringify(itemsData)) as {
+    items: Record<string, { label: string; description?: string }>;
+    combine_rules: unknown[];
+  };
+
+  for (const [itemId, ov] of Object.entries(overrides.items)) {
+    if (!merged.items[itemId]) continue;
+    if (ov.label !== undefined) merged.items[itemId].label = ov.label;
+    if (ov.description !== undefined) merged.items[itemId].description = ov.description;
+  }
+
+  return merged;
+}
+
 export function getBaseExamine(hotspotId: string) {
   return story.examines[hotspotId];
 }

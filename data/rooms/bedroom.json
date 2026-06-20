@@ -13,66 +13,830 @@
     "crow_art": "#2d3548"
   },
   "shell": {
-    "size": { "x": 7.0, "z": 6.0 },
-    "wall_height": 3.0,
+    "size": {
+      "x": 7,
+      "z": 6
+    },
+    "wall_height": 3,
     "floor_color": "wood",
     "wall_color": "plaster"
   },
   "props": [
-    { "id": "Rug", "mesh": "box", "color": "#5a4a3a", "size": [2.2, 0.05, 1.6], "position": [0, 0.03, 1.5] },
-    { "id": "BedFrame", "mesh": "box", "color": "wood_dark", "size": [2.0, 0.4, 2.6], "position": [-2.0, 0.2, 0.5] },
-    { "id": "Mattress", "mesh": "box", "color": "fabric_light", "size": [1.9, 0.35, 2.4], "position": [-2.0, 0.55, 0.5] },
-    { "id": "Pillow", "mesh": "box", "color": "fabric", "size": [0.7, 0.18, 0.45], "position": [-2.0, 0.85, -0.35] },
-    { "id": "Desk", "mesh": "box", "color": "wood", "size": [1.4, 0.75, 0.7], "position": [1.8, 0.375, 0.0] },
-    { "id": "DeskTop", "mesh": "box", "color": "wood_dark", "size": [1.45, 0.05, 0.75], "position": [1.8, 0.77, 0.0] },
-    { "id": "Chair", "mesh": "models/chair.glb", "color": "wood", "size": [0.45, 0.9, 0.45], "position": [1.2, 0.0, 0.5], "rotation": [0, 90, 0] },
-    { "id": "Bookshelf", "mesh": "box", "color": "wood_dark", "size": [0.35, 2.0, 1.0], "position": [3.325, 1.0, 2.2] },
-    { "id": "Nightstand", "mesh": "box", "color": "wood", "size": [0.5, 0.55, 0.45], "position": [-0.8, 0.275, 0.2] },
-    { "id": "BedsideLamp", "mesh": "box", "color": "metal", "size": [0.36, 1.7, 0.36], "position": [-1.35, 0, 0.75] },
-    { "id": "Wardrobe", "mesh": "box", "color": "wood_dark", "size": [1.2, 2.2, 0.55], "position": [-2.8, 1.1, 2.725] },
-    { "id": "WardrobeDoor", "mesh": "box", "color": "wood", "size": [0.55, 2.0, 0.06], "position": [-2.55, 1.05, 2.45] },
-    { "id": "Painting", "mesh": "box", "color": "accent", "size": [0.9, 0.7, 0.05], "position": [0.5, 1.8, -2.95] },
-    { "id": "WallSafe", "mesh": "box", "color": "metal", "size": [0.35, 0.35, 0.12], "position": [0.5, 1.5, -2.98] },
-    { "id": "ClockBody", "mesh": "cylinder", "color": "metal", "size": [0.5, 0.08, 0.5], "position": [-1.0, 2.2, -2.9], "rotation": [90, 0, 0] },
-    { "id": "ClockFace", "mesh": "cylinder", "color": "#f2f2f2", "size": [0.42, 0.02, 0.42], "position": [-1.0, 2.2, -2.85], "rotation": [90, 0, 0] },
-    { "id": "DoorFrame", "mesh": "box", "color": "wood_dark", "size": [1.2, 2.4, 0.2], "position": [3.35, 1.2, -1.0], "rotation": [0, 90, 0], "wall": "east" },
-    { "id": "DoorPanel", "mesh": "box", "color": "wood", "size": [1.0, 2.2, 0.08], "position": [3.35, 1.1, -1.0], "rotation": [0, 90, 0], "wall": "east" },
-    { "id": "DoorChain", "mesh": "box", "color": "metal", "size": [0.05, 0.3, 0.05], "position": [3.1, 1.4, -0.6], "rotation": [0, 90, 0], "wall": "east" },
-    { "id": "Padlock", "mesh": "box", "color": "#3a3a40", "size": [0.12, 0.15, 0.06], "position": [3.1, 1.25, -0.6], "rotation": [0, 90, 0], "wall": "east" },
-    { "id": "WindowFrame", "mesh": "box", "color": "wood_dark", "size": [1.4, 1.6, 0.12], "position": [-3.2, 1.6, 1.0], "rotation": [0, 90, 0] },
-    { "id": "WindowGlass", "mesh": "box", "color": "window_cool", "size": [1.2, 1.4, 0.02], "position": [-3.15, 1.6, 1.05], "rotation": [0, 90, 0] },
-    { "id": "LampBase", "mesh": "cylinder", "color": "metal", "size": [0.12, 0.25, 0.12], "position": [2.1, 0.9, 0.0] },
-    { "id": "LampShade", "mesh": "cylinder", "color": "lamp_warm", "size": [0.22, 0.18, 0.22], "position": [2.1, 1.05, 0.0] },
-    { "id": "Phone", "mesh": "box", "color": "#1a1a22", "size": [0.06, 0.11, 0.04], "position": [0.5, 1.52, -2.965] },
-    { "id": "Sketchbook", "mesh": "box", "color": "crow_art", "size": [0.25, 0.04, 0.3], "position": [1.6, 0.82, -0.1] },
-    { "id": "DeskMug", "mesh": "box", "color": "metal", "size": [0.12, 0.1, 0.12], "position": [1.42, 0.802, 0.2] },
-    { "id": "CrowFigurine", "mesh": "sphere", "color": "crow_art", "size": [0.12, 0.18, 0.12], "position": [-0.5, 0.88, 0.15] }
+    {
+      "id": "Rug",
+      "mesh": "box",
+      "color": "#5a4a3a",
+      "size": [
+        2.2,
+        0.05,
+        1.6
+      ],
+      "position": [
+        -1.95,
+        -0.02,
+        1.45
+      ]
+    },
+    {
+      "id": "BedFrame",
+      "mesh": "box",
+      "color": "wood_dark",
+      "size": [
+        2,
+        0.4,
+        2.6
+      ],
+      "position": [
+        -2.05,
+        0.2,
+        -1.2
+      ]
+    },
+    {
+      "id": "Mattress",
+      "mesh": "box",
+      "color": "fabric_light",
+      "size": [
+        1.9,
+        0.35,
+        2.4
+      ],
+      "position": [
+        -2.05,
+        0.55,
+        -1.2
+      ]
+    },
+    {
+      "id": "Pillow",
+      "mesh": "box",
+      "color": "fabric",
+      "size": [
+        0.7,
+        0.18,
+        0.45
+      ],
+      "position": [
+        -2.05,
+        0.8,
+        -2.05
+      ]
+    },
+    {
+      "id": "Desk",
+      "mesh": "box",
+      "color": "wood",
+      "size": [
+        1.4,
+        0.75,
+        0.7
+      ],
+      "position": [
+        1.8,
+        0.375,
+        0
+      ]
+    },
+    {
+      "id": "DeskTop",
+      "mesh": "box",
+      "color": "wood_dark",
+      "size": [
+        1.45,
+        0.05,
+        0.75
+      ],
+      "position": [
+        1.8,
+        0.77,
+        0
+      ]
+    },
+    {
+      "id": "Chair",
+      "mesh": "models/chair.glb",
+      "color": "wood",
+      "size": [
+        0.45,
+        0.9,
+        0.45
+      ],
+      "position": [
+        2.1,
+        0.025,
+        0.85
+      ],
+      "rotation": [
+        0,
+        210,
+        0
+      ]
+    },
+    {
+      "id": "Bookshelf",
+      "mesh": "box",
+      "color": "wood_dark",
+      "size": [
+        0.35,
+        2,
+        1
+      ],
+      "position": [
+        3.325,
+        1,
+        2.2
+      ]
+    },
+    {
+      "id": "Nightstand",
+      "mesh": "box",
+      "color": "wood",
+      "size": [
+        0.5,
+        0.55,
+        0.45
+      ],
+      "position": [
+        -0.75,
+        0.275,
+        -2.05
+      ]
+    },
+    {
+      "id": "BedsideLamp",
+      "mesh": "box",
+      "color": "metal",
+      "size": [
+        0.36,
+        1.7,
+        0.36
+      ],
+      "position": [
+        -3.2,
+        0,
+        -2.3
+      ]
+    },
+    {
+      "id": "Wardrobe",
+      "mesh": "box",
+      "color": "wood_dark",
+      "size": [
+        1.2,
+        2.2,
+        0.55
+      ],
+      "position": [
+        -2.8,
+        1.1,
+        2.725
+      ]
+    },
+    {
+      "id": "WardrobeDoor",
+      "mesh": "box",
+      "color": "wood",
+      "size": [
+        0.55,
+        2,
+        0.06
+      ],
+      "position": [
+        -2.55,
+        1.05,
+        2.45
+      ]
+    },
+    {
+      "id": "Painting",
+      "mesh": "box",
+      "color": "accent",
+      "size": [
+        0.9,
+        0.7,
+        0.05
+      ],
+      "position": [
+        0.5,
+        1.8,
+        -2.9
+      ]
+    },
+    {
+      "id": "WallSafe",
+      "mesh": "box",
+      "color": "metal",
+      "size": [
+        0.35,
+        0.35,
+        0.12
+      ],
+      "position": [
+        0.5,
+        1.7,
+        -2.94
+      ]
+    },
+    {
+      "id": "ClockBody",
+      "mesh": "cylinder",
+      "color": "metal",
+      "size": [
+        0.5,
+        0.08,
+        0.5
+      ],
+      "position": [
+        -1.75,
+        2.15,
+        -2.9
+      ],
+      "rotation": [
+        90,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "ClockFace",
+      "mesh": "cylinder",
+      "color": "#f2f2f2",
+      "size": [
+        0.42,
+        0.02,
+        0.42
+      ],
+      "position": [
+        -1.75,
+        2.15,
+        -2.85
+      ],
+      "rotation": [
+        90,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "DoorFrame",
+      "mesh": "box",
+      "color": "wood_dark",
+      "size": [
+        1.2,
+        2.4,
+        0.2
+      ],
+      "position": [
+        3.45,
+        1.2,
+        -1
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "wall": "east"
+    },
+    {
+      "id": "DoorPanel",
+      "mesh": "box",
+      "color": "wood",
+      "size": [
+        1,
+        2.2,
+        0.08
+      ],
+      "position": [
+        3.35,
+        1.15,
+        -1
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "wall": "east"
+    },
+    {
+      "id": "DoorChain",
+      "mesh": "box",
+      "color": "metal",
+      "size": [
+        0.05,
+        0.3,
+        0.05
+      ],
+      "position": [
+        3.3,
+        1.15,
+        -0.55
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "wall": "east"
+    },
+    {
+      "id": "Padlock",
+      "mesh": "box",
+      "color": "#3a3a40",
+      "size": [
+        0.12,
+        0.15,
+        0.06
+      ],
+      "position": [
+        3.3,
+        1,
+        -0.55
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ],
+      "wall": "east"
+    },
+    {
+      "id": "WindowFrame",
+      "mesh": "box",
+      "color": "wood_dark",
+      "size": [
+        1.4,
+        1.6,
+        0.12
+      ],
+      "position": [
+        -3.45,
+        1.6,
+        1
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ]
+    },
+    {
+      "id": "WindowGlass",
+      "mesh": "box",
+      "color": "window_cool",
+      "size": [
+        1.2,
+        1.4,
+        0.02
+      ],
+      "position": [
+        -3.4,
+        1.6,
+        1.05
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ]
+    },
+    {
+      "id": "LampBase",
+      "mesh": "cylinder",
+      "color": "metal",
+      "size": [
+        0.12,
+        0.25,
+        0.12
+      ],
+      "position": [
+        2.3,
+        0.9,
+        -0.15
+      ]
+    },
+    {
+      "id": "LampShade",
+      "mesh": "cylinder",
+      "color": "lamp_warm",
+      "size": [
+        0.22,
+        0.18,
+        0.22
+      ],
+      "position": [
+        2.3,
+        1.05,
+        -0.15
+      ]
+    },
+    {
+      "id": "Phone",
+      "mesh": "box",
+      "color": "#1a1a22",
+      "size": [
+        0.06,
+        0.11,
+        0.04
+      ],
+      "position": [
+        2.55,
+        0.97,
+        -2.45
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "Sketchbook",
+      "mesh": "box",
+      "color": "crow_art",
+      "size": [
+        0.25,
+        0.04,
+        0.3
+      ],
+      "position": [
+        1.6,
+        0.82,
+        -0.1
+      ]
+    },
+    {
+      "id": "DeskMug",
+      "mesh": "box",
+      "color": "metal",
+      "size": [
+        0.12,
+        0.1,
+        0.12
+      ],
+      "position": [
+        1.17,
+        0.802,
+        -0.2
+      ],
+      "rotation": [
+        0,
+        15,
+        0
+      ]
+    },
+    {
+      "id": "CrowFigurine",
+      "mesh": "sphere",
+      "color": "crow_art",
+      "size": [
+        0.12,
+        0.18,
+        0.12
+      ],
+      "position": [
+        -0.85,
+        0.58,
+        -2.1
+      ],
+      "rotation": [
+        0,
+        255,
+        0
+      ]
+    }
   ],
   "hotspots": [
-    { "id": "bed", "label": "Bed", "position": [-2.0, 0.9, 0.5], "size": [2.0, 0.8, 2.4], "color": "#88aa88" },
-    { "id": "calendar_scrap", "label": "Calendar Scrap", "position": [-2.0, 0.6, 1.2], "size": [0.4, 0.2, 0.4], "color": "#eeddcc" },
-    { "id": "wall_clock", "label": "Wall Clock", "position": [-1.0, 2.2, -2.8], "size": [0.5, 0.5, 0.3], "color": "#ccccdd" },
-    { "id": "desk", "label": "Desk", "position": [1.8, 0.375, 0.0], "size": [1.4, 0.75, 0.7], "color": "#aa8866" },
-    { "id": "desk_drawer", "label": "Desk Drawer", "position": [1.8, 0.45, 0.2], "size": [0.8, 0.3, 0.5], "color": "#886644" },
-    { "id": "sketchbook", "label": "Sketchbook", "position": [1.6, 0.85, -0.1], "size": [0.35, 0.15, 0.35], "color": "#445566" },
-    { "id": "bookshelf", "label": "Bookshelf", "position": [3.3, 1.2, 2.2], "size": [0.4, 2.0, 1.0], "color": "#776655" },
-    { "id": "nightstand", "label": "Nightstand", "position": [-0.8, 0.6, 0.2], "size": [0.5, 0.6, 0.45], "color": "#997755" },
-    { "id": "key_handle", "label": "Key Handle", "position": [-0.8, 0.65, 0.35], "size": [0.25, 0.2, 0.25], "color": "#bb9955" },
-    { "id": "painting", "label": "Painting", "position": [0.5, 1.8, -2.8], "size": [0.9, 0.7, 0.3], "color": "#ccaa66" },
-    { "id": "wall_notes", "label": "Pinned Notes", "position": [-1.05, 1.55, -2.85], "size": [3.2, 1.4, 0.25], "color": "#ccbbaa", "wall": "north" },
-    { "id": "wall_safe", "label": "Wall Safe", "position": [0.5, 1.5, -2.8], "size": [0.4, 0.4, 0.3], "color": "#9999aa" },
-    { "id": "wardrobe", "label": "Wardrobe", "position": [-2.8, 1.2, 2.7], "size": [1.2, 2.2, 0.6], "color": "#665544" },
-    { "id": "cipher_disk_pickup", "label": "Cipher Disk", "position": [-2.6, 1.0, 2.0], "size": [0.35, 0.35, 0.35], "color": "#ddcc99" },
-    { "id": "stillpoint_letter", "label": "Letter", "position": [-2.9, 0.9, 2.0], "size": [0.3, 0.25, 0.3], "color": "#eeeecc" },
-    { "id": "door", "label": "Door", "position": [3.2, 1.2, -1.0], "size": [0.4, 2.2, 1.0], "color": "#aa7755", "wall": "east" },
-    { "id": "window", "label": "Window", "position": [-3.1, 1.6, 1.0], "size": [1.2, 1.4, 0.3], "color": "#88bbdd", "wall": "west" },
-    { "id": "combine_station", "label": "Combine", "position": [1.8, 0.85, 0.0], "size": [0.5, 0.2, 0.5], "color": "#bbaa88" },
-    { "id": "lamp", "label": "Lamp", "position": [2.1, 0.95, 0.0], "size": [0.3, 0.4, 0.3], "color": "#ffd9a0" },
-    { "id": "chair", "label": "Chair", "position": [1.2, 0.45, 0.5], "size": [0.5, 0.9, 0.5], "color": "#aa8866" }
+    {
+      "id": "bed",
+      "label": "Bed",
+      "position": [
+        -2.05,
+        0.9,
+        -1.2
+      ],
+      "size": [
+        2,
+        0.8,
+        2.4
+      ],
+      "color": "#88aa88"
+    },
+    {
+      "id": "calendar_scrap",
+      "label": "Calendar Scrap",
+      "position": [
+        -2.05,
+        0.6,
+        -0.5
+      ],
+      "size": [
+        0.4,
+        0.2,
+        0.4
+      ],
+      "color": "#eeddcc"
+    },
+    {
+      "id": "wall_clock",
+      "label": "Wall Clock",
+      "position": [
+        -1.75,
+        2.15,
+        -2.8
+      ],
+      "size": [
+        0.5,
+        0.5,
+        0.3
+      ],
+      "color": "#ccccdd"
+    },
+    {
+      "id": "desk",
+      "label": "Desk",
+      "position": [
+        1.8,
+        0.9,
+        0
+      ],
+      "size": [
+        1.4,
+        0.75,
+        0.7
+      ],
+      "color": "#aa8866"
+    },
+    {
+      "id": "desk_drawer",
+      "label": "Desk Drawer",
+      "position": [
+        1.8,
+        0.45,
+        0.2
+      ],
+      "size": [
+        0.8,
+        0.3,
+        0.5
+      ],
+      "color": "#886644"
+    },
+    {
+      "id": "sketchbook",
+      "label": "Sketchbook",
+      "position": [
+        1.6,
+        0.85,
+        -0.1
+      ],
+      "size": [
+        0.35,
+        0.15,
+        0.35
+      ],
+      "color": "#445566"
+    },
+    {
+      "id": "bookshelf",
+      "label": "Bookshelf",
+      "position": [
+        3.3,
+        1.2,
+        2.2
+      ],
+      "size": [
+        0.4,
+        2,
+        1
+      ],
+      "color": "#776655"
+    },
+    {
+      "id": "nightstand",
+      "label": "Nightstand",
+      "position": [
+        -0.75,
+        0.6,
+        -2.05
+      ],
+      "size": [
+        0.5,
+        0.6,
+        0.45
+      ],
+      "color": "#997755"
+    },
+    {
+      "id": "key_handle",
+      "label": "Key Handle",
+      "position": [
+        -0.75,
+        0.65,
+        -1.9
+      ],
+      "size": [
+        0.25,
+        0.2,
+        0.25
+      ],
+      "color": "#bb9955"
+    },
+    {
+      "id": "painting",
+      "label": "Painting",
+      "position": [
+        0.5,
+        1.8,
+        -2.75
+      ],
+      "size": [
+        0.9,
+        0.7,
+        0.3
+      ],
+      "color": "#ccaa66"
+    },
+    {
+      "id": "wall_notes",
+      "label": "Pinned Notes",
+      "position": [
+        0.25,
+        1.55,
+        -2.85
+      ],
+      "size": [
+        3.2,
+        1.4,
+        0.25
+      ],
+      "color": "#ccbbaa",
+      "wall": "north"
+    },
+    {
+      "id": "wall_safe",
+      "label": "Wall Safe",
+      "position": [
+        0.5,
+        1.7,
+        -2.8
+      ],
+      "size": [
+        0.4,
+        0.4,
+        0.3
+      ],
+      "color": "#9999aa"
+    },
+    {
+      "id": "wardrobe",
+      "label": "Wardrobe",
+      "position": [
+        -2.8,
+        1.2,
+        2.7
+      ],
+      "size": [
+        1.2,
+        2.2,
+        0.6
+      ],
+      "color": "#665544"
+    },
+    {
+      "id": "cipher_disk_pickup",
+      "label": "Cipher Disk",
+      "position": [
+        -2.6,
+        1,
+        2
+      ],
+      "size": [
+        0.35,
+        0.35,
+        0.35
+      ],
+      "color": "#ddcc99"
+    },
+    {
+      "id": "stillpoint_letter",
+      "label": "Letter",
+      "position": [
+        -2.9,
+        0.9,
+        2
+      ],
+      "size": [
+        0.3,
+        0.25,
+        0.3
+      ],
+      "color": "#eeeecc"
+    },
+    {
+      "id": "door",
+      "label": "Door",
+      "position": [
+        3.2,
+        1.2,
+        -1
+      ],
+      "size": [
+        0.4,
+        2.2,
+        1
+      ],
+      "color": "#aa7755",
+      "wall": "east"
+    },
+    {
+      "id": "window",
+      "label": "Window",
+      "position": [
+        -3.35,
+        1.6,
+        1
+      ],
+      "size": [
+        1.2,
+        1.4,
+        0.3
+      ],
+      "color": "#88bbdd",
+      "wall": "west"
+    },
+    {
+      "id": "combine_station",
+      "label": "Combine",
+      "position": [
+        1.8,
+        0.85,
+        0
+      ],
+      "size": [
+        0.5,
+        0.2,
+        0.5
+      ],
+      "color": "#bbaa88"
+    },
+    {
+      "id": "lamp",
+      "label": "Lamp",
+      "position": [
+        2.1,
+        0.9,
+        0
+      ],
+      "size": [
+        0.3,
+        0.4,
+        0.3
+      ],
+      "color": "#ffd9a0"
+    },
+    {
+      "id": "chair",
+      "label": "Chair",
+      "position": [
+        2.65,
+        0.05,
+        1.308
+      ],
+      "size": [
+        0.5,
+        0.9,
+        0.5
+      ],
+      "color": "#aa8866"
+    }
   ],
-  "spawn": { "player": [-1.35, 0, 1.05] },
+  "spawn": {
+    "player": [
+      -1.35,
+      0,
+      1.05
+    ]
+  },
   "lighting": {
-    "lamp": { "position": [2.1, 1.2, 0.0], "color": "#ffd9a0", "energy": 1.2 },
-    "window": { "position": [-3.0, 2.0, 1.0], "color": "#8ab4d9", "energy": 0.6 }
+    "lamp": {
+      "position": [
+        2.3,
+        1.2,
+        -0.15
+      ],
+      "color": "#ffd9a0",
+      "energy": 1.2
+    },
+    "window": {
+      "position": [
+        -3.25,
+        2,
+        1
+      ],
+      "color": "#8ab4d9",
+      "energy": 0.6
+    }
   }
 }

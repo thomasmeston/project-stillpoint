@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import type { RoomBuilder } from '../scene/RoomBuilder';
-import roomData from '../../data/rooms/bedroom.json';
 import puzzleData from '../../data/puzzles/bedroom.json';
 import {
   clearContentOverrides,
@@ -14,6 +13,11 @@ import {
   setExamineOverride,
   setItemOverride,
 } from './DevContentOverrides';
+import {
+  buildRoomJson,
+  saveContentToRepo,
+  saveLayoutToRepo,
+} from './DevSave';
 
 const RELATIONSHIPS: Record<string, { props: string[]; hotspots: string[]; lights: string[] }> = {
   BedFrame: {
@@ -190,6 +194,7 @@ export class DevMover {
     this.undoBtn?.addEventListener('click', () => this.undo());
     this.redoBtn?.addEventListener('click', () => this.redo());
     document.getElementById('dev-copy-json')?.addEventListener('click', () => this.copyJson());
+    document.getElementById('dev-save-layout')?.addEventListener('click', () => this.saveLayoutToDisk());
     document.getElementById('dev-reset-layout')?.addEventListener('click', () => this.resetLayout());
     document.getElementById('dev-close-btn')?.addEventListener('click', () => this.setActive(false));
 
@@ -213,6 +218,7 @@ export class DevMover {
       this.loadItemFields(itemId);
     });
     document.getElementById('dev-apply-content')?.addEventListener('click', () => this.applyContent());
+    document.getElementById('dev-save-content')?.addEventListener('click', () => this.saveContent());
     document.getElementById('dev-copy-content')?.addEventListener('click', () => this.copyContentJson());
     document.getElementById('dev-reset-content')?.addEventListener('click', () => this.resetContent());
 
@@ -712,7 +718,7 @@ export class DevMover {
 
     // Rebuild collision boundaries and save
     this.room.rebuildObstacles();
-    this.saveLayout();
+    this.persistLayoutDraft();
 
     // Update selection visual outlines
     this.updateBoxHelpers();
@@ -745,7 +751,7 @@ export class DevMover {
       if (ryDiff) this.nudgePropGroup(id, 'ry', ry - currentRy);
 
       this.room.rebuildObstacles();
-      this.saveLayout();
+      this.persistLayoutDraft();
       this.updateBoxHelpers();
       this.updateUIFields();
     }
@@ -889,7 +895,7 @@ export class DevMover {
     }
 
     this.room.rebuildObstacles();
-    this.saveLayout();
+    this.persistLayoutDraft();
     this.updateBoxHelpers();
     this.updateUIFields();
     this.updateHistoryButtons();
@@ -900,7 +906,7 @@ export class DevMover {
     if (this.redoBtn) this.redoBtn.disabled = this.redoStack.length === 0;
   }
 
-  private saveLayout(): void {
+  private persistLayoutDraft(): void {
     localStorage.setItem(
       'dev_room_layout_bedroom',
       JSON.stringify({
@@ -912,75 +918,7 @@ export class DevMover {
   }
 
   private copyJson(): void {
-    const cleanProps = this.room.propsData.map((p) => {
-      const formatted: any = {
-        id: p.id,
-        mesh: p.mesh,
-        color: p.color,
-        size: p.size,
-        position: [
-          parseFloat(p.position[0].toFixed(3)),
-          parseFloat(p.position[1].toFixed(3)),
-          parseFloat(p.position[2].toFixed(3)),
-        ],
-      };
-
-      if (p.rotation) {
-        formatted.rotation = [
-          parseFloat(p.rotation[0].toFixed(3)),
-          parseFloat(p.rotation[1].toFixed(3)),
-          parseFloat(p.rotation[2].toFixed(3)),
-        ];
-      }
-
-      if (p.wall) {
-        formatted.wall = p.wall;
-      }
-
-      return formatted;
-    });
-
-    const cleanHotspots = this.room.hotspotsData.map((h) => {
-      const formatted: any = {
-        id: h.id,
-        label: h.label,
-        position: [
-          parseFloat(h.position[0].toFixed(3)),
-          parseFloat(h.position[1].toFixed(3)),
-          parseFloat(h.position[2].toFixed(3)),
-        ],
-        size: h.size,
-        color: (h as any).color,
-      };
-
-      if (h.wall) {
-        formatted.wall = h.wall;
-      }
-
-      return formatted;
-    });
-
-    const cleanLighting: any = {};
-    for (const [key, spec] of Object.entries(this.room.lightingData || {})) {
-      cleanLighting[key] = {
-        position: [
-          parseFloat(spec.position[0].toFixed(3)),
-          parseFloat(spec.position[1].toFixed(3)),
-          parseFloat(spec.position[2].toFixed(3))
-        ],
-        color: spec.color,
-        energy: spec.energy
-      };
-    }
-
-    const fullConfig = {
-      ...roomData,
-      props: cleanProps,
-      hotspots: cleanHotspots,
-      lighting: cleanLighting
-    };
-
-    const json = JSON.stringify(fullConfig, null, 2);
+    const json = JSON.stringify(buildRoomJson(this.room), null, 2);
     navigator.clipboard
       .writeText(json)
       .then(() => {
@@ -991,6 +929,18 @@ export class DevMover {
         alert('Failed to copy to clipboard. JSON printed to developer console.');
         console.log(json);
       });
+  }
+
+  private async saveLayoutToDisk(): Promise<void> {
+    if (!confirm('Save layout to data/rooms/bedroom.json? This overwrites the file on disk.')) {
+      return;
+    }
+
+    const result = await saveLayoutToRepo(this.room);
+    alert(result.message);
+    if (result.ok && result.method === 'api') {
+      location.reload();
+    }
   }
 
   private resetLayout(): void {
@@ -1073,6 +1023,11 @@ export class DevMover {
   }
 
   private applyContent(): void {
+    this.applyContentToOverrides();
+    alert('Text preview saved to localStorage. Play-test to preview.');
+  }
+
+  private applyContentToOverrides(): void {
     if (this.selectedHotspotId) {
       setExamineOverride(this.selectedHotspotId, {
         title: this.examineTitleInput?.value ?? '',
@@ -1088,8 +1043,24 @@ export class DevMover {
         description: this.itemDescInput?.value ?? '',
       });
     }
+  }
 
-    alert('Interaction text saved (localStorage). Play-test to preview.');
+  private async saveContent(): Promise<void> {
+    this.applyContentToOverrides();
+
+    if (
+      !confirm(
+        'Save text to data/story/bedroom-script.json and data/items.json? This overwrites those files on disk.',
+      )
+    ) {
+      return;
+    }
+
+    const result = await saveContentToRepo();
+    alert(result.message);
+    if (result.ok && result.method === 'api') {
+      location.reload();
+    }
   }
 
   private copyContentJson(): void {
