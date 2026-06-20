@@ -13,17 +13,20 @@ export class IsoCamera {
   private targetPos = new THREE.Vector3();
   private currentYaw = 0;
   private targetYaw = 0;
-  private size = 10;
+  private currentSize = 10;
+  private targetSize = 10;
+  private currentPitch = ISO_PITCH;
+  private targetPitch = ISO_PITCH;
   private rotating = false;
 
   constructor(aspect: number) {
     this.rig = new THREE.Object3D();
     this.rig.rotation.order = 'YXZ';
     this.camera = new THREE.OrthographicCamera(
-      (-this.size * aspect) / 2,
-      (this.size * aspect) / 2,
-      this.size / 2,
-      -this.size / 2,
+      (-this.currentSize * aspect) / 2,
+      (this.currentSize * aspect) / 2,
+      this.currentSize / 2,
+      -this.currentSize / 2,
       0.1,
       100,
     );
@@ -33,6 +36,8 @@ export class IsoCamera {
     this.snapToView(0);
     this.currentPos.copy(this.targetPos);
     this.currentYaw = this.targetYaw;
+    this.currentSize = this.targetSize;
+    this.currentPitch = this.targetPitch;
     this.applyRigPose(this.currentPos, this.currentYaw);
   }
 
@@ -69,33 +74,61 @@ export class IsoCamera {
 
   resize(width: number, height: number): void {
     const aspect = width / height;
-    this.camera.left = (-this.size * aspect) / 2;
-    this.camera.right = (this.size * aspect) / 2;
-    this.camera.top = this.size / 2;
-    this.camera.bottom = -this.size / 2;
+    this.camera.left = (-this.currentSize * aspect) / 2;
+    this.camera.right = (this.currentSize * aspect) / 2;
+    this.camera.top = this.currentSize / 2;
+    this.camera.bottom = -this.currentSize / 2;
     this.camera.updateProjectionMatrix();
   }
 
   onWheel(deltaY: number): void {
-    this.size = THREE.MathUtils.clamp(this.size + deltaY * 0.01, 4, 15);
-    this.resize(window.innerWidth, window.innerHeight);
+    this.targetSize = THREE.MathUtils.clamp(this.targetSize + deltaY * 0.01, 4, 15);
   }
 
   update(dt: number): void {
     const posDone = this.currentPos.distanceToSquared(this.targetPos) < 0.002;
     const yawDone = Math.abs(this.currentYaw - this.targetYaw) < 0.002;
-    if (!this.rotating && posDone && yawDone) return;
+    const sizeDone = Math.abs(this.currentSize - this.targetSize) < 0.01;
+    const pitchDone = Math.abs(this.currentPitch - this.targetPitch) < 0.002;
+    if (!this.rotating && posDone && yawDone && sizeDone && pitchDone) return;
 
     this.currentPos.lerp(this.targetPos, 1 - Math.exp(-ROTATE_DAMP * dt));
     this.currentYaw = THREE.MathUtils.lerp(this.currentYaw, this.targetYaw, 1 - Math.exp(-ROTATE_DAMP * dt));
+    this.currentSize = THREE.MathUtils.lerp(this.currentSize, this.targetSize, 1 - Math.exp(-ROTATE_DAMP * dt));
+    this.currentPitch = THREE.MathUtils.lerp(this.currentPitch, this.targetPitch, 1 - Math.exp(-ROTATE_DAMP * dt));
+    
     this.applyRigPose(this.currentPos, this.currentYaw);
+    this.resize(window.innerWidth, window.innerHeight);
 
-    if (this.currentPos.distanceToSquared(this.targetPos) < 0.002 && Math.abs(this.currentYaw - this.targetYaw) < 0.002) {
+    if (this.currentPos.distanceToSquared(this.targetPos) < 0.002 && 
+        Math.abs(this.currentYaw - this.targetYaw) < 0.002 &&
+        Math.abs(this.currentSize - this.targetSize) < 0.01 &&
+        Math.abs(this.currentPitch - this.targetPitch) < 0.002) {
       this.currentPos.copy(this.targetPos);
       this.currentYaw = this.targetYaw;
+      this.currentSize = this.targetSize;
+      this.currentPitch = this.targetPitch;
       this.applyRigPose(this.currentPos, this.currentYaw);
+      this.resize(window.innerWidth, window.innerHeight);
       this.rotating = false;
     }
+  }
+
+  zoomTo(target: THREE.Vector3, size: number, pitch?: number, yaw?: number): void {
+    this.targetPos.copy(target);
+    this.targetSize = size;
+    if (pitch !== undefined) {
+      this.targetPitch = pitch;
+    }
+    if (yaw !== undefined) {
+      this.targetYaw = yaw;
+    }
+  }
+
+  resetZoom(): void {
+    this.snapToView(this.viewIndex);
+    this.targetSize = 10;
+    this.targetPitch = ISO_PITCH;
   }
 
   menuRotate(dt: number): void {
@@ -108,7 +141,7 @@ export class IsoCamera {
     // Fixed orbit views.
   }
 
-  private snapToView(index: number): void {
+  getYawForViewIndex(index: number): number {
     const facing = VIEW_FACING[index];
     const yaws: Record<Exclude<WallFace, 'floor'>, number> = {
       north: THREE.MathUtils.degToRad(45),
@@ -116,14 +149,18 @@ export class IsoCamera {
       south: THREE.MathUtils.degToRad(225),
       west: THREE.MathUtils.degToRad(315),
     };
+    return yaws[facing as Exclude<WallFace, 'floor'>];
+  }
+
+  private snapToView(index: number): void {
     this.targetPos.set(0, 0.9, 0.0); // Center of the room
-    this.targetYaw = yaws[facing as Exclude<WallFace, 'floor'>];
+    this.targetYaw = this.getYawForViewIndex(index);
   }
 
 
   private applyRigPose(pos: THREE.Vector3, yaw: number): void {
     this.rig.position.copy(pos);
     this.rig.rotation.y = yaw;
-    this.rig.rotation.x = ISO_PITCH;
+    this.rig.rotation.x = this.currentPitch;
   }
 }

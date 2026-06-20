@@ -25,7 +25,7 @@
     { "id": "Pillow", "mesh": "box", "color": "fabric", "size": [0.7, 0.18, 0.45], "position": [-2.0, 0.85, -0.35] },
     { "id": "Desk", "mesh": "box", "color": "wood", "size": [1.4, 0.75, 0.7], "position": [1.8, 0.375, 0.0] },
     { "id": "DeskTop", "mesh": "box", "color": "wood_dark", "size": [1.45, 0.05, 0.75], "position": [1.8, 0.77, 0.0] },
-    { "id": "Chair", "mesh": "box", "color": "wood", "size": [0.45, 0.85, 0.45], "position": [1.2, 0.425, 0.5] },
+    { "id": "Chair", "mesh": "models/chair.glb", "color": "wood", "size": [0.45, 0.9, 0.45], "position": [1.2, 0.0, 0.5], "rotation": [0, 90, 0] },
     { "id": "Bookshelf", "mesh": "box", "color": "wood_dark", "size": [0.35, 2.0, 1.0], "position": [3.325, 1.0, 2.2] },
     { "id": "Nightstand", "mesh": "box", "color": "wood", "size": [0.5, 0.55, 0.45], "position": [-0.8, 0.275, 0.2] },
     { "id": "Wardrobe", "mesh": "box", "color": "wood_dark", "size": [1.2, 2.2, 0.55], "position": [-2.8, 1.1, 2.725] },
@@ -50,7 +50,7 @@
     { "id": "bed", "label": "Bed", "position": [-2.0, 0.9, 0.5], "size": [2.0, 0.8, 2.4], "color": "#88aa88" },
     { "id": "calendar_scrap", "label": "Calendar Scrap", "position": [-2.0, 0.6, 1.2], "size": [0.4, 0.2, 0.4], "color": "#eeddcc" },
     { "id": "wall_clock", "label": "Wall Clock", "position": [-1.0, 2.2, -2.8], "size": [0.5, 0.5, 0.3], "color": "#ccccdd" },
-    { "id": "desk", "label": "Desk", "position": [1.8, 0.9, 0.0], "size": [1.4, 0.8, 0.7], "color": "#aa8866" },
+    { "id": "desk", "label": "Desk", "position": [1.8, 0.375, 0.0], "size": [1.4, 0.75, 0.7], "color": "#aa8866" },
     { "id": "desk_drawer", "label": "Desk Drawer", "position": [1.8, 0.45, 0.2], "size": [0.8, 0.3, 0.5], "color": "#886644" },
     { "id": "sketchbook", "label": "Sketchbook", "position": [1.6, 0.85, -0.1], "size": [0.35, 0.15, 0.35], "color": "#445566" },
     { "id": "bookshelf", "label": "Bookshelf", "position": [3.3, 1.2, 2.2], "size": [0.4, 2.0, 1.0], "color": "#776655" },
@@ -64,7 +64,9 @@
     { "id": "door", "label": "Door", "position": [3.2, 1.2, -1.0], "size": [0.4, 2.2, 1.0], "color": "#aa7755", "wall": "east" },
     { "id": "window", "label": "Window", "position": [-3.1, 1.6, 1.0], "size": [1.2, 1.4, 0.3], "color": "#88bbdd", "wall": "west" },
     { "id": "phone", "label": "Phone", "position": [2.0, 0.85, 0.15], "size": [0.2, 0.2, 0.2], "color": "#333344" },
-    { "id": "combine_station", "label": "Combine", "position": [1.8, 0.85, 0.0], "size": [0.5, 0.2, 0.5], "color": "#bbaa88" }
+    { "id": "combine_station", "label": "Combine", "position": [1.8, 0.85, 0.0], "size": [0.5, 0.2, 0.5], "color": "#bbaa88" },
+    { "id": "lamp", "label": "Lamp", "position": [2.1, 0.95, 0.0], "size": [0.3, 0.4, 0.3], "color": "#ffd9a0" },
+    { "id": "chair", "label": "Chair", "position": [1.2, 0.45, 0.5], "size": [0.5, 0.9, 0.5], "color": "#aa8866" }
   ],
   "spawn": { "player": [0, 0, 2.0] },
   "lighting": {

@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/styles/hud.css" />
+    <link rel="stylesheet" href="/styles/dev.css" />
   </head>
   <body>
     <canvas id="game-canvas"></canvas>
@@ -16,6 +17,7 @@
       <header id="title-bar">
         <h1>Bedroom</h1>
         <div id="header-controls">
+          <button id="zoom-back-btn" class="hidden" type="button">← Back</button>
           <div id="view-controls">
             <button id="rotate-left" type="button" title="Rotate left (Q / ←)">↺</button>
             <button id="rotate-right" type="button" title="Rotate right (E / →)">↻</button>
@@ -146,6 +148,10 @@
             <label for="music-volume">Music Volume</label>
             <input type="range" id="music-volume" min="0" max="1" step="0.05" class="menu-slider" />
           </div>
+
+          <div class="dev-toggle-row">
+            <button id="dev-toggle-btn" class="menu-btn">Toggle Dev Mode</button>
+          </div>
         </div>
         
         <button id="resume-btn" class="menu-btn resume-btn">Resume</button>
@@ -154,6 +160,70 @@
 
     <!-- Intro Words Screen -->
     <div id="intro-words-overlay" class="menu-overlay hidden"></div>
+
+    <!-- Dev Mode Dashboard -->
+    <div id="dev-panel" class="hidden">
+      <div class="dev-header">
+        <h3>Dev Mode</h3>
+        <span class="dev-indicator">Editor</span>
+      </div>
+      
+      <div class="dev-selection-status">
+        Selected: <span id="dev-selected-name">None</span>
+      </div>
+      
+      <div class="dev-controls-group">
+        <!-- Position X -->
+        <div class="dev-row">
+          <label for="dev-pos-x">Pos X</label>
+          <div class="nudge-container">
+            <button type="button" class="nudge-btn" id="dev-x-dec">-</button>
+            <input type="text" id="dev-pos-x" class="dev-input" value="0.00" />
+            <button type="button" class="nudge-btn" id="dev-x-inc">+</button>
+          </div>
+        </div>
+
+        <!-- Position Y -->
+        <div class="dev-row">
+          <label for="dev-pos-y">Pos Y</label>
+          <div class="nudge-container">
+            <button type="button" class="nudge-btn" id="dev-y-dec">-</button>
+            <input type="text" id="dev-pos-y" class="dev-input" value="0.00" />
+            <button type="button" class="nudge-btn" id="dev-y-inc">+</button>
+          </div>
+        </div>
+
+        <!-- Position Z -->
+        <div class="dev-row">
+          <label for="dev-pos-z">Pos Z</label>
+          <div class="nudge-container">
+            <button type="button" class="nudge-btn" id="dev-z-dec">-</button>
+            <input type="text" id="dev-pos-z" class="dev-input" value="0.00" />
+            <button type="button" class="nudge-btn" id="dev-z-inc">+</button>
+          </div>
+        </div>
+
+        <!-- Rotation Y -->
+        <div class="dev-row">
+          <label for="dev-rot-y">Rot Y°</label>
+          <div class="nudge-container">
+            <button type="button" class="nudge-btn" id="dev-ry-dec">-</button>
+            <input type="text" id="dev-rot-y" class="dev-input" value="0" />
+            <button type="button" class="nudge-btn" id="dev-ry-inc">+</button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="dev-actions">
+        <div class="dev-row-buttons">
+          <button id="dev-undo" class="dev-btn" title="Undo (Ctrl+Z)" disabled>Undo</button>
+          <button id="dev-redo" class="dev-btn" title="Redo (Ctrl+Y)" disabled>Redo</button>
+        </div>
+        <button id="dev-copy-json" class="dev-btn dev-btn-primary">Copy Layout JSON</button>
+        <button id="dev-reset-layout" class="dev-btn dev-btn-danger">Reset Layout</button>
+        <button id="dev-close-btn" class="dev-btn">Exit Dev Mode</button>
+      </div>
+    </div>
 
     <script type="module" src="/src/main.ts"></script>
   </body>

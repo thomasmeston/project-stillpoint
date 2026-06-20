@@ -12,6 +12,7 @@ import { RoomBuilder } from '../scene/RoomBuilder';
 import { ViewWallController } from '../scene/ViewWallController';
 import { HUD } from '../ui/HUD';
 import { PuzzleUI } from '../ui/PuzzleUI';
+import { DevMover } from './DevMover';
 
 export class Game {
   private renderer: THREE.WebGLRenderer;
@@ -22,6 +23,7 @@ export class Game {
   private room: RoomBuilder;
   private player: PlayerMover;
   private input: InputController;
+  private devMover: DevMover;
 
   readonly gameState = new GameState();
   readonly inventory = new Inventory();
@@ -36,6 +38,7 @@ export class Game {
   private currentSlot: number | null = null;
   private inMenu = true;
   private escapeMenuOpen = false;
+  private isDeskZoomed = false;
   private introActive = false;
   private wordsClickedCount = 0;
   private readonly INTRO_WORDS = [
@@ -54,7 +57,7 @@ export class Game {
   ];
 
   get isInputBlocked(): boolean {
-    return this.inMenu || this.escapeMenuOpen || this.introActive;
+    return this.inMenu || this.escapeMenuOpen || this.introActive || (this.devMover && this.devMover.isActive());
   }
 
   constructor(private canvas: HTMLCanvasElement) {
@@ -88,6 +91,19 @@ export class Game {
       this.room.hotspots.map((h) => h.mesh),
     );
     this.input.isHotspotInteractable = (mesh) => this.wallCtrl.isObjectInteractable(mesh);
+
+    this.devMover = new DevMover(
+      this.scene,
+      this.isoCamera.camera,
+      this.room,
+      this.canvas,
+      (active) => {
+        if (active && this.escapeMenuOpen) {
+          this.toggleEscapeMenu();
+        }
+      }
+    );
+
     this.wireInput();
     this.wireViewRotation();
 
@@ -144,11 +160,22 @@ export class Game {
   }
 
   private wireInput(): void {
+    this.hud.onZoomBack = () => this.zoomOutFromDesk();
+
     this.input.onFirstInput = () => {
       this.narrative.onFirstInput();
       this.audio.startOnFirstInteraction();
     };
-    this.input.onMove = (point) => this.player.moveTo(point);
+    this.input.onMove = (point) => {
+      if (this.isDeskZoomed) {
+        this.zoomOutFromDesk();
+        return;
+      }
+      if (this.player.isSitting) {
+        this.standUp();
+      }
+      this.player.moveTo(point);
+    };
     this.input.onHotspot = (id) => this.handleHotspot(id);
 
     let isMiddleDragging = false;
@@ -178,6 +205,7 @@ export class Game {
 
     this.canvas.addEventListener('mousemove', (e) => {
       if (this.isInputBlocked) return;
+      if (this.isDeskZoomed) return; // Block rotation drag when zoomed top-down
       if (isMiddleDragging) {
         this.hud.setCursorHint('', e.clientX, e.clientY);
         const deltaX = e.clientX - middleDragStartX;
@@ -212,6 +240,7 @@ export class Game {
 
     this.canvas.addEventListener('wheel', (e) => {
       if (this.isInputBlocked) return;
+      if (this.isDeskZoomed) return; // Block wheel zoom when zoomed top-down
       e.preventDefault();
       if (e.shiftKey) {
         if (e.deltaY > 0) this.rotateView('right');
@@ -227,22 +256,61 @@ export class Game {
     document.getElementById('rotate-right')?.addEventListener('click', () => this.rotateView('right'));
 
     window.addEventListener('keydown', (e) => {
+      if (e.key === '`') {
+        e.preventDefault();
+        this.toggleDevMode();
+        return;
+      }
+
       if (this.inMenu) return;
       if (e.repeat) return;
+
+      if (this.isDeskZoomed) {
+        if (e.key === 'Escape') {
+          this.zoomOutFromDesk();
+          return;
+        }
+        if (e.key === 'q' || e.key === 'Q' || e.key === 'e' || e.key === 'E' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+          return; // Block rotation
+        }
+      }
+
       if (e.key === 'Escape') {
         if (this.introActive) return;
+        if (this.devMover && this.devMover.isActive()) return; // Let devMover handle Escape deselect
         this.toggleEscapeMenu();
         return;
       }
-      if (this.isInputBlocked) return;
-      if (e.key === 'ArrowLeft' || e.key === 'q' || e.key === 'Q') this.rotateView('left');
-      else if (e.key === 'ArrowRight' || e.key === 'e' || e.key === 'E') this.rotateView('right');
+
+      const isDevActive = this.devMover && this.devMover.isActive();
+      if (this.inMenu || this.escapeMenuOpen || this.introActive) return;
+
+      if (e.key === 'q' || e.key === 'Q') {
+        this.rotateView('left');
+      } else if (e.key === 'e' || e.key === 'E') {
+        this.rotateView('right');
+      } else if (!isDevActive) {
+        if (e.key === 'ArrowLeft') this.rotateView('left');
+        else if (e.key === 'ArrowRight') this.rotateView('right');
+      }
     });
   }
 
+  private toggleDevMode(): void {
+    if (this.inMenu || this.introActive) return;
+    if (this.player.isSitting) {
+      this.standUp();
+    }
+    const active = !this.devMover.isActive();
+    this.devMover.setActive(active);
+  }
+
   private rotateView(direction: 'left' | 'right'): void {
-    if (this.isInputBlocked) return;
+    if (this.inMenu || this.escapeMenuOpen || this.introActive) return;
     if (this.wallCtrl.isAnimating() || this.isoCamera.isRotating()) return;
+    if (this.player.isSitting) {
+      this.standUp();
+    }
     this.audio.playSfx('rotate');
     if (direction === 'left') {
       this.isoCamera.rotateLeft();
@@ -278,7 +346,18 @@ export class Game {
           this.puzzleUI.openCombine();
           break;
         case 'examine':
-          this.handleExamine(hotspotId);
+          if (hotspotId === 'desk') {
+            if (this.player.isSitting) {
+              this.zoomToDesk();
+            } else {
+              this.handleSit(true);
+            }
+          } else {
+            this.handleExamine(hotspotId);
+          }
+          break;
+        case 'sit':
+          this.handleSit();
           break;
         default:
           this.narrative.onExamine(hotspotId);
@@ -309,6 +388,106 @@ export class Game {
       this.puzzleManager.applyConsequence(`disable_hotspot:${hotspotId}`);
       this.narrative.onExamine(hotspotId);
     }
+  }
+
+  private handleSit(zoomTopDown = false): void {
+    const chairMesh = this.room.propsRoot.getObjectByName('Chair') || this.room.root.getObjectByName('Chair');
+    if (!chairMesh) return;
+
+    // Get chair world position and rotation
+    chairMesh.updateMatrixWorld(true);
+    const chairWorldPos = new THREE.Vector3();
+    chairMesh.getWorldPosition(chairWorldPos);
+    
+    // Copy chair rotation
+    const chairRotation = chairMesh.rotation.clone();
+
+    // Get chair's forward direction to offset the ready-to-sit position in front of it
+    const forward = new THREE.Vector3();
+    chairMesh.getWorldDirection(forward);
+    
+    const sitFrontPos = chairWorldPos.clone().addScaledVector(forward, 0.45);
+    sitFrontPos.y = 0; // Walk target is on the floor
+
+    // Walk the player to the front of the chair first
+    this.player.moveTo(sitFrontPos, () => {
+      // Orient the player to match the chair's rotation before sitting down
+      this.player.root.rotation.copy(chairRotation);
+      this.player.root.rotation.x = 0;
+      this.player.root.rotation.z = 0;
+
+      // Make player sit
+      this.player.sitOn(chairWorldPos, chairRotation);
+
+      if (zoomTopDown) {
+        this.zoomToDesk();
+      } else {
+        // Get Desk mesh world position to zoom onto it
+        const deskMesh = this.room.propsRoot.getObjectByName('Desk') || this.room.root.getObjectByName('Desk');
+        const deskTarget = new THREE.Vector3();
+        if (deskMesh) {
+          deskMesh.updateMatrixWorld(true);
+          deskMesh.getWorldPosition(deskTarget);
+          deskTarget.y += 0.475; // Focus on the desk top
+        } else {
+          deskTarget.set(1.8, 0.85, 0.0);
+        }
+
+        // Zoom camera to the desk top
+        this.isoCamera.zoomTo(deskTarget, 3.5);
+      }
+    });
+  }
+
+  private standUp(): void {
+    if (!this.player.isSitting) return;
+    this.isDeskZoomed = false;
+    this.player.standUp();
+    this.isoCamera.resetZoom();
+    this.hud.showZoomControls(false);
+  }
+
+  private zoomToDesk(): void {
+    this.isDeskZoomed = true;
+
+    // Zoom top-down on desk center
+    const deskMesh = this.room.propsRoot.getObjectByName('Desk') || this.room.root.getObjectByName('Desk');
+    const deskTarget = new THREE.Vector3();
+    if (deskMesh) {
+      deskMesh.updateMatrixWorld(true);
+      deskMesh.getWorldPosition(deskTarget);
+      deskTarget.y += 0.375; // Surface at Y = 0.75
+    } else {
+      deskTarget.set(1.8, 0.75, 0.0);
+    }
+
+    // Pitch = -Math.PI / 2 (top down), Yaw = 0 (aligned)
+    this.isoCamera.zoomTo(deskTarget, 1.4, -Math.PI / 2, 0);
+
+    // Update HUD controls
+    this.hud.showZoomControls(true);
+  }
+
+  private zoomOutFromDesk(): void {
+    this.isDeskZoomed = false;
+
+    // Zoom back to seated isometric view
+    const deskMesh = this.room.propsRoot.getObjectByName('Desk') || this.room.root.getObjectByName('Desk');
+    const deskTarget = new THREE.Vector3();
+    if (deskMesh) {
+      deskMesh.updateMatrixWorld(true);
+      deskMesh.getWorldPosition(deskTarget);
+      deskTarget.y += 0.475;
+    } else {
+      deskTarget.set(1.8, 0.85, 0.0);
+    }
+
+    const currentViewYaw = this.isoCamera.getYawForViewIndex(this.isoCamera.getViewIndex());
+    const ISO_PITCH = THREE.MathUtils.degToRad(-35);
+    this.isoCamera.zoomTo(deskTarget, 3.5, ISO_PITCH, currentViewYaw);
+
+    // Update HUD controls
+    this.hud.showZoomControls(false);
   }
 
   private openPuzzle(hotspotId: string): void {
@@ -601,7 +780,7 @@ export class Game {
     const wasMoving = this.player.isMoving;
     this.isoCamera.update(dt);
     this.wallCtrl.update(dt);
-    this.player.update(dt);
+    this.player.update(dt, this.room.obstacles, this.room.shellSize);
 
     if (wasMoving && !this.player.isMoving) {
       this.saveGame();
@@ -614,8 +793,10 @@ export class Game {
     const resumeBtn = document.getElementById('resume-btn');
     const muteMusicCheck = document.getElementById('mute-music') as HTMLInputElement;
     const musicVolumeSlider = document.getElementById('music-volume') as HTMLInputElement;
+    const devToggleBtn = document.getElementById('dev-toggle-btn');
 
     resumeBtn?.addEventListener('click', () => this.toggleEscapeMenu());
+    devToggleBtn?.addEventListener('click', () => this.toggleDevMode());
 
     muteMusicCheck?.addEventListener('change', (e) => {
       const target = e.target as HTMLInputElement;

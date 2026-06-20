@@ -76,13 +76,20 @@ body {
   letter-spacing: 0.02em;
 }
 
-#journal-toggle {
+#journal-toggle,
+#zoom-back-btn {
   background: #2a3140;
   border: 1px solid #6a5d45;
   color: #e8e4dc;
   padding: 8px 16px;
   border-radius: 6px;
   cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+#journal-toggle:hover,
+#zoom-back-btn:hover {
+  background: #3a4458;
 }
 
 #cursor-label {

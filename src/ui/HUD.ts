@@ -19,8 +19,11 @@ export class HUD {
   private winTitle = document.getElementById('win-title')!;
   private winBody = document.getElementById('win-body')!;
   private winRestart = document.getElementById('win-restart')!;
+  private viewControls = document.getElementById('view-controls')!;
+  private zoomBackBtn = document.getElementById('zoom-back-btn')!;
 
   private thoughtTimer: number | null = null;
+  onZoomBack?: () => void;
 
   constructor(
     private inventory: Inventory,
@@ -31,6 +34,7 @@ export class HUD {
     this.journalToggle.addEventListener('click', () => this.toggleJournal());
     this.journalList.addEventListener('change', () => this.renderJournalDetail());
     this.winRestart.addEventListener('click', () => location.reload());
+    this.zoomBackBtn.addEventListener('click', () => this.onZoomBack?.());
 
     this.narrative.events.on('examineShown', ({ title, body }) => this.showExamine(title, body));
     this.narrative.events.on('thoughtShown', (text) => this.showThought(text));
@@ -116,7 +120,18 @@ export class HUD {
       case 'pickup': return 'Take';
       case 'open_puzzle': return 'Use';
       case 'combine': return 'Combine';
+      case 'sit': return 'Sit';
       default: return 'Examine';
+    }
+  }
+
+  showZoomControls(showBack: boolean): void {
+    if (showBack) {
+      this.viewControls.classList.add('hidden');
+      this.zoomBackBtn.classList.remove('hidden');
+    } else {
+      this.viewControls.classList.remove('hidden');
+      this.zoomBackBtn.classList.add('hidden');
     }
   }
 }

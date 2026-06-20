@@ -80,7 +80,9 @@
     { "id": "door", "action": "open_puzzle", "puzzle": "padlock" },
     { "id": "window", "action": "examine" },
     { "id": "phone", "action": "examine" },
-    { "id": "combine_station", "action": "combine" }
+    { "id": "combine_station", "action": "combine" },
+    { "id": "lamp", "action": "examine" },
+    { "id": "chair", "action": "sit" }
   ],
   "item_uses": [
     {

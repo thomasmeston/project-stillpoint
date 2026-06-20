@@ -3,6 +3,9 @@ import roomData from '../../data/rooms/bedroom.json';
 import { Hotspot, type HotspotData } from './Hotspot';
 import { inferWallFace, type WallFace } from './WallFace';
 import type { ViewWallController } from './ViewWallController';
+import { publicUrl } from '../utils/publicUrl';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+
 
 type RoomFile = {
   palette: Record<string, string>;
@@ -25,25 +28,108 @@ type RoomFile = {
   lighting?: Record<string, { position: number[]; color: string; energy: number }>;
 };
 
+const FLOOR_ONLY_PROPS = new Set([
+  'Rug',
+  'BedFrame',
+  'Mattress',
+  'Pillow',
+  'Desk',
+  'DeskTop',
+  'Chair',
+  'Nightstand',
+  'LampBase',
+  'LampShade',
+  'Phone',
+  'Sketchbook',
+  'CrowFigurine'
+]);
+
+const FLOOR_ONLY_HOTSPOTS = new Set([
+  'bed',
+  'calendar_scrap',
+  'desk',
+  'desk_drawer',
+  'sketchbook',
+  'nightstand',
+  'key_handle',
+  'phone',
+  'combine_station',
+  'chair'
+]);
+
 export class RoomBuilder {
   readonly root = new THREE.Group();
   readonly propsRoot = new THREE.Group();
   readonly hotspotsRoot = new THREE.Group();
   readonly hotspots: Hotspot[] = [];
   readonly floorMeshes: THREE.Object3D[] = [];
+  readonly obstacles: THREE.Box3[] = [];
+  readonly shellSize = new THREE.Vector2();
+  readonly propsData: RoomFile['props'] = [];
+  readonly hotspotsData: RoomFile['hotspots'] = [];
+  readonly lightingData: RoomFile['lighting'] = {};
+  readonly wallMeshes = new Map<WallFace, THREE.Mesh>();
+  readonly lights = new Map<string, THREE.PointLight>();
 
   private palette: Record<string, string>;
-  private wallMeshes = new Map<WallFace, THREE.Mesh>();
 
   constructor(private wallCtrl: ViewWallController) {
     const data = roomData as unknown as RoomFile;
     this.palette = data.palette;
+    this.shellSize.set(data.shell.size.x, data.shell.size.z);
     this.root.add(this.propsRoot);
     this.root.add(this.hotspotsRoot);
     this.buildShell(data.shell);
-    this.buildProps(data.props);
-    this.buildHotspots(data.hotspots);
-    this.buildLighting(data.lighting ?? {});
+
+    // Load custom layout from localStorage if it exists
+    this.propsData = data.props;
+    this.hotspotsData = data.hotspots;
+    this.lightingData = data.lighting ?? {};
+    const savedLayout = localStorage.getItem('dev_room_layout_bedroom');
+    if (savedLayout) {
+      try {
+        const parsed = JSON.parse(savedLayout);
+        if (Array.isArray(parsed.props)) {
+          this.propsData = data.props.map((original) => {
+            const saved = parsed.props.find((p: any) => p.id === original.id);
+            if (saved) {
+              return {
+                ...original,
+                position: saved.position,
+                rotation: saved.rotation ?? original.rotation
+              };
+            }
+            return original;
+          });
+        }
+        if (Array.isArray(parsed.hotspots)) {
+          this.hotspotsData = data.hotspots.map((original) => {
+            const saved = parsed.hotspots.find((h: any) => h.id === original.id);
+            if (saved) {
+              return {
+                ...original,
+                position: saved.position
+              };
+            }
+            return original;
+          });
+        }
+        if (parsed.lighting) {
+          this.lightingData = { ...this.lightingData };
+          for (const key of Object.keys(parsed.lighting)) {
+            if (this.lightingData[key]) {
+              this.lightingData[key].position = [...parsed.lighting[key].position];
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load custom dev layout', e);
+      }
+    }
+
+    this.buildProps(this.propsData);
+    this.buildHotspots(this.hotspotsData);
+    this.buildLighting(this.lightingData);
 
     // Register walls with wallCtrl AFTER everything is parented and in rest position!
     for (const [face, wall] of this.wallMeshes) {
@@ -108,44 +194,147 @@ export class RoomBuilder {
   }
 
   private buildProps(props: RoomFile['props']): void {
+    const loader = new GLTFLoader();
+
     for (const prop of props) {
-      let mesh: THREE.Mesh;
-      const color = this.color(prop.color);
-      const size = new THREE.Vector3(prop.size[0], prop.size[1], prop.size[2]);
-      if (prop.mesh === 'cylinder') {
-        mesh = new THREE.Mesh(
-          new THREE.CylinderGeometry(size.x / 2, size.x / 2, size.y, 12),
-          new THREE.MeshStandardMaterial({ color, roughness: 0.85 }),
-        );
-      } else if (prop.mesh === 'sphere') {
-        mesh = new THREE.Mesh(
-          new THREE.SphereGeometry(size.x / 2, 12, 12),
-          new THREE.MeshStandardMaterial({ color, roughness: 0.85 }),
-        );
+      if (prop.mesh && (prop.mesh.endsWith('.glb') || prop.mesh.endsWith('.gltf'))) {
+        loader.load(publicUrl(prop.mesh), (gltf) => {
+          const model = gltf.scene;
+          model.name = `${prop.id}_model`;
+
+          // Enable shadow casting and standard material configurations
+          model.traverse((child) => {
+            if ((child as THREE.Mesh).isMesh) {
+              child.castShadow = true;
+              child.receiveShadow = true;
+
+              const meshChild = child as THREE.Mesh;
+              if (meshChild.material) {
+                const origMat = meshChild.material as any;
+                meshChild.material = new THREE.MeshStandardMaterial({
+                  color: origMat.color || new THREE.Color(0xffffff),
+                  map: origMat.map || null,
+                  roughness: 0.85,
+                  metalness: 0.1
+                });
+              }
+            }
+          });
+
+          // Scale model to target bounds size
+          const box = new THREE.Box3().setFromObject(model);
+          const size = new THREE.Vector3();
+          box.getSize(size);
+
+          const targetSize = new THREE.Vector3(prop.size[0], prop.size[1], prop.size[2]);
+          const scaleX = targetSize.x / (size.x || 1.0);
+          const scaleY = targetSize.y / (size.y || 1.0);
+          const scaleZ = targetSize.z / (size.z || 1.0);
+          const scale = Math.min(scaleX, scaleY, scaleZ);
+          model.scale.setScalar(scale);
+
+          // Get new bounds to offset pivot to bottom-center
+          const newBox = new THREE.Box3().setFromObject(model);
+          const center = new THREE.Vector3();
+          newBox.getCenter(center);
+
+          // Align local origin to bottom-center of the mesh
+          model.position.set(-center.x, -newBox.min.y, -center.z);
+
+          // Create parent group for transformation matching the prop
+          const group = new THREE.Group();
+          group.name = prop.id;
+          group.position.set(prop.position[0], prop.position[1], prop.position[2]);
+          if (prop.rotation) {
+            group.rotation.set(
+              THREE.MathUtils.degToRad(prop.rotation[0]),
+              THREE.MathUtils.degToRad(prop.rotation[1]),
+              THREE.MathUtils.degToRad(prop.rotation[2])
+            );
+          }
+          group.add(model);
+
+          const face = prop.wall ?? (FLOOR_ONLY_PROPS.has(prop.id) ? 'floor' : inferWallFace(prop.position[0], prop.position[2]));
+          group.userData.wallFace = face;
+
+          if (face !== 'floor') {
+            const wallMesh = this.wallMeshes.get(face);
+            if (wallMesh) {
+              group.position.sub(wallMesh.position);
+              wallMesh.add(group);
+            } else {
+              this.propsRoot.add(group);
+            }
+          } else {
+            this.propsRoot.add(group);
+          }
+        });
       } else {
-        mesh = this.makeBox(size, color);
-      }
-      mesh.position.set(prop.position[0], prop.position[1], prop.position[2]);
-      if (prop.rotation) {
-        mesh.rotation.set(
-          THREE.MathUtils.degToRad(prop.rotation[0]),
-          THREE.MathUtils.degToRad(prop.rotation[1]),
-          THREE.MathUtils.degToRad(prop.rotation[2]),
-        );
-      }
-      mesh.name = prop.id;
-      const face = prop.wall ?? inferWallFace(prop.position[0], prop.position[2]);
-      mesh.userData.wallFace = face;
-      if (face !== 'floor') {
-        const wallMesh = this.wallMeshes.get(face);
-        if (wallMesh) {
-          mesh.position.sub(wallMesh.position);
-          wallMesh.add(mesh);
+        // Fallback to procedural shape generation
+        let mesh: THREE.Mesh;
+        const color = this.color(prop.color);
+        const size = new THREE.Vector3(prop.size[0], prop.size[1], prop.size[2]);
+        if (prop.mesh === 'cylinder') {
+          mesh = new THREE.Mesh(
+            new THREE.CylinderGeometry(size.x / 2, size.x / 2, size.y, 12),
+            new THREE.MeshStandardMaterial({ color, roughness: 0.85 }),
+          );
+        } else if (prop.mesh === 'sphere') {
+          mesh = new THREE.Mesh(
+            new THREE.SphereGeometry(size.x / 2, 12, 12),
+            new THREE.MeshStandardMaterial({ color, roughness: 0.85 }),
+          );
+        } else {
+          mesh = this.makeBox(size, color);
+        }
+
+        if (prop.id === 'WindowGlass') {
+          const loaderTexture = new THREE.TextureLoader();
+          const texture = loaderTexture.load(publicUrl('images/beach.png'));
+          mesh.material = new THREE.MeshStandardMaterial({
+            map: texture,
+            roughness: 0.1,
+            metalness: 0.1
+          });
+        }
+
+        mesh.position.set(prop.position[0], prop.position[1], prop.position[2]);
+        if (prop.rotation) {
+          mesh.rotation.set(
+            THREE.MathUtils.degToRad(prop.rotation[0]),
+            THREE.MathUtils.degToRad(prop.rotation[1]),
+            THREE.MathUtils.degToRad(prop.rotation[2]),
+          );
+        }
+        mesh.name = prop.id;
+        const face = prop.wall ?? (FLOOR_ONLY_PROPS.has(prop.id) ? 'floor' : inferWallFace(prop.position[0], prop.position[2]));
+        mesh.userData.wallFace = face;
+        if (face !== 'floor') {
+          const wallMesh = this.wallMeshes.get(face);
+          if (wallMesh) {
+            mesh.position.sub(wallMesh.position);
+            wallMesh.add(mesh);
+          } else {
+            this.propsRoot.add(mesh);
+          }
         } else {
           this.propsRoot.add(mesh);
         }
-      } else {
-        this.propsRoot.add(mesh);
+      }
+
+      // Add obstacles for player collisions
+      if (['BedFrame', 'Desk', 'Chair', 'Bookshelf', 'Nightstand', 'Wardrobe'].includes(prop.id)) {
+        const min = new THREE.Vector3(
+          prop.position[0] - prop.size[0] / 2,
+          prop.position[1] - prop.size[1] / 2,
+          prop.position[2] - prop.size[2] / 2
+        );
+        const max = new THREE.Vector3(
+          prop.position[0] + prop.size[0] / 2,
+          prop.position[1] + prop.size[1] / 2,
+          prop.position[2] + prop.size[2] / 2
+        );
+        this.obstacles.push(new THREE.Box3(min, max));
       }
     }
   }
@@ -153,7 +342,7 @@ export class RoomBuilder {
   private buildHotspots(hotspots: RoomFile['hotspots']): void {
     for (const hs of hotspots) {
       const hotspot = new Hotspot(hs);
-      const face = hs.wall ?? inferWallFace(hs.position[0], hs.position[2]);
+      const face = hs.wall ?? (FLOOR_ONLY_HOTSPOTS.has(hs.id) ? 'floor' : inferWallFace(hs.position[0], hs.position[2]));
       hotspot.mesh.userData.wallFace = face;
       hotspot.mesh.userData.isHotspot = true;
       this.hotspots.push(hotspot);
@@ -174,14 +363,48 @@ export class RoomBuilder {
   private buildLighting(lighting: RoomFile['lighting']): void {
     const ambient = new THREE.AmbientLight(0x404860, 0.55);
     this.root.add(ambient);
-    for (const spec of Object.values(lighting ?? {})) {
+
+    const LIGHT_PARENTS: Record<string, string> = {
+      lamp: 'LampBase',
+      window: 'WindowFrame'
+    };
+
+    for (const [key, spec] of Object.entries(lighting ?? {})) {
       const light = new THREE.PointLight(
         new THREE.Color(spec.color),
         spec.energy,
         6,
       );
-      light.position.set(spec.position[0], spec.position[1], spec.position[2]);
-      this.root.add(light);
+      light.name = `light_${key}`;
+
+      const parentId = LIGHT_PARENTS[key];
+      let parentMesh: THREE.Object3D | undefined;
+      if (parentId) {
+        parentMesh = this.propsRoot.getObjectByName(parentId) || this.root.getObjectByName(parentId);
+      }
+
+      if (parentMesh) {
+        parentMesh.updateMatrixWorld(true);
+        const parentWorldPos = new THREE.Vector3();
+        parentMesh.getWorldPosition(parentWorldPos);
+
+        const localPos = new THREE.Vector3(
+          spec.position[0] - parentWorldPos.x,
+          spec.position[1] - parentWorldPos.y,
+          spec.position[2] - parentWorldPos.z
+        );
+
+        light.position.copy(localPos);
+        parentMesh.add(light);
+
+        light.userData.parentPropId = parentId;
+        light.userData.localOffset = localPos.clone();
+      } else {
+        light.position.set(spec.position[0], spec.position[1], spec.position[2]);
+        this.root.add(light);
+      }
+
+      this.lights.set(key, light);
     }
   }
 
@@ -190,6 +413,25 @@ export class RoomBuilder {
     if (hs) {
       hs.mesh.userData.puzzleHidden = !visible;
       if (!visible) hs.mesh.visible = false;
+    }
+  }
+
+  rebuildObstacles(): void {
+    this.obstacles.length = 0;
+    for (const prop of this.propsData) {
+      if (['BedFrame', 'Desk', 'Chair', 'Bookshelf', 'Nightstand', 'Wardrobe'].includes(prop.id)) {
+        const min = new THREE.Vector3(
+          prop.position[0] - prop.size[0] / 2,
+          prop.position[1] - prop.size[1] / 2,
+          prop.position[2] - prop.size[2] / 2
+        );
+        const max = new THREE.Vector3(
+          prop.position[0] + prop.size[0] / 2,
+          prop.position[1] + prop.size[1] / 2,
+          prop.position[2] + prop.size[2] / 2
+        );
+        this.obstacles.push(new THREE.Box3(min, max));
+      }
     }
   }
 }

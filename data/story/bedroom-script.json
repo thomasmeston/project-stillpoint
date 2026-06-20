@@ -121,7 +121,7 @@
     },
     "window": {
       "title": "Window",
-      "body": "Rain on glass. Street below is wrong — too quiet, no cars. No exit here."
+      "body": "It's a paradise out there. Too bad I'm couped up in here."
     },
     "phone": {
       "title": "Phone",
@@ -130,6 +130,14 @@
     "combine_station": {
       "title": "Desk Surface",
       "body": "Enough space to fit two small objects together."
+    },
+    "lamp": {
+      "title": "Lamp",
+      "body": "A heavy metal desk lamp. It casts a warm pool of light over the desk. The bulb is hot to the touch."
+    },
+    "chair": {
+      "title": "Chair",
+      "body": "A simple wooden desk chair. It looks comfortable enough."
     }
   },
   "on_flag": {
