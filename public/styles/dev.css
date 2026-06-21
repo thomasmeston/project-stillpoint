@@ -195,6 +195,10 @@
   margin-top: 8px;
 }
 
+#dev-panel:has(#dev-content-section:not(.hidden)) .dev-actions {
+  display: none;
+}
+
 .dev-btn {
   background: #202838;
   border: 1px solid rgba(201, 168, 108, 0.4);

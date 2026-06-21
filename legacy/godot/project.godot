@@ -1,11 +1,11 @@
 ; Engine configuration file.
-; Godot 4.x project — LonnieCrow Room 1 MVP
+; Godot 4.x project — Project Stillpoint Room 1 MVP
 
 config_version=5
 
 [application]
 
-config/name="LonnieCrow"
+config/name="Project Stillpoint"
 config/description="Escape room point-and-click — Room 1: Bedroom"
 run/main_scene="res://scenes/main/Main.tscn"
 config/features=PackedStringArray("4.3", "Forward Plus")

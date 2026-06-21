@@ -1,7 +1,7 @@
 extends Node
 ## SaveLoad — single-slot persistence.
 
-const SAVE_PATH := "user://lonniecrow_save.json"
+const SAVE_PATH := "user://stillpoint_save.json"
 
 
 func save_game(player_position: Vector3) -> bool:

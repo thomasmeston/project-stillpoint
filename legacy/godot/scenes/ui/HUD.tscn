@@ -21,7 +21,7 @@ offset_top = 16.0
 offset_right = 400.0
 offset_bottom = 48.0
 theme_override_font_sizes/font_size = 22
-text = "LonnieCrow — Bedroom"
+text = "Project Stillpoint — Bedroom"
 
 [node name="JournalOpen" type="Button" parent="."]
 anchors_preset = 1

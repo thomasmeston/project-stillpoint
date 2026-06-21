@@ -1,11 +1,11 @@
-# AGENTS.md — Project Stillpoint (LonnieCrow Room 1)
+# AGENTS.md — Project Stillpoint (Room 1)
 
 > Harness-neutral handoff for Cody, Cloud Cody, or any coding agent.
 > Last updated: 2026-06-10
 
 ## What this is
 
-Browser-based isometric escape room: Lonnie Crow wakes trapped in his bedroom and must solve puzzles to escape while uncovering the truth about **Project Stillpoint**.
+Browser-based isometric escape room: you wake trapped in a bedroom and must solve puzzles to escape while uncovering the truth about **Project Stillpoint**.
 
 **GitHub:** https://github.com/thomasmeston/project-stillpoint  
 **Local path:** `C:\Users\thoma\OneDrive\Documents\GitHub\project-stillpoint`
@@ -51,7 +51,7 @@ npm install
 npm run dev          # http://localhost:5173
 npm run build        # tsc + vite build → dist/
 npm run preview      # serve dist locally
-npm run package:itch # build + lonniecrow-itch.zip
+npm run package:itch # build + stillpoint-itch.zip
 ```
 
 ## Verification profile

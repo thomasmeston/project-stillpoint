@@ -1,6 +1,6 @@
-# Project Stillpoint — LonnieCrow Room 1
+# Project Stillpoint — Room 1
 
-Browser-based escape room: Lonnie Crow wakes trapped in his bedroom and must solve puzzles to escape while uncovering the truth about Project Stillpoint.
+Browser-based escape room: you wake trapped in a bedroom and must solve puzzles to escape while uncovering the truth about Project Stillpoint.
 
 **Repo:** https://github.com/thomasmeston/project-stillpoint
 **Stack:** Vite 6, TypeScript, Three.js, Howler
@@ -12,7 +12,7 @@ npm install
 npm run dev      # http://localhost:5173
 npm run build    # production build → dist/
 npm run preview  # serve dist/
-npm run package:itch  # build + lonniecrow-itch.zip
+npm run package:itch  # build + stillpoint-itch.zip
 ```
 
 ## Controls

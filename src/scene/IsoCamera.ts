@@ -4,6 +4,14 @@ import { VIEW_FACING, type WallFace } from './WallFace';
 const ISO_PITCH = THREE.MathUtils.degToRad(-35);
 const ROTATE_DAMP = 9;
 
+export type CameraSnapshot = {
+  pos: THREE.Vector3;
+  yaw: number;
+  size: number;
+  pitch: number;
+  viewIndex: number;
+};
+
 export class IsoCamera {
   readonly camera: THREE.OrthographicCamera;
   readonly rig: THREE.Object3D;
@@ -129,6 +137,33 @@ export class IsoCamera {
     this.snapToView(this.viewIndex);
     this.targetSize = 10;
     this.targetPitch = ISO_PITCH;
+  }
+
+  captureSnapshot(): CameraSnapshot {
+    return {
+      pos: this.currentPos.clone(),
+      yaw: this.currentYaw,
+      size: this.currentSize,
+      pitch: this.currentPitch,
+      viewIndex: this.viewIndex,
+    };
+  }
+
+  restoreSnapshot(snapshot: CameraSnapshot, instant = false): void {
+    this.viewIndex = snapshot.viewIndex;
+    this.targetPos.copy(snapshot.pos);
+    this.targetYaw = snapshot.yaw;
+    this.targetSize = snapshot.size;
+    this.targetPitch = snapshot.pitch;
+    if (instant) {
+      this.currentPos.copy(snapshot.pos);
+      this.currentYaw = snapshot.yaw;
+      this.currentSize = snapshot.size;
+      this.currentPitch = snapshot.pitch;
+      this.applyRigPose(this.currentPos, this.currentYaw);
+      this.resize(window.innerWidth, window.innerHeight);
+      this.rotating = false;
+    }
   }
 
   menuRotate(dt: number): void {

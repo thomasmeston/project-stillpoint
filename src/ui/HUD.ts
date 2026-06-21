@@ -21,9 +21,11 @@ export class HUD {
   private winRestart = document.getElementById('win-restart')!;
   private viewControls = document.getElementById('view-controls')!;
   private zoomBackBtn = document.getElementById('zoom-back-btn')!;
+  private meditateBtn = document.getElementById('meditate-btn')!;
 
   private thoughtTimer: number | null = null;
   onZoomBack?: () => void;
+  onMeditate?: () => void;
 
   constructor(
     private inventory: Inventory,
@@ -35,6 +37,7 @@ export class HUD {
     this.journalList.addEventListener('change', () => this.renderJournalDetail());
     this.winRestart.addEventListener('click', () => location.reload());
     this.zoomBackBtn.addEventListener('click', () => this.onZoomBack?.());
+    this.meditateBtn.addEventListener('click', () => this.onMeditate?.());
 
     this.narrative.events.on('examineShown', ({ title, body }) => this.showExamine(title, body));
     this.narrative.events.on('thoughtShown', (text) => this.showThought(text));
@@ -132,9 +135,16 @@ export class HUD {
     if (showBack) {
       this.viewControls.classList.add('hidden');
       this.zoomBackBtn.classList.remove('hidden');
+      this.meditateBtn.classList.add('hidden');
     } else {
       this.viewControls.classList.remove('hidden');
       this.zoomBackBtn.classList.add('hidden');
+      this.meditateBtn.classList.remove('hidden');
     }
+  }
+
+  setMeditating(active: boolean): void {
+    this.meditateBtn.textContent = active ? 'Return' : 'Meditate';
+    this.meditateBtn.classList.toggle('meditate-active', active);
   }
 }

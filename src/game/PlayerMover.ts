@@ -268,8 +268,24 @@ export class PlayerMover {
     return this.root.position;
   }
 
+  getFacingYaw(): number {
+    return this.root.rotation.y;
+  }
+
+  getHeadWorldPosition(): THREE.Vector3 {
+    const head = this.root.getWorldPosition(new THREE.Vector3());
+    head.y += 1.55;
+    return head;
+  }
+
   get isMoving(): boolean {
     return this.moving;
+  }
+
+  cancelMovement(): void {
+    this.target = null;
+    this.onArrival = null;
+    this.setMoving(false);
   }
 
   setPosition(pos: { x: number; y: number; z: number }): void {

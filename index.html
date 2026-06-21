@@ -45,6 +45,7 @@
       </aside>
 
       <footer id="inventory-bar"></footer>
+      <button id="meditate-btn" type="button">Meditate</button>
     </div>
 
     <div id="clock-modal" class="modal hidden">
@@ -161,6 +162,10 @@
     <!-- Intro Words Screen -->
     <div id="intro-words-overlay" class="menu-overlay hidden"></div>
 
+    <div id="meditate-overlay" class="menu-overlay hidden">
+      <div id="meditate-words"></div>
+    </div>
+
     <!-- Dev Mode Dashboard -->
     <div id="dev-panel" class="hidden">
       <div class="dev-header">
@@ -259,11 +264,12 @@
         <button id="dev-apply-content" class="dev-btn" type="button">Preview Text (local)</button>
         <button id="dev-copy-content" class="dev-btn" type="button">Copy Content JSON</button>
         <button id="dev-reset-content" class="dev-btn dev-btn-danger" type="button">Reset Text Overrides</button>
+        <button id="dev-close-btn-text" class="dev-btn dev-close-btn" type="button">Exit Dev Mode</button>
         <p class="dev-mode-hint">Save Text writes to <code>data/story/bedroom-script.json</code> and <code>data/items.json</code>.</p>
       </div>
       
       <div class="dev-actions">
-        <button id="dev-close-btn" class="dev-btn">Exit Dev Mode</button>
+        <button id="dev-close-btn" class="dev-btn dev-close-btn" type="button">Exit Dev Mode</button>
       </div>
     </div>
 

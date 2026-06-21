@@ -7,10 +7,11 @@ import { NarrativeManager } from './NarrativeManager';
 import { PlayerMover } from './PlayerMover';
 import { PuzzleManager } from './PuzzleManager';
 import { SaveLoad } from './SaveLoad';
-import { IsoCamera } from '../scene/IsoCamera';
+import { IsoCamera, type CameraSnapshot } from '../scene/IsoCamera';
 import { RoomBuilder } from '../scene/RoomBuilder';
 import { ViewWallController } from '../scene/ViewWallController';
 import { HUD } from '../ui/HUD';
+import { MeditationOverlay } from '../ui/MeditationOverlay';
 import { PuzzleUI } from '../ui/PuzzleUI';
 import { DevMover } from './DevMover';
 import { DeskSketchSpread } from '../scene/DeskSketchSpread';
@@ -45,6 +46,9 @@ export class Game {
   private isDeskZoomed = false;
   private isWallNotesZoomed = false;
   private introActive = false;
+  private meditateActive = false;
+  private preMeditateCamera: CameraSnapshot | null = null;
+  private meditation = new MeditationOverlay();
   private wordsClickedCount = 0;
   private readonly INTRO_WORDS = [
     // Original 13 words
@@ -66,7 +70,8 @@ export class Game {
   }
 
   get isInputBlocked(): boolean {
-    return this.inMenu || this.escapeMenuOpen || this.introActive || (this.devMover && this.devMover.isActive());
+    return this.inMenu || this.escapeMenuOpen || this.introActive || this.meditateActive
+      || (this.devMover && this.devMover.isActive());
   }
 
   constructor(private canvas: HTMLCanvasElement) {
@@ -181,6 +186,7 @@ export class Game {
 
   private wireInput(): void {
     this.hud.onZoomBack = () => this.zoomOutFromDetail();
+    this.hud.onMeditate = () => this.toggleMeditate();
 
     this.input.onFirstInput = () => {
       this.narrative.onFirstInput();
@@ -289,6 +295,10 @@ export class Game {
       if (this.isDeskZoomed) return;
 
       if (e.key === 'Escape') {
+        if (this.meditateActive) {
+          this.exitMeditate();
+          return;
+        }
         if (this.introActive) return;
         if (this.devMover && this.devMover.isActive()) return; // Let devMover handle Escape deselect
         this.toggleEscapeMenu();
@@ -310,7 +320,7 @@ export class Game {
   }
 
   private toggleDevMode(): void {
-    if (this.inMenu || this.introActive) return;
+    if (this.inMenu || this.introActive || this.meditateActive) return;
     if (this.isDeskZoomed) {
       this.zoomOutFromDesk();
     }
@@ -319,7 +329,7 @@ export class Game {
   }
 
   private rotateView(direction: 'left' | 'right'): void {
-    if (this.inMenu || this.escapeMenuOpen || this.introActive) return;
+    if (this.inMenu || this.escapeMenuOpen || this.introActive || this.meditateActive) return;
     if (this.isDeskZoomed) return;
     if (this.wallCtrl.isAnimating() || this.isoCamera.isRotating()) return;
     this.audio.playSfx('rotate');
@@ -554,6 +564,47 @@ export class Game {
   private zoomOutFromDetail(): void {
     if (this.isDeskZoomed) this.zoomOutFromDesk();
     else if (this.isWallNotesZoomed) this.zoomOutFromWallNotes();
+  }
+
+  private toggleMeditate(): void {
+    if (this.inMenu || this.introActive || this.isDetailZoomed) return;
+    if (this.meditateActive) {
+      this.exitMeditate();
+    } else {
+      this.enterMeditate();
+    }
+  }
+
+  private enterMeditate(): void {
+    if (this.escapeMenuOpen) this.toggleEscapeMenu();
+    this.player.cancelMovement();
+    this.preMeditateCamera = this.isoCamera.captureSnapshot();
+
+    const head = this.player.getHeadWorldPosition();
+    const faceYaw = this.player.getFacingYaw() + Math.PI;
+    this.isoCamera.zoomTo(
+      head,
+      0.88,
+      THREE.MathUtils.degToRad(-8),
+      faceYaw,
+    );
+
+    this.meditation.show(this.narrative.getMeditationFragments());
+    this.meditateActive = true;
+    this.hud.setMeditating(true);
+    this.hud.setCursorHintVisible(false);
+    this.audio.playSfx('click');
+  }
+
+  private exitMeditate(): void {
+    if (this.preMeditateCamera) {
+      this.isoCamera.restoreSnapshot(this.preMeditateCamera);
+      this.preMeditateCamera = null;
+    }
+    this.meditation.hide();
+    this.meditateActive = false;
+    this.hud.setMeditating(false);
+    this.hud.setCursorHintVisible(true);
   }
 
   private getDeskApproachPosition(): THREE.Vector3 {

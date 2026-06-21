@@ -4,91 +4,172 @@
 
 ## Context
 
-LonnieCrow Room 1 rebuilt as a browser game (Vite + TypeScript + Three.js). Godot MVP archived to `legacy/godot/`. Repo lives at https://github.com/thomasmeston/project-stillpoint.
+Room 1 rebuilt as a browser game (Vite + TypeScript + Three.js). Godot MVP archived to `legacy/godot/`. Repo lives at https://github.com/thomasmeston/project-stillpoint.
+
+**Package name:** `project-stillpoint` (npm). **Itch zip:** `stillpoint-itch.zip` via `npm run package:itch`.
 
 ## Done
+
+### Core gameplay
 
 - Core systems: GameState, PuzzleManager, Inventory, Narrative, SaveLoad, Audio
 - Three.js isometric scene: RoomBuilder, hotspots, click-to-move
 - Tiny Room Stories–style view rotation (4 walls, animated drop/rise)
 - DOM HUD + four puzzle modals; full escape path wired
-- Replaced the player character model with a custom 3D papercraft model (`man-papercraft.glb`) auto-rigged via Meshy AI, playing skeletal animations blended with secondary procedural breathing/idle bobbing.
-- Updated the window view to display a less vibrant tropical beach scene framed from the room's perspective.
-- Introduced 2D circle-to-AABB sliding collision detection on the gameplay plane, preventing the player from passing through bedroom walls or furniture props (`BedFrame`, `Desk`, `Chair`, `Bookshelf`, `Nightstand`, `Wardrobe`).
-- Added stuck state detection to clean up movement animations and cancel walking when the player runs into solid obstacles.
-- Built a real-time **Dev Mode** layout editor allowing developers to select props in 3D, view transparent debug hotspot boxes, select multiple objects simultaneously (via `Ctrl`/`Shift` clicks) to nudge them as a group, step backward and forward through changes using a 50-state Undo/Redo history stack (with `Ctrl+Z`/`Ctrl+Y` support), translate, rotate, and orbit props and their corresponding children, click hotspots, and PointLight source positions synchronously, immediately test character collision boundaries on the fly, persist placements in `localStorage`, and export the entire merged configuration directly to the clipboard.
+- 2D circle-to-AABB sliding collision on the gameplay plane (walls + furniture props)
+- Stuck-state detection cancels walk animation when blocked by obstacles
 - `npm run build` passes; GitHub Pages workflow present
-- Agent OS registered; initial push to `project-stillpoint`
-- Centered the starting room in the browser viewport, enabled middle mouse drag (mouse wheel hold) camera rotation control, and configured middle-click (mouse wheel click) to trigger a single counter-clockwise rotation
-- Updated wall folding logic to raise only the two back corner walls (facing and left-adjacent) for each view index, dropping the side/front walls to guarantee props are never obstructed
-- Fixed rotation sign errors in the North and South wall Y-coordinate folding equations, centered the room shell and camera target Z-bounds to Z = 0, and aligned bookshelf/door sizes and rotations to lie completely flat on the ground when folded
-- Fixed camera rotation warp bug: removed absolute angle normalization at the end of camera rotation animations, allowing relative target yaw angles to accumulate indefinitely so the camera rotates smoothly in the same direction infinitely without direction-reversal artifacts.
-- Expanded the orthographic camera zoom range (clamping size between 4 and 15 instead of 8 and 14) to allow players to zoom in significantly closer to inspect room details.
-- Implemented a complete Web Audio API synthesizer fallback in `AudioManager.ts` that dynamically generates retro-style sound effects (short tick for clicks, dual metallic lock release for door unlocking, and a bandpass filter wind sweep for camera rotation wooshes) when physical `.ogg` audio files are absent. (Ambient bedroom hum track removed as per user request).
-- Wired the camera rotation "woosh" sound effect (`playSfx('rotate')`) to trigger when starting any view rotation.
-- Created a premium glassmorphic **Main Menu** overlay with 3 save slots, a slow 3D orbit camera showcase rotating the bedroom scene, and support to load, delete, or reset slots.
-- Implemented **Autosave** functionality, writing slot metadata (timestamp, screenshot, game flags, inventory, journal logs, room status, player position) to local storage automatically on gameplay changes (flag changed, puzzle solved, inventory updated, journal log appended, player stopping walk, and hotspot interaction).
-- Added a paused **Escape Menu** overlay (ESC key) allowing background music volume adjustment and muting using Howler, blocking all movement and keyboard rotation inputs while active.
-- Added a **Floating Words Intro Sequence** overlay on new games, displaying 65 floating words (original 13 words + 52 themed synonyms/similar words, a 5x increase) using the Outfit font and subtle float animations. The "focus your mind" helper title is removed to offer a cleaner design, and words are spaced via an 8x9 grid to prevent cluttered overlaps. Sizes vary dramatically (ranging from 0.7rem to 5.5rem). The player clicks 5 words to clear the overlay, playing tick sounds and triggering a smooth fade-out. Persisted under the `intro_words_cleared` flag to skip on loaded sessions.
-- **Detached desk lamp from wall fold logic.** Moved `LampBase` and `LampShade` into the `FLOOR_ONLY_PROPS` set in `RoomBuilder.ts` so they stay in place when walls animate up/down instead of being parented to a folding wall.
-- **Individually clickable desk items.** Added three new desk props (`Phone`, `Sketchbook`, `CrowFigurine`) and their matching hotspots (`phone`, `sketchbook`, `lamp`) in `bedroom.json` with examine text in `bedroom-script.json`. Each is independently clickable and shows its own narrative panel.
-- **Chair sit/stand interaction.** Clicking the chair hotspot triggers `handleSit()` in `Game.ts`, which walks the player to the front of the chair, then calls `PlayerMover.sitOn()`. Procedural bone animation (`animateSittingBones`) bends thighs and calves to 90°, lowers the pelvis 0.45 units, relaxes arms forward 45°, and applies a biomechanically accurate forward spine lean (30° arc via sine curve) for center-of-mass transfer during descent. Standing reverses the process with matching forward-lean momentum. The camera zooms to the desk top on sit, and resets on stand.
-- **Replaced placeholder chair with poly.pizza GLB.** Downloaded the wooden chair model from [poly.pizza/m/13AL0KYItKD](https://poly.pizza/m/13AL0KYItKD) and stored it at `public/models/chair.glb` (3.1 MB). The `bedroom.json` prop entry references `models/chair.glb` with mesh loading handled by `RoomBuilder`.
-- **Desk zoom interaction.** Clicking the desk while sitting triggers `zoomToDesk()`, which smoothly animates the `IsoCamera` to a top-down view (pitch −90°, yaw 0°, size 1.4) centered on the desk surface. A "↩ Back" button in the HUD (`showZoomControls`) returns to the seated isometric view via `zoomOutFromDesk()`. Input (rotation drag, wheel zoom, keyboard shortcuts) is blocked while in top-down desk mode.
-- **IsoCamera `zoomTo` with pitch/yaw.** Extended `IsoCamera.zoomTo(target, size, pitch?, yaw?)` to support arbitrary pitch and yaw angles, enabling the top-down desk view transition and seated camera zoom. `resetZoom()` snaps back to the current view index defaults.
+- **Branding cleanup:** all "Lonnie" / "Lonnie Crow" references removed from repo; player is second-person "you"
 
-## Current state (uncommitted)
+### Player & camera
 
-The working tree has ~1,100 lines of uncommitted changes across 11 files:
+- Player model: custom papercraft GLB (`public/models/characters/man-papercraft.glb`), Meshy AI–rigged, with skeletal walk/idle and procedural breathing/idle bob
+- Spawn beside the bed (`spawn.player`: −1.35, 0, 1.05)
+- Centered room in viewport; middle-mouse drag for camera orbit; middle-click triggers one counter-clockwise rotation
+- Wall folding raises only the two back corner walls per view; side/front walls drop so props stay visible
+- Fixed rotation sign errors in North/South wall folding; room shell and camera Z-bounds centered at Z = 0
+- Fixed camera rotation warp bug (relative yaw accumulates without normalization snap)
+- Orthographic zoom range 4–15 (was 8–14)
+- **`IsoCamera.captureSnapshot()` / `restoreSnapshot()`** for saving and restoring camera state (used by Meditate)
 
-| File | Key changes |
-|------|-------------|
-| `data/rooms/bedroom.json` | Added Phone, Sketchbook, CrowFigurine props; lamp, phone, chair hotspots |
-| `data/puzzles/bedroom.json` | Added `phone`, `lamp`, `chair` hotspot actions (examine/sit) |
-| `data/story/bedroom-script.json` | Examine text for phone, lamp |
-| `src/game/Game.ts` | `handleSit()`, `zoomToDesk()`, `zoomOutFromDesk()`, `standUp()`, desk click routing, `isDeskZoomed` input blocking |
-| `src/game/PlayerMover.ts` | `sitOn()`, `standUp()`, bone posing (`animateSittingBones`, `animateStandingBones`), transition state machine, `FLOOR_ONLY_PROPS` lamp entries |
-| `src/scene/IsoCamera.ts` | `zoomTo(target, size, pitch?, yaw?)`, `resetZoom()`, `getYawForViewIndex()` |
-| `src/scene/RoomBuilder.ts` | `FLOOR_ONLY_PROPS` / `FLOOR_ONLY_HOTSPOTS` additions, GLB mesh loading for chair |
-| `src/ui/HUD.ts` | `showZoomControls()` with "↩ Back" button, `onZoomBack` callback |
-| `public/styles/hud.css` | Styling for zoom-back button |
-| `public/models/chair.glb` | Poly.pizza wooden chair model (CC0) |
-| `index.html` | Minor updates |
+### Audio & menus
+
+- Web Audio synthesizer fallback in `AudioManager.ts` for missing `.ogg` SFX (click, door unlock, rotate woosh)
+- Background music: `public/audio/Glass Rain Drift.mp3` via Howler at 20% default volume
+- Camera rotation woosh (`playSfx('rotate')`) on view rotation start
+- Glassmorphic **Main Menu** with 3 save slots, orbit camera showcase, load/delete/reset
+- **Autosave** to localStorage on flag change, puzzle solve, inventory change, journal update, hotspot state change, and player walk stop
+- **Escape Menu** (ESC): BGM volume + mute; blocks movement and rotation while open
+- **Floating Words Intro** on new game: 65 words (13 core + 52 themed), Outfit font, 8×9 grid layout, sizes 0.7–5.5 rem; click 5 to clear with tick SFX and fade-out; skipped via `intro_words_cleared` flag on load
+
+### Meditate
+
+- **Meditate** button at bottom center of HUD (inventory bar sits above it)
+- Click → camera swings to close-up on player face (`PlayerMover.getHeadWorldPosition()` + facing yaw); canvas blurs; discovered journal clues and inner thoughts float on screen (intro-style drift animation via `MeditationOverlay.ts`)
+- Content from `NarrativeManager.getMeditationFragments()` — journal entries, heard thoughts, examine/flag inner voice; fallback words if nothing discovered yet
+- **Return** button (same control) or **Esc** exits and restores pre-meditate camera snapshot
+- Blocks gameplay input while active (`meditateActive`); hidden during desk/wall detail zoom
+
+### Narrative voice
+
+- Inner voice / `thoughts` in `data/story/bedroom-script.json` rewritten to cryptic, memory-fogged tone (fragmented, uncertain, puzzle hints veiled)
+- `NarrativeManager` tracks `heardThoughtIds` in save data; examine/flag thoughts now resolve to display text correctly in HUD toast
+
+### Room art & interactables
+
+- Window view: muted tropical beach texture (`public/images/beach.png`) on `WindowGlass`
+- **Oak tree painting:** procedural canvas texture (`OakTreePaintingArt.ts`); **swing-open animation** on first examine (`PaintingRevealController.ts`) sets `painting_moved` and reveals wall safe
+- **Wall notes cluster:** ~30 procedural cryptic papers pinned on north wall (`WallNotesCluster.ts`, `CrypticPaperArt.ts`); examine hotspot walks player in and enters detail zoom
+- **Desk sketch spread:** procedural papers + sketchbook on desk surface (`DeskSketchSpread.ts`); visible during desk detail zoom — toggle sketchbook open/close, inspect individual papers
+- **Procedural props:** bedside lamp (`BedsideLampProp.ts`), desk mug with pens (`DeskMugProp.ts`)
+- **Chair GLB:** poly.pizza wooden chair at `public/models/chair.glb` (CC0)
+- Desk lamp detached from wall fold logic (`LampBase`, `LampShade` in `FLOOR_ONLY_PROPS`)
+- Individual desk/nightstand props in room data: `Phone`, `Sketchbook`, `CrowFigurine` with examine hotspots and narrative text
+- **Phone-in-safe puzzle:** phone prop hidden in wall safe until unlocked; `syncSafeVisuals()` toggles safe/phone visibility; phone added to inventory on safe open
+
+### Detail zoom modes
+
+Shared `isDetailZoomed` flag blocks normal input (walk, rotation, wheel zoom) while active. HUD shows **↩ Back** via `showZoomControls()`.
+
+| Mode | Trigger | Camera | In-zoom interaction |
+|------|---------|--------|---------------------|
+| **Desk** | Examine `desk` hotspot → walk to approach position → `zoomToDesk()` | Top-down (pitch −90°, size 1.4) | Click sketchbook to spread papers; click papers to inspect/dismiss |
+| **Wall notes** | Examine `wall_notes` → walk → `zoomToWallNotes()` | Front-on wall (pitch 0°, size 1.15); player hidden | Click papers to inspect/dismiss |
+
+`IsoCamera.zoomTo(target, size, pitch?, yaw?)` and `getYawForViewIndex()` support arbitrary transitions.
+
+> **Note:** Chair sit/stand with procedural bone posing was implemented briefly (`3c7371a`) but **removed** in favor of walk-to + detail zoom. Chair hotspot is examine-only today.
+
+### Dev Mode
+
+Toggle from escape menu or `` ` `` key. Two tabs:
+
+- **Layout:** select props/hotspots/lights (Ctrl/Shift multi-select), nudge position/rotation, 50-state undo/redo (`Ctrl+Z`/`Ctrl+Y`), copy layout JSON, reset from repo defaults, **Save Layout** → writes `data/rooms/bedroom.json` via Vite dev plugin (`/__dev/save`) or downloads JSON
+- **Text:** edit examine copy and item labels/descriptions with localStorage preview overrides (`DevContentOverrides.ts`); **Save Text** → writes `data/story/bedroom-script.json` + `data/items.json`; **Exit Dev Mode** sits below Reset Text Overrides in Text tab; selecting **— select item —** clears item label/description fields
+
+Parent/child relationships for grouped nudging defined in `DevMover.ts` `RELATIONSHIPS` map.
+
+### Testing
+
+- Playwright e2e: `tests/e2e/desk-zoom.spec.ts` — desk examine → top-down zoom controls (intro skipped programmatically)
+
+## Puzzle flow (escape path)
+
+1. Find time clue → set wall clock to **3:17** → desk drawer unlocks
+2. Open desk drawer → photos + receipt
+3. Examine painting → swing-open animation → wall safe revealed (`painting_moved`)
+4. With photos, painting examine opens photo cipher → spell **STILL** → safe combo known
+5. Wall safe padlock **STILL** → safe opens → key blade + phone
+6. Combine key blade + handle (nightstand) → unlock wardrobe
+7. Cipher disk + letter → door padlock **STILLPOINT** → escape
 
 ## Next
 
-1. **Polish chair sit/stand.** Verify the sitting pose looks correct in the browser with the new chair GLB — the bone-animation offsets (pelvis drop of 0.45, thigh 90°, calf 90°) may need tuning relative to the specific chair mesh seat height.
-2. **Desk interaction objects.** When zoomed top-down on the desk, items (lamp, phone, sketchbook, drawer) should become individually clickable with magnified hover effects or tooltips. This is the foundation for future desk-based puzzles.
-3. **Add OGG audio to `public/audio/`** (click, door unlock, ambient). The synthesizer fallback covers everything for now, but real audio will feel much better.
-4. **Replace remaining placeholder props with GLB art** in `public/models/` (bed, desk, nightstand, bookshelf, wardrobe).
-5. **Enable GitHub Pages** on repo Settings → Pages (workflow deploys from `main`).
-6. Optional: itch.io upload via `npm run package:itch`.
+1. **Desk detail layer** — in top-down zoom, make lamp, phone, drawer, and mug individually clickable (hover/tooltips); sketchbook/papers work today
+2. **Wall notes** — tie inspected papers to journal clues or a future puzzle beat (visual inspect only today)
+3. **Meditate polish** — tune face close-up framing for papercraft model; filter/tokenize floating fragments for readability at high journal count
+4. **Chair interaction** — decide whether to restore sit/stand bone animation or keep examine-only with walk-to-desk flow
+5. **Add OGG SFX** to `public/audio/` (click, door unlock, rotate). Synth fallback works; real audio will feel better
+6. **Replace remaining placeholder box/cylinder props** with GLB art (bed, desk, nightstand, bookshelf, wardrobe — chair done)
+7. **Enable GitHub Pages** on repo Settings → Pages (workflow deploys from `main`)
+8. Expand Playwright coverage (full escape path, wall notes zoom, meditate)
+9. Optional: itch.io upload via `npm run package:itch`
 
 ## Checklist
 
-- [x] Full escape path (clock → photos → key → padlock → win)
+- [x] Full escape path (clock → photos → painting → safe → key → padlock → win)
 - [x] Journal clues populate at milestones
-- [x] View rotation works on all four walls; hotspots stay interactable
+- [x] View rotation on all four walls; hotspots stay interactable
 - [x] Walk/idle animations on click-to-move
-- [x] Main Menu overlay with 3 save slots and deletion support
-- [x] Auto-saving of game state on key actions and player movement
-- [x] Escape Menu pause screen with Howler music volume controls
-- [x] Floating Words Intro sequence on New Game (fade out and input blocking)
-- [x] Desk lamp stays in place during wall folds (detached from wall parent)
-- [x] Desk items (phone, sketchbook, lamp) individually clickable with examine text
-- [x] Chair click → walk-to → sit with procedural bone animation
-- [x] Chair replaced with poly.pizza GLB (`public/models/chair.glb`)
-- [x] Desk click (while sitting) → top-down camera zoom with back button
-- [x] IsoCamera supports arbitrary pitch/yaw zoom transitions
+- [x] Main Menu with 3 save slots
+- [x] Autosave on key gameplay events
+- [x] Escape Menu with BGM controls
+- [x] Floating Words intro on new game
+- [x] Meditate: face zoom, blur, floating discovered clues/thoughts
+- [x] Cryptic inner-voice rewrite in `bedroom-script.json`
+- [x] Desk lamp stays grounded during wall folds
+- [x] Desk items individually examinable (phone, sketchbook, lamp, chair)
+- [x] Desk examine → walk-to → top-down zoom with back button
+- [x] Desk sketchbook spread + paper inspect in zoom view
+- [x] Wall notes examine → zoom + paper inspect
+- [x] Painting swing-open reveal + phone-in-safe flow
+- [x] Procedural painting, papers, mug, bedside lamp
+- [x] Chair GLB (`public/models/chair.glb`)
+- [x] Dev Mode layout + text editor with save-to-repo (dev server)
+- [x] Playwright desk-zoom smoke test
 - [x] `npm run build && npm run preview` — no console errors
 - [ ] GitHub Pages live after first deploy
-- [ ] Desk interaction layer: clickable objects in top-down zoom view
-- [ ] All placeholder box/cylinder props replaced with real GLB models
+- [ ] Desk zoom: lamp / phone / drawer clickable
+- [ ] Wall notes tied to puzzle/narrative beats
+- [ ] All placeholder props replaced with real GLB models
+
+## Key files
+
+| Path | Purpose |
+|------|---------|
+| `src/game/Game.ts` | Main loop, detail zoom, meditate, painting/safe flow, menus, autosave |
+| `src/game/PlayerMover.ts` | GLB load, walk/collision, head position for meditate zoom |
+| `src/game/NarrativeManager.ts` | Journal/thoughts, `getMeditationFragments()`, save data |
+| `src/ui/MeditationOverlay.ts` | Floating clue/thought overlay during meditate |
+| `src/game/DevMover.ts` | Dev layout + text editor UI |
+| `src/game/DevSave.ts` | Serialize layout/content; POST to `/__dev/save` |
+| `src/scene/DeskSketchSpread.ts` | Desk papers + sketchbook in zoom view |
+| `src/scene/WallNotesCluster.ts` | Wall papers in zoom view |
+| `src/scene/PaintingRevealController.ts` | Painting swing-open animation |
+| `src/scene/RoomBuilder.ts` | Room build, GLB load, `FLOOR_ONLY_*` sets, safe/phone sync |
+| `src/scene/ViewWallController.ts` | Wall rotation animation |
+| `src/scene/IsoCamera.ts` | Orthographic camera, zoom/rotate, snapshot restore |
+| `data/rooms/bedroom.json` | Layout, props, hotspots, spawn |
+| `data/puzzles/bedroom.json` | Puzzles, gates, hotspot actions |
+| `data/story/bedroom-script.json` | Examine text, journal, inner voice |
+| `scripts/vite-plugin-dev-save.ts` | Dev-only write-back to `data/` |
+| `tests/e2e/desk-zoom.spec.ts` | Desk zoom Playwright smoke |
 
 ## Blockers / notes
 
-- Player model: `public/models/characters/man-in-suit.glb` (CC0, Quaternius Animated Men Pack).
-- Chair model: `public/models/chair.glb` (CC0, poly.pizza).
-- Sitting bone offsets (pelvis −0.45, thighs 90°, calves 90°) are tuned to the papercraft model's skeleton. If the player model changes, re-tune `animateSittingBones` in `PlayerMover.ts`.
-- The top-down desk zoom blocks all camera rotation and zoom inputs (`isDeskZoomed` flag in `Game.ts`). Standing up from the chair auto-resets the zoom state.
-- `FLOOR_ONLY_PROPS` and `FLOOR_ONLY_HOTSPOTS` in `RoomBuilder.ts` control which objects stay grounded during wall animations. Any new desk/floor prop must be added to these sets.
+- **Player model:** `public/models/characters/man-papercraft.glb` (custom, Meshy-rigged). Legacy Quaternius suit and other character GLBs remain in `public/models/characters/` but are unused.
+- **Chair model:** `public/models/chair.glb` (CC0, [poly.pizza](https://poly.pizza/m/13AL0KYItKD)).
+- **`FLOOR_ONLY_PROPS`** and **`FLOOR_ONLY_HOTSPOTS`** in `RoomBuilder.ts` control which objects stay grounded during wall animations. Add new floor/desk props and hotspots there.
+- Detail zoom blocks input via `isDetailZoomed` (`isDeskZoomed || isWallNotesZoomed`) in `Game.ts`. Meditate, ESC menu, and Dev Mode also block gameplay input.
+- Dev **Save Layout / Save Text** only writes to disk when running `npm run dev` (Vite plugin). Production/preview builds fall back to JSON download.
+- Agent OS registered; project context at `C:\Users\thoma\agent-os\context\projects\project-stillpoint.md`.

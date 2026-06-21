@@ -4,7 +4,7 @@ import { join } from 'path';
 
 const root = process.cwd();
 const dist = join(root, 'dist');
-const out = join(root, 'lonniecrow-itch.zip');
+const out = join(root, 'stillpoint-itch.zip');
 
 execSync('npm run build', { stdio: 'inherit', cwd: root });
 
@@ -16,7 +16,7 @@ if (existsSync(out)) rmSync(out);
 
 const zipCmd = process.platform === 'win32'
   ? `powershell Compress-Archive -Path "${dist}\\*" -DestinationPath "${out}" -Force`
-  : `cd dist && zip -r ../lonniecrow-itch.zip .`;
+  : `cd dist && zip -r ../stillpoint-itch.zip .`;
 
 execSync(zipCmd, { stdio: 'inherit', shell: true });
 console.log(`Created ${out}`);

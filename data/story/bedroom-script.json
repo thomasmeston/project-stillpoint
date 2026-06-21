@@ -1,70 +1,70 @@
 {
-  "opening_thought": "Static in my skull. The door should open — I know it should — but my body won't believe it yet.",
+  "opening_thought": "White noise behind my eyes. I know this room — no, I know I knew it. The walls are the right wrong distance apart.",
   "thoughts": {
-    "wake_beside_bed": "I'm on my feet beside the bed. Sheets still warm. Like I lay down and forgot I was asleep.",
-    "locked_hint": "That won't budge yet. There has to be another way in.",
-    "door_locked": "Won't budge. There has to be another way out.",
-    "drawer_unlocked": "The drawer clicks. Someone wanted me to find what's inside.",
-    "safe_found": "The painting shifts. A safe sits in the wall like a secret I forgot on purpose.",
-    "key_ready": "The key feels familiar — like I assembled it in a dream already.",
-    "wardrobe_open": "Cold air from the wardrobe. Paper smell. Memory trying to surface.",
-    "door_opening": "The chain falls. The deadbolt catches for the first time.",
-    "desk_drawer_loot": "Photos, a receipt. Pieces of a day I don't remember living.",
-    "safe_opened": "The safe clicks open. Key blade, a note about rest — and my phone, locked away in there.",
-    "bed_musings": "The mattress remembers my weight. I slept here — or something like sleep.",
-    "clock_musings": "Midnight on the face. Time won't move until I choose where it stops.",
-    "desk_musings": "Coffee ring, open sketchbook. Whoever sat here was halfway through a thought.",
-    "sketchbook_musings": "The crow again. I draw it when I'm close to remembering.",
-    "wall_notes_musings": "My handwriting on every scrap. I don't recall pinning them — but the shapes feel true.",
-    "painting_musings": "That oak tree. I've stood under it somewhere real.",
-    "window_musings": "Paradise out there. Too bright to trust.",
-    "nightstand_musings": "The drawer handle is worn. Something snapped off and got hidden here.",
-    "bookshelf_musings": "Dream Cartography. Of course that's what I was reading.",
-    "wardrobe_musings": "Cold wood. Whatever I locked in there, I wasn't ready to face it awake.",
-    "lamp_musings": "Warm light. For a second the room feels almost mine.",
-    "chair_musings": "The chair knows my weight. Muscle memory of sitting, waiting, thinking.",
-    "door_musings": "Chain, padlock, deadbolt. I stacked every layer myself — and hid the code where I'd have to earn it."
+    "wake_beside_bed": "Standing. When did standing happen. The bed still holds heat like something that just stopped speaking.",
+    "locked_hint": "Not yet. Some other part of me remembers before I do.",
+    "door_locked": "Layered shut. I stacked the locks myself — I just can't recall why.",
+    "drawer_unlocked": "Wood exhales. I was waiting for that sound. I think I was.",
+    "safe_found": "The wall has a second face. I hid something where I'd have to look twice.",
+    "key_ready": "Metal finds wood. The fit is older than this forgetting.",
+    "wardrobe_open": "Cold breath. Paper smell. Ink. A name I signed somewhere between sleep and waking.",
+    "door_opening": "Something unlatches that was never barred from the outside.",
+    "desk_drawer_loot": "Faces turned away. Dates that don't belong to me — except my hand wrote the receipt.",
+    "safe_opened": "Brass tongue. A blade without a handle. Rest — the word pulsing like a second heartbeat.",
+    "bed_musings": "Indentation in the linen. Someone lay here. Was it me, before I woke into not-knowing?",
+    "clock_musings": "Twelve frozen on the face. A minute buried somewhere. I circled it once — the ink remembers.",
+    "desk_musings": "Brown ring in the grain. Thoughts left half-finished. The chair still angled toward forgetting.",
+    "sketchbook_musings": "Black feathers. Lines I don't recall drawing. STILL — then an arrow I can't follow yet.",
+    "wall_notes_musings": "Paper constellation. My script on every scrap. I don't remember writing — only that it's true.",
+    "painting_musings": "Oak in oil. Roots in paint. Wind I felt somewhere that wasn't this room.",
+    "window_musings": "Blue too clean. Sun lies flat. Real places are dimmer than this.",
+    "nightstand_musings": "Grip worn smooth. Snapped off something that wanted to stay shut.",
+    "bookshelf_musings": "Dream Cartography. I was mapping exits on paper before I built one in wood.",
+    "wardrobe_musings": "Dark inside. Things I folded away when waking hurt too much to carry.",
+    "lamp_musings": "Gold pool on the desk. For one blink the room fits around me like skin.",
+    "chair_musings": "Sit. Wait. Think. The wood knows the shape my body makes when I'm almost remembering.",
+    "door_musings": "Chain. Code. Bolt. I layered every lock so only someone paying attention could leave."
   },
   "journal_entries": {
     "calendar_clue": {
       "title": "Calendar Scrap",
       "body": "March 17 circled in my own handwriting. Margin note: 3:17. Why would I mark a minute?",
-      "thought": "Time might be the first lock."
+      "thought": "March holds a minute. Time wears the first mask."
     },
     "clock_solved": {
       "title": "Clock Set to 3:17",
       "body": "The bedroom clock ticks again when set to 3:17. The desk drawer pops open.",
-      "thought": "I chose that time. I must have."
+      "thought": "Three and seventeen. The hands tremble like they're ashamed to move."
     },
     "photo_cipher_solved": {
       "title": "Photo Backs — STILL",
       "body": "Rearranging the photo backs spells STILL. Receipt says Stillpoint Sleep Lab intake.",
-      "thought": "Stillpoint. The word sits heavy."
+      "thought": "STILL. The letters arrange themselves. My mouth wants to say what comes after."
     },
     "safe_opened": {
       "title": "Wall Safe",
       "body": "Inside the safe: a brass key blade and a note — 'Handle where you rest.'",
-      "thought": "Rest. Nightstand."
+      "thought": "Rest. Where the head falls. Where the missing piece waits."
     },
     "key_assembled": {
       "title": "Key Assembled",
       "body": "Blade and wooden handle fit together. Wardrobe lock.",
-      "thought": ""
+      "thought": "Whole again. The cold wood already knows what I'm bringing."
     },
     "wardrobe_open": {
       "title": "Wardrobe Contents",
       "body": "Cipher disk and a folded consent letter for Project Stillpoint. My signature.",
-      "thought": "I signed this. I wanted to forget something."
+      "thought": "Signature dried. I agreed to forget — on purpose, with open eyes."
     },
     "disk_hint": {
       "title": "Cipher Disk",
       "body": "Align STILL with POINT on the disk. The door padlock wants the full passphrase.",
-      "thought": "STILLPOINT. The name of the project."
+      "thought": "STILL meets POINT. A name for the place between sleeping and waking."
     },
     "door_code": {
       "title": "Door Unlocked",
       "body": "Padlock code accepted. Chain slack. Deadbolt finally catches.",
-      "thought": ""
+      "thought": "The last layer yields. The hallway is real — or real enough to leave through."
     },
     "ending_journal": {
       "title": "Project Stillpoint",
@@ -185,7 +185,7 @@
   },
   "ending": {
     "title": "You Remember",
-    "body": "Lonnie steps into the hallway. Fluorescent hum. A voice on a speaker: 'Session complete.'\n\nProject Stillpoint was never a prison — it was a chamber you built to recover a memory too sharp to carry awake. The bedroom dissolves behind you like a page turning.\n\nYou chose to forget. You chose to return.",
+    "body": "You step into the hallway. Fluorescent hum. A voice on a speaker: 'Session complete.'\n\nProject Stillpoint was never a prison — it was a chamber you built to recover a memory too sharp to carry awake. The bedroom dissolves behind you like a page turning.\n\nYou chose to forget. You chose to return.",
     "journal_id": "ending_journal"
   }
 }

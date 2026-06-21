@@ -196,7 +196,9 @@ export class DevMover {
     document.getElementById('dev-copy-json')?.addEventListener('click', () => this.copyJson());
     document.getElementById('dev-save-layout')?.addEventListener('click', () => this.saveLayoutToDisk());
     document.getElementById('dev-reset-layout')?.addEventListener('click', () => this.resetLayout());
-    document.getElementById('dev-close-btn')?.addEventListener('click', () => this.setActive(false));
+    document.querySelectorAll('.dev-close-btn').forEach((btn) => {
+      btn.addEventListener('click', () => this.setActive(false));
+    });
 
     this.hotspotPicker = document.getElementById('dev-hotspot-picker') as HTMLSelectElement;
     this.itemPicker = document.getElementById('dev-item-picker') as HTMLSelectElement;
@@ -212,10 +214,17 @@ export class DevMover {
     });
     this.itemPicker?.addEventListener('change', () => {
       const itemId = this.itemPicker?.value ?? '';
-      if (itemId && this.contentNameEl) {
-        this.contentNameEl.textContent = `Item: ${itemId}`;
+      if (itemId) {
+        if (this.contentNameEl) {
+          this.contentNameEl.textContent = `Item: ${itemId}`;
+        }
+        this.loadItemFields(itemId);
+      } else {
+        this.clearItemFields();
+        if (this.contentNameEl) {
+          this.contentNameEl.textContent = this.selectedHotspotId ?? 'None';
+        }
       }
-      this.loadItemFields(itemId);
     });
     document.getElementById('dev-apply-content')?.addEventListener('click', () => this.applyContent());
     document.getElementById('dev-save-content')?.addEventListener('click', () => this.saveContent());
@@ -1011,7 +1020,10 @@ export class DevMover {
   }
 
   private loadItemFields(itemId: string): void {
-    if (!itemId) return;
+    if (!itemId) {
+      this.clearItemFields();
+      return;
+    }
     const base = getBaseItem(itemId);
     const ov = getItemOverride(itemId);
     if (this.itemLabelInput) {
@@ -1020,6 +1032,11 @@ export class DevMover {
     if (this.itemDescInput) {
       this.itemDescInput.value = ov?.description ?? base?.description ?? '';
     }
+  }
+
+  private clearItemFields(): void {
+    if (this.itemLabelInput) this.itemLabelInput.value = '';
+    if (this.itemDescInput) this.itemDescInput.value = '';
   }
 
   private applyContent(): void {

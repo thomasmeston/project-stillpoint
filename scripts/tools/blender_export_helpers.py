@@ -1,5 +1,5 @@
 """
-Blender helper — export hero props for LonnieCrow Room 1.
+Blender helper — export hero props for Project Stillpoint Room 1.
 
 Run inside Blender (Scripting workspace) or:
   blender --background --python scripts/tools/blender_export_helpers.py
