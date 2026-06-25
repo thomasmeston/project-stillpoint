@@ -280,6 +280,11 @@ export class DevMover {
     return this.active;
   }
 
+  setRoom(room: RoomBuilder): void {
+    this.room = room;
+    if (this.active) this.updateHotspotDebugVisibility();
+  }
+
   setActive(active: boolean): void {
     if (this.active === active) return;
     this.active = active;

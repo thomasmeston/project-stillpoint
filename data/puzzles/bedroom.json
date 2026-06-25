@@ -90,7 +90,8 @@
     { "id": "window", "action": "examine" },
     { "id": "combine_station", "action": "combine" },
     { "id": "lamp", "action": "examine" },
-    { "id": "chair", "action": "examine" }
+    { "id": "chair", "action": "examine" },
+    { "id": "floor_portal", "action": "examine", "disabled": true }
   ],
   "item_uses": [
     {

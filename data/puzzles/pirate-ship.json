@@ -1,0 +1,22 @@
+{
+  "puzzles": [
+    {
+      "id": "chest_lock",
+      "type": "padlock",
+      "solution": "ANCHOR",
+      "on_success": [
+        "set_flag:ship_chest_opened",
+        "journal:ship_chest_opened",
+        "thought:ship_chest_opened"
+      ]
+    }
+  ],
+  "gates": [],
+  "hotspots": [
+    { "id": "ship_wheel", "action": "examine" },
+    { "id": "treasure_chest", "action": "open_puzzle", "puzzle": "chest_lock" },
+    { "id": "crate_clue", "action": "examine" },
+    { "id": "mast", "action": "examine" }
+  ],
+  "item_uses": []
+}

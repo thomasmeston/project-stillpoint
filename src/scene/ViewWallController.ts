@@ -39,6 +39,11 @@ export class ViewWallController {
     }
   }
 
+  reset(): void {
+    this.entries = [];
+    this.viewIndex = 0;
+  }
+
   register(object: THREE.Object3D, face: WallFace, isHotspot = false): void {
     const targetDropT = this.inMenu ? 0 : (isWallRaised(face, this.viewIndex) ? 0 : 1);
     this.entries.push({

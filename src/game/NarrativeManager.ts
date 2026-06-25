@@ -1,4 +1,5 @@
 import storyData from '../../data/story/bedroom-script.json';
+import shipStoryData from '../../data/story/pirate-ship-script.json';
 import { EventBus } from '../utils/EventBus';
 import {
   mergeExamineEntry,
@@ -25,13 +26,33 @@ export type NarrativeEvents = {
 export class NarrativeManager {
   readonly events = new EventBus<NarrativeEvents>();
 
-  private data = storyData as StoryFile;
+  private readonly storyFiles: Record<string, StoryFile> = {
+    bedroom: storyData as StoryFile,
+    pirate_ship: shipStoryData as StoryFile,
+  };
+  private roomId = 'bedroom';
+  private data = this.storyFiles.bedroom;
   private journalEntries: Record<string, StoryFile['journal_entries'][string]> = {};
   private triggered = new Set<string>();
   private heardThoughtIds = new Set<string>();
   private openingShown = false;
   bindGameState(gs: GameState): void {
     gs.events.on('flagChanged', ({ flag }) => this.onFlag(flag));
+  }
+
+  loadRoom(roomId: string): void {
+    this.roomId = roomId;
+    this.data = this.storyFiles[roomId] ?? this.storyFiles.bedroom;
+  }
+
+  getHeardThoughtCount(): number {
+    return this.heardThoughtIds.size;
+  }
+
+  /** Room-aware thought resolution: prefer the active room's text, falling back to the bedroom resolver. */
+  private resolveThought(ref: string): string {
+    if (!ref) return '';
+    return this.data.thoughts[ref] ?? resolveThoughtText(ref);
   }
 
   onFirstInput(): void {
@@ -43,7 +64,20 @@ export class NarrativeManager {
   }
 
   onExamine(hotspotId: string): void {
-    const entry = mergeExamineEntry(hotspotId, this.data.examines[hotspotId]);
+    let entry: { title: string; body: string; thought?: string; journal?: string } | null;
+    if (this.roomId === 'bedroom') {
+      entry = mergeExamineEntry(hotspotId, this.data.examines[hotspotId]);
+    } else {
+      const base = this.data.examines[hotspotId];
+      entry = base
+        ? {
+            title: base.title,
+            body: base.body,
+            thought: base.thought ? this.resolveThought(base.thought) : undefined,
+            journal: base.journal,
+          }
+        : null;
+    }
     if (!entry) return;
     this.events.emit('examineShown', { title: entry.title, body: entry.body });
     this.fireTrigger(`examine:${hotspotId}`, entry);
@@ -63,7 +97,7 @@ export class NarrativeManager {
   showThought(thoughtId: string): void {
     if (!thoughtId) return;
     this.heardThoughtIds.add(thoughtId);
-    const text = resolveThoughtText(thoughtId);
+    const text = this.resolveThought(thoughtId);
     this.events.emit('thoughtShown', text);
   }
 
@@ -85,13 +119,13 @@ export class NarrativeManager {
     }
 
     for (const thoughtId of this.heardThoughtIds) {
-      add(resolveThoughtText(thoughtId));
+      add(this.resolveThought(thoughtId));
     }
 
     for (const entry of Object.values(this.journalEntries)) {
       add(entry.title);
       add(entry.body);
-      if (entry.thought) add(resolveThoughtText(entry.thought));
+      if (entry.thought) add(this.resolveThought(entry.thought));
     }
 
     for (const key of this.triggered) {
@@ -102,7 +136,7 @@ export class NarrativeManager {
       } else if (key.startsWith('flag:')) {
         thoughtKey = this.data.on_flag[key.slice(5)]?.thought;
       }
-      if (thoughtKey) add(resolveThoughtText(thoughtKey));
+      if (thoughtKey) add(this.resolveThought(thoughtKey));
     }
 
     return fragments;
@@ -131,7 +165,7 @@ export class NarrativeManager {
     this.triggered.add(key);
     if (entry.thought) {
       this.heardThoughtIds.add(entry.thought);
-      this.events.emit('thoughtShown', resolveThoughtText(entry.thought));
+      this.events.emit('thoughtShown', this.resolveThought(entry.thought));
     }
     if (entry.journal) this.addJournalEntry(entry.journal);
   }
@@ -150,6 +184,14 @@ export class NarrativeManager {
     this.triggered = new Set(data.triggered);
     this.heardThoughtIds = new Set(data.heardThoughtIds ?? []);
     this.openingShown = data.openingShown;
+    this.events.emit('journalUpdated', undefined);
+  }
+
+  resetForNewGame(): void {
+    this.journalEntries = {};
+    this.triggered = new Set();
+    this.heardThoughtIds = new Set();
+    this.openingShown = false;
     this.events.emit('journalUpdated', undefined);
   }
 }

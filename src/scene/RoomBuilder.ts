@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import roomData from '../../data/rooms/bedroom.json';
+import shipRoomData from '../../data/rooms/pirate-ship.json';
 import { Hotspot, type HotspotData } from './Hotspot';
 import { inferWallFace, type WallFace } from './WallFace';
 import type { ViewWallController } from './ViewWallController';
@@ -57,8 +58,19 @@ const FLOOR_ONLY_HOTSPOTS = new Set([
   'nightstand',
   'key_handle',
   'combine_station',
-  'chair'
+  'chair',
+  'floor_portal'
 ]);
+
+const OBSTACLE_IDS = new Set([
+  'BedFrame', 'Desk', 'Chair', 'Bookshelf', 'Nightstand', 'Wardrobe',
+  'Mast', 'TreasureChest', 'WheelStand', 'Barrel1', 'Barrel2', 'Cannon',
+]);
+
+const ROOM_FILES: Record<string, unknown> = {
+  bedroom: roomData,
+  pirate_ship: shipRoomData,
+};
 
 export class RoomBuilder {
   readonly root = new THREE.Group();
@@ -78,11 +90,14 @@ export class RoomBuilder {
   readonly wallNotesCluster: WallNotesCluster;
   wallSafeMesh: THREE.Object3D | null = null;
   phoneInSafeMesh: THREE.Object3D | null = null;
+  floorPortal: THREE.Object3D | null = null;
+  readonly roomId: string;
 
   private palette: Record<string, string>;
 
-  constructor(private wallCtrl: ViewWallController) {
-    const data = roomData as unknown as RoomFile;
+  constructor(private wallCtrl: ViewWallController, roomId = 'bedroom') {
+    this.roomId = roomId;
+    const data = (ROOM_FILES[roomId] ?? roomData) as unknown as RoomFile;
     this.palette = data.palette;
     this.shellSize.set(data.shell.size.x, data.shell.size.z);
     const spawn = data.spawn?.player ?? [0, 0, 2];
@@ -100,7 +115,7 @@ export class RoomBuilder {
     this.propsData = data.props;
     this.hotspotsData = data.hotspots;
     this.lightingData = data.lighting ?? {};
-    const savedLayout = localStorage.getItem('dev_room_layout_bedroom');
+    const savedLayout = localStorage.getItem(`dev_room_layout_${roomId}`);
     if (savedLayout) {
       try {
         const parsed = JSON.parse(savedLayout);
@@ -146,9 +161,12 @@ export class RoomBuilder {
     this.buildHotspots(this.hotspotsData);
     this.buildLighting(this.lightingData);
 
-    const northWall = this.wallMeshes.get('north');
-    if (northWall) {
-      this.wallNotesCluster.attachToWall(northWall);
+    if (roomId === 'bedroom') {
+      const northWall = this.wallMeshes.get('north');
+      if (northWall) {
+        this.wallNotesCluster.attachToWall(northWall);
+      }
+      this.buildFloorPortal();
     }
 
     // Register walls with wallCtrl AFTER everything is parented and in rest position!
@@ -409,7 +427,7 @@ export class RoomBuilder {
       }
 
       // Add obstacles for player collisions
-      if (['BedFrame', 'Desk', 'Chair', 'Bookshelf', 'Nightstand', 'Wardrobe'].includes(prop.id)) {
+      if (OBSTACLE_IDS.has(prop.id)) {
         const min = new THREE.Vector3(
           prop.position[0] - prop.size[0] / 2,
           prop.position[1] - prop.size[1] / 2,
@@ -447,8 +465,18 @@ export class RoomBuilder {
   }
 
   private buildLighting(lighting: RoomFile['lighting']): void {
-    const ambient = new THREE.AmbientLight(0x404860, 0.55);
+    const isShip = this.roomId === 'pirate_ship';
+    const ambient = new THREE.AmbientLight(
+      isShip ? 0xcfe4ff : 0x404860,
+      isShip ? 1.5 : 0.55,
+    );
     this.root.add(ambient);
+
+    if (isShip) {
+      const sun = new THREE.DirectionalLight(0xfff3da, 1.8);
+      sun.position.set(4, 9, 5);
+      this.root.add(sun);
+    }
 
     const LIGHT_PARENTS: Record<string, string> = {
       lamp: 'LampBase',
@@ -505,7 +533,7 @@ export class RoomBuilder {
   rebuildObstacles(): void {
     this.obstacles.length = 0;
     for (const prop of this.propsData) {
-      if (['BedFrame', 'Desk', 'Chair', 'Bookshelf', 'Nightstand', 'Wardrobe'].includes(prop.id)) {
+      if (OBSTACLE_IDS.has(prop.id)) {
         const min = new THREE.Vector3(
           prop.position[0] - prop.size[0] / 2,
           prop.position[1] - prop.size[1] / 2,
@@ -523,6 +551,68 @@ export class RoomBuilder {
 
   revealWallSafe(): void {
     if (this.wallSafeMesh) this.wallSafeMesh.visible = true;
+  }
+
+  private buildFloorPortal(): void {
+    const group = new THREE.Group();
+    group.name = 'FloorPortal';
+    group.userData.wallFace = 'floor';
+
+    const disc = new THREE.Mesh(
+      new THREE.CircleGeometry(0.62, 48),
+      new THREE.MeshBasicMaterial({ color: 0x05060a }),
+    );
+    disc.rotation.x = -Math.PI / 2;
+    group.add(disc);
+
+    const innerGlow = new THREE.Mesh(
+      new THREE.CircleGeometry(0.5, 48),
+      new THREE.MeshBasicMaterial({ color: 0x2a1d55, transparent: true, opacity: 0.85 }),
+    );
+    innerGlow.rotation.x = -Math.PI / 2;
+    innerGlow.position.y = 0.006;
+    group.add(innerGlow);
+
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(0.62, 0.06, 16, 48),
+      new THREE.MeshStandardMaterial({
+        color: 0x6f5bd0,
+        emissive: 0x6f5bd0,
+        emissiveIntensity: 1.4,
+        roughness: 0.4,
+      }),
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = 0.01;
+    group.add(ring);
+
+    group.position.set(0.4, 0.03, 1.3);
+    group.visible = false;
+    this.floorPortal = group;
+    this.propsRoot.add(group);
+  }
+
+  /** Animate the bedroom floor portal into view (after the meditation gate is met). */
+  revealFloorPortal(): void {
+    if (!this.floorPortal) return;
+    const target = this.floorPortal;
+    target.visible = true;
+    target.scale.setScalar(0.01);
+    const start = performance.now();
+    const dur = 650;
+    const animate = (t: number): void => {
+      const k = Math.min(1, (t - start) / dur);
+      const eased = 1 - Math.pow(1 - k, 3);
+      target.scale.setScalar(eased);
+      if (k < 1) requestAnimationFrame(animate);
+    };
+    requestAnimationFrame(animate);
+  }
+
+  syncPortalVisual(visible: boolean): void {
+    if (!this.floorPortal) return;
+    this.floorPortal.visible = visible;
+    this.floorPortal.scale.setScalar(1);
   }
 
   syncSafeContents(paintingMoved: boolean, safeUnlocked: boolean, phoneTaken: boolean): void {

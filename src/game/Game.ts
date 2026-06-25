@@ -9,6 +9,7 @@ import { PuzzleManager } from './PuzzleManager';
 import { SaveLoad } from './SaveLoad';
 import { IsoCamera, type CameraSnapshot } from '../scene/IsoCamera';
 import { RoomBuilder } from '../scene/RoomBuilder';
+import { FallTransition } from '../scene/FallTransition';
 import { ViewWallController } from '../scene/ViewWallController';
 import { HUD } from '../ui/HUD';
 import { MeditationOverlay } from '../ui/MeditationOverlay';
@@ -21,6 +22,7 @@ export class Game {
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
   private sceneBg = new THREE.Color(0x141820);
+  private shipBg = new THREE.Color(0x8fc1e3);
   private isoCamera: IsoCamera;
   private wallCtrl: ViewWallController;
   private room: RoomBuilder;
@@ -41,14 +43,17 @@ export class Game {
 
   private clock = new THREE.Clock();
   private currentSlot: number | null = null;
+  private currentRoomId = 'bedroom';
   private inMenu = true;
   private escapeMenuOpen = false;
   private isDeskZoomed = false;
   private isWallNotesZoomed = false;
   private introActive = false;
   private meditateActive = false;
+  private fallActive = false;
   private preMeditateCamera: CameraSnapshot | null = null;
   private meditation = new MeditationOverlay();
+  private fallTransition = new FallTransition();
   private wordsClickedCount = 0;
   private readonly INTRO_WORDS = [
     // Original 13 words
@@ -71,6 +76,7 @@ export class Game {
 
   get isInputBlocked(): boolean {
     return this.inMenu || this.escapeMenuOpen || this.introActive || this.meditateActive
+      || this.fallActive
       || (this.devMover && this.devMover.isActive());
   }
 
@@ -187,6 +193,7 @@ export class Game {
   private wireInput(): void {
     this.hud.onZoomBack = () => this.zoomOutFromDetail();
     this.hud.onMeditate = () => this.toggleMeditate();
+    this.hud.onReturnToRoom = () => this.returnToBedroom();
 
     this.input.onFirstInput = () => {
       this.narrative.onFirstInput();
@@ -344,6 +351,10 @@ export class Game {
 
   private handleHotspot(hotspotId: string): void {
     this.audio.playSfx('click');
+    if (hotspotId === 'floor_portal') {
+      this.startFallToShip();
+      return;
+    }
     const action = this.puzzleManager.getHotspotAction(hotspotId);
     if (action === 'locked') {
       this.narrative.showThought(hotspotId === 'door' ? 'door_locked' : 'locked_hint');
@@ -567,7 +578,8 @@ export class Game {
   }
 
   private toggleMeditate(): void {
-    if (this.inMenu || this.introActive || this.isDetailZoomed) return;
+    if (this.inMenu || this.introActive || this.isDetailZoomed || this.fallActive) return;
+    if (this.currentRoomId !== 'bedroom') return;
     if (this.meditateActive) {
       this.exitMeditate();
     } else {
@@ -581,15 +593,25 @@ export class Game {
     this.preMeditateCamera = this.isoCamera.captureSnapshot();
 
     const head = this.player.getHeadWorldPosition();
-    const faceYaw = this.player.getFacingYaw() + Math.PI;
+    const faceYaw = this.player.getFacingYaw();
     this.isoCamera.zoomTo(
       head,
       0.88,
-      THREE.MathUtils.degToRad(-8),
+      THREE.MathUtils.degToRad(-6),
       faceYaw,
     );
 
-    this.meditation.show(this.narrative.getMeditationFragments());
+    const canOpenPortal = this.currentRoomId === 'bedroom'
+      && this.narrative.getHeardThoughtCount() >= 4
+      && !this.gameState.hasFlag('meditation_portal_opened');
+
+    this.meditation.show(this.narrative.getMeditationFragments(), {
+      canOpenPortal,
+      onPortalUnlocked: () => {
+        this.gameState.setFlag('meditation_portal_opened', true);
+        this.saveGame();
+      },
+    });
     this.meditateActive = true;
     this.hud.setMeditating(true);
     this.hud.setCursorHintVisible(false);
@@ -605,6 +627,115 @@ export class Game {
     this.meditateActive = false;
     this.hud.setMeditating(false);
     this.hud.setCursorHintVisible(true);
+
+    // Reveal the floor portal once the meditation gate has been cleared.
+    if (
+      this.currentRoomId === 'bedroom'
+      && this.gameState.hasFlag('meditation_portal_opened')
+      && this.puzzleManager.getHotspotDef('floor_portal').disabled
+    ) {
+      this.puzzleManager.applyConsequence('enable_hotspot:floor_portal');
+      this.room.revealFloorPortal();
+      this.narrative.showThought('door_opening');
+    }
+  }
+
+  private startFallToShip(): void {
+    if (this.fallActive) return;
+    this.fallActive = true;
+    this.player.cancelMovement();
+    this.audio.playSfx('rotate');
+    this.fallTransition.play(
+      () => {
+        this.loadRoom('pirate_ship');
+        this.player.setPosition(this.room.playerSpawn);
+        this.saveGame();
+      },
+      () => {
+        this.fallActive = false;
+        this.narrative.addJournalEntry('ship_arrival');
+        this.narrative.showThought('ship_arrival');
+      },
+    );
+  }
+
+  private loadRoom(roomId: string): void {
+    this.scene.remove(this.room.root);
+    this.disposeObject3D(this.room.root);
+    this.wallCtrl.reset();
+    this.wallCtrl.setInMenu(this.inMenu);
+
+    this.room = new RoomBuilder(this.wallCtrl, roomId);
+    this.currentRoomId = roomId;
+    this.scene.add(this.room.root);
+
+    if (roomId === 'bedroom') {
+      this.room.propsRoot.add(this.deskSketchSpread.group);
+    }
+
+    this.puzzleManager.loadRoom(roomId);
+    this.narrative.loadRoom(roomId);
+
+    this.input.setTargets(this.room.floorMeshes, this.room.hotspots.map((h) => h.mesh));
+    this.devMover.setRoom(this.room);
+
+    this.scene.background = roomId === 'pirate_ship' ? this.shipBg : this.sceneBg;
+    this.hud.setRoomTitle(roomId === 'pirate_ship' ? 'Ship Deck' : 'Bedroom');
+    this.hud.setMeditateAvailable(roomId === 'bedroom');
+    this.hud.setReturnToRoomVisible(roomId === 'pirate_ship');
+
+    this.refreshHotspotVisibility();
+
+    if (roomId === 'bedroom') {
+      this.syncSafeVisuals();
+      this.room.syncPaintingReveal(
+        this.gameState.hasFlag('painting_moved'),
+        this.gameState.hasFlag('safe_unlocked'),
+        this.inventory.hasItem('phone'),
+      );
+      this.syncPortalState();
+    }
+
+    this.isoCamera.setViewIndex(0);
+    this.wallCtrl.setViewIndex(0);
+  }
+
+  private returnToBedroom(): void {
+    if (this.currentRoomId !== 'pirate_ship' || this.inMenu || this.fallActive) return;
+    this.player.cancelMovement();
+    this.audio.playSfx('click');
+    this.loadRoom('bedroom');
+    this.player.setPosition(this.room.playerSpawn);
+    this.saveGame();
+  }
+
+  private refreshHotspotVisibility(): void {
+    for (const hs of this.room.hotspots) {
+      const def = this.puzzleManager.getHotspotDef(hs.id);
+      this.room.setHotspotVisible(hs.id, !def.disabled);
+    }
+  }
+
+  private syncPortalState(): void {
+    if (this.currentRoomId !== 'bedroom') return;
+    const opened = this.gameState.hasFlag('meditation_portal_opened');
+    if (opened) {
+      this.puzzleManager.applyConsequence('enable_hotspot:floor_portal');
+    }
+    this.room.syncPortalVisual(opened);
+  }
+
+  private disposeObject3D(root: THREE.Object3D): void {
+    root.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if (mesh.geometry) mesh.geometry.dispose();
+      const material = mesh.material;
+      if (Array.isArray(material)) {
+        material.forEach((m) => m.dispose());
+      } else if (material) {
+        (material as THREE.Material).dispose();
+      }
+    });
   }
 
   private getDeskApproachPosition(): THREE.Vector3 {
@@ -731,9 +862,53 @@ export class Game {
   private startNewGame(slot: number): void {
     this.saveLoad.delete(slot);
     this.currentSlot = slot;
+    if (this.currentRoomId !== 'bedroom') {
+      this.loadRoom('bedroom');
+    }
+    this.resetSessionForNewGame();
     this.player.setPosition(this.room.playerSpawn);
     this.transitionToGame();
     this.saveGame();
+  }
+
+  private resetSessionForNewGame(): void {
+    this.gameState.resetForNewGame();
+    this.inventory.resetForNewGame();
+    this.narrative.resetForNewGame();
+    this.puzzleManager.resetForNewGame();
+
+    this.introActive = false;
+    this.meditateActive = false;
+    this.fallActive = false;
+    this.escapeMenuOpen = false;
+    this.isDeskZoomed = false;
+    this.isWallNotesZoomed = false;
+    this.wordsClickedCount = 0;
+
+    this.meditation.hide();
+    this.deskSketchSpread.reset();
+    this.room.wallNotesCluster.resetInspect();
+    this.room.syncPaintingReveal(false, false, false);
+    this.room.syncPortalVisual(false);
+    this.syncSafeVisuals();
+
+    document.getElementById('escape-menu')?.classList.add('hidden');
+    document.getElementById('win-overlay')?.classList.add('hidden');
+    document.getElementById('intro-words-overlay')?.classList.add('hidden');
+    document.getElementById('meditate-overlay')?.classList.add('hidden');
+    document.getElementById('hud')?.classList.add('hidden');
+
+    for (const id of this.room.hotspots.map((h) => h.id)) {
+      const def = this.puzzleManager.getHotspotDef(id);
+      this.room.setHotspotVisible(id, !def.disabled);
+    }
+
+    this.hud.refreshJournal();
+    this.hud.showZoomControls(false);
+    this.hud.setMeditating(false);
+    this.hud.setRoomTitle('Bedroom');
+    this.hud.setMeditateAvailable(true);
+    this.hud.setReturnToRoomVisible(false);
   }
 
   private loadGame(slot: number): void {
@@ -751,28 +926,29 @@ export class Game {
     if (data.narrative) {
       this.narrative.loadSaveData(data.narrative as any);
     }
+
+    const savedRoom = (data.currentRoom as string) ?? 'bedroom';
+    this.loadRoom(savedRoom);
+
     if (data.puzzleManager) {
       this.puzzleManager.loadSaveData(data.puzzleManager as any);
     }
+    this.refreshHotspotVisibility();
+
     if (data.playerPosition) {
       const pos = data.playerPosition as { x: number; y: number; z: number };
       this.player.setPosition(pos);
     }
 
-    // Refresh wall hotspots state visibility to match loaded state
-    const roomHotspots = ['desk_drawer', 'wardrobe', 'painting', 'wall_safe', 'door', 'cipher_disk_pickup', 'stillpoint_letter'];
-    for (const id of roomHotspots) {
-      const def = this.puzzleManager.getHotspotDef(id);
-      if (def) {
-        this.room.setHotspotVisible(id, !def.disabled);
-      }
+    if (savedRoom === 'bedroom') {
+      this.syncSafeVisuals();
+      this.room.syncPaintingReveal(
+        this.gameState.hasFlag('painting_moved'),
+        this.gameState.hasFlag('safe_unlocked'),
+        this.inventory.hasItem('phone'),
+      );
+      this.syncPortalState();
     }
-
-    this.room.syncPaintingReveal(
-      this.gameState.hasFlag('painting_moved'),
-      this.gameState.hasFlag('safe_unlocked'),
-      this.inventory.hasItem('phone'),
-    );
 
     this.transitionToGame();
   }
@@ -816,9 +992,11 @@ export class Game {
     const overlay = document.getElementById('intro-words-overlay');
     if (!overlay) return;
 
+    document.getElementById('hud')?.classList.add('hidden');
+    document.getElementById('meditate-overlay')?.classList.add('hidden');
+
     overlay.innerHTML = '';
-    overlay.classList.remove('hidden');
-    overlay.classList.remove('fade-out');
+    overlay.classList.remove('hidden', 'fade-out');
 
     this.spawnIntroWords(overlay);
   }
@@ -880,7 +1058,14 @@ export class Game {
       containerEl.style.animationDuration = `${duration}s`;
       containerEl.style.animationDelay = `${delay}s`;
 
-      wordEl.addEventListener('click', () => this.handleIntroWordClick(wordEl));
+      wordEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.handleIntroWordClick(wordEl);
+      });
+      containerEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.handleIntroWordClick(wordEl);
+      });
 
       containerEl.appendChild(wordEl);
       overlay.appendChild(containerEl);
@@ -899,20 +1084,18 @@ export class Game {
   }
 
   private completeIntroSequence(): void {
-    // Add clicked class to all remaining words so they fade away slowly
-    const remainingWords = document.querySelectorAll('.intro-word');
-    remainingWords.forEach((word) => {
+    const overlay = document.getElementById('intro-words-overlay');
+    if (!overlay) return;
+
+    overlay.querySelectorAll('.intro-word').forEach((word) => {
       word.classList.add('clicked');
     });
 
-    const overlay = document.getElementById('intro-words-overlay');
-    if (overlay) {
-      overlay.classList.add('fade-out');
-      setTimeout(() => {
-        overlay.classList.add('hidden');
-        overlay.innerHTML = '';
-      }, 1000);
-    }
+    overlay.classList.add('fade-out');
+    setTimeout(() => {
+      overlay.classList.add('hidden');
+      overlay.innerHTML = '';
+    }, 1000);
 
     this.introActive = false;
     this.gameState.setFlag('intro_words_cleared', true);
@@ -934,6 +1117,7 @@ export class Game {
       this.puzzleManager,
       this.player.position,
       this.currentSlot,
+      this.currentRoomId,
     );
   }
 

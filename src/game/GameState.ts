@@ -55,4 +55,10 @@ export class GameState {
     this.solvedPuzzles = new Set(data.solvedPuzzles);
     this.hasWon = data.hasWon;
   }
+
+  resetForNewGame(): void {
+    this.flags = {};
+    this.solvedPuzzles = new Set();
+    this.hasWon = false;
+  }
 }

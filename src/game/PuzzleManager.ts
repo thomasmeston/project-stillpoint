@@ -1,4 +1,5 @@
 import puzzleData from '../../data/puzzles/bedroom.json';
+import shipPuzzleData from '../../data/puzzles/pirate-ship.json';
 import { EventBus } from '../utils/EventBus';
 import type { GameState } from './GameState';
 import type { Inventory } from './Inventory';
@@ -42,7 +43,11 @@ export type PuzzleEvents = {
 export class PuzzleManager {
   readonly events = new EventBus<PuzzleEvents>();
 
-  private data = puzzleData as PuzzlesFile;
+  private readonly roomFiles: Record<string, PuzzlesFile> = {
+    bedroom: puzzleData as PuzzlesFile,
+    pirate_ship: shipPuzzleData as PuzzlesFile,
+  };
+  private data = this.roomFiles.bedroom;
   private puzzles = new Map(this.data.puzzles.map((p) => [p.id, p]));
   private gates = new Map(this.data.gates.map((g) => [g.hotspot, g]));
   private hotspots = new Map(
@@ -60,6 +65,18 @@ export class PuzzleManager {
     this.inventory = inv;
     this.narrative = nar;
     gs.events.on('flagChanged', () => this.onFlagChanged());
+  }
+
+  loadRoom(roomId: string): void {
+    this.data = this.roomFiles[roomId] ?? this.roomFiles.bedroom;
+    this.puzzles = new Map(this.data.puzzles.map((p) => [p.id, p]));
+    this.gates = new Map(this.data.gates.map((g) => [g.hotspot, g]));
+    this.hotspots = new Map(
+      this.data.hotspots
+        .filter((h): h is HotspotDef & { id: string } => Boolean(h.id))
+        .map((h) => [h.id, { ...h }]),
+    );
+    this.onFlagChanged();
   }
 
   getHotspotDef(id: string): HotspotDef {
@@ -197,5 +214,9 @@ export class PuzzleManager {
       }
     }
     this.onFlagChanged();
+  }
+
+  resetForNewGame(): void {
+    this.loadRoom('bedroom');
   }
 }

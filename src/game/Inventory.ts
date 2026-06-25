@@ -88,4 +88,10 @@ export class Inventory {
     this.selectedItem = data.selectedItem;
     this.events.emit('changed', undefined);
   }
+
+  resetForNewGame(): void {
+    this.items = [];
+    this.selectedItem = '';
+    this.events.emit('changed', undefined);
+  }
 }

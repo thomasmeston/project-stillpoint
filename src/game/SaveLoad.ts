@@ -13,9 +13,11 @@ export class SaveLoad {
     puzzleManager: PuzzleManager,
     playerPosition: { x: number; y: number; z: number },
     slot: number,
+    currentRoom = 'bedroom',
   ): void {
     const data = {
-      version: 1,
+      version: 2,
+      currentRoom,
       gameState: gameState.getSaveData(),
       inventory: inventory.getSaveData(),
       narrative: narrative.getSaveData(),

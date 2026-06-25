@@ -25,6 +25,11 @@ export class InputController {
     this.hotspotTargets = hotspotTargets;
   }
 
+  setTargets(floorTargets: THREE.Object3D[], hotspotTargets: THREE.Object3D[]): void {
+    this.floorTargets = floorTargets;
+    this.hotspotTargets = hotspotTargets;
+  }
+
   handleClick(clientX: number, clientY: number): void {
     if (!this.firstInput) {
       this.firstInput = true;

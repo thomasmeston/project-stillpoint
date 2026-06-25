@@ -15,12 +15,14 @@
 
     <div id="hud" class="hidden">
       <header id="title-bar">
-        <h1>Bedroom</h1>
+        <h1 id="room-title">Bedroom</h1>
         <div id="header-controls">
           <button id="zoom-back-btn" class="hidden" type="button">← Back</button>
           <div id="view-controls">
             <button id="rotate-left" type="button" title="Rotate left (Q / ←)">↺</button>
             <button id="rotate-right" type="button" title="Rotate right (E / →)">↻</button>
+            <button id="return-room-btn" class="hidden" type="button" title="Return to bedroom">Return to Room</button>
+            <button id="meditate-btn" type="button" title="Meditate">Meditate</button>
           </div>
           <button id="journal-toggle" type="button">Journal</button>
         </div>
@@ -45,7 +47,6 @@
       </aside>
 
       <footer id="inventory-bar"></footer>
-      <button id="meditate-btn" type="button">Meditate</button>
     </div>
 
     <div id="clock-modal" class="modal hidden">
@@ -160,10 +161,21 @@
     </div>
 
     <!-- Intro Words Screen -->
-    <div id="intro-words-overlay" class="menu-overlay hidden"></div>
+    <div id="intro-words-overlay" class="hidden"></div>
 
-    <div id="meditate-overlay" class="menu-overlay hidden">
+    <div id="meditate-overlay" class="hidden">
+      <button id="meditate-return-btn" class="hidden" type="button">Return</button>
+      <div id="meditate-center-guide" aria-hidden="true"></div>
       <div id="meditate-words"></div>
+      <div id="meditate-portal-message" aria-hidden="true">A door has opened.</div>
+      <div id="meditate-focus-ball" aria-label="Drag to center and hold">
+        <div id="meditate-ball-progress"></div>
+      </div>
+    </div>
+
+    <!-- Fall transition (bedroom → ship) -->
+    <div id="fall-overlay" class="hidden" aria-hidden="true">
+      <div id="fall-streaks"></div>
     </div>
 
     <!-- Dev Mode Dashboard -->
