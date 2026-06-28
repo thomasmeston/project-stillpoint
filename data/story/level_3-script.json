@@ -1,0 +1,49 @@
+{
+  "opening_thought": "Cold stone. Blue light that does not flicker. My breath sounds too loud.",
+  "thoughts": {
+    "lesson_3_cavern": "Rest. Even the crystal stops humming when you stop fighting the dark.",
+    "cavern_crystal_musings": "Light trapped in mineral. Patient. Unhurried.",
+    "cavern_clue_musings": "Scratched into the pillar: REST. The cavern agrees."
+  },
+  "journal_entries": {
+    "cavern_clue_found": {
+      "title": "Etched Pillar",
+      "body": "Four letters carved in stone: REST.",
+      "thought": "cavern_clue_musings"
+    },
+    "lesson_3_cavern": {
+      "title": "Lesson — Rest",
+      "body": "The stone chest opened to REST. The wardrobe in the bedroom may yield now.",
+      "thought": "lesson_3_cavern"
+    }
+  },
+  "examines": {
+    "cavern_crystal": {
+      "title": "Crystal Cluster",
+      "body": "Faceted blue shards catching light from nowhere. They pulse like slow breathing.",
+      "thought": "cavern_crystal_musings"
+    },
+    "cavern_clue": {
+      "title": "Etched Stone",
+      "body": "Four letters carved deep: REST.",
+      "thought": "cavern_clue_musings",
+      "journal": "cavern_clue_found"
+    },
+    "cavern_chest": {
+      "title": "Stone Chest",
+      "body": "Heavy lid, letter lock. The cavern is quiet until you solve it.",
+      "thought": "cavern_clue_musings"
+    }
+  },
+  "on_flag": {
+    "lesson_3": {
+      "thought": "lesson_3_cavern",
+      "journal": "lesson_3_cavern"
+    }
+  },
+  "ending": {
+    "title": "Cavern",
+    "body": "The crystals keep their vigil.",
+    "journal_id": "lesson_3_cavern"
+  }
+}

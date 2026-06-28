@@ -1,0 +1,22 @@
+{
+  "puzzles": [
+    {
+      "id": "observatory_lock",
+      "type": "padlock",
+      "solution": "STILL",
+      "on_success": [
+        "set_flag:lesson_4",
+        "journal:lesson_4_observatory",
+        "thought:lesson_4_observatory",
+        "thought:all_lessons_learned"
+      ]
+    }
+  ],
+  "gates": [],
+  "hotspots": [
+    { "id": "observatory_telescope", "action": "examine" },
+    { "id": "observatory_chart", "action": "examine" },
+    { "id": "observatory_chest", "action": "open_puzzle", "puzzle": "observatory_lock" }
+  ],
+  "item_uses": []
+}

@@ -47,7 +47,7 @@
     },
     {
       "hotspot": "painting",
-      "requires": ["flag:desk_drawer_unlocked"]
+      "requires": ["flag:desk_drawer_unlocked", "flag:lesson_2"]
     },
     {
       "hotspot": "wall_safe",
@@ -67,7 +67,7 @@
     },
     {
       "hotspot": "door",
-      "requires": ["item:cipher_disk"]
+      "requires": ["item:cipher_disk", "flag:lesson_4"]
     }
   ],
   "hotspots": [
@@ -91,13 +91,16 @@
     { "id": "combine_station", "action": "combine" },
     { "id": "lamp", "action": "examine" },
     { "id": "chair", "action": "examine" },
-    { "id": "floor_portal", "action": "examine", "disabled": true }
+    { "id": "portal_ship", "action": "examine", "disabled": true },
+    { "id": "portal_garden", "action": "examine", "disabled": true },
+    { "id": "portal_cavern", "action": "examine", "disabled": true },
+    { "id": "portal_observatory", "action": "examine", "disabled": true }
   ],
   "item_uses": [
     {
       "item": "assembled_key",
       "hotspot": "wardrobe",
-      "requires": ["item:assembled_key"],
+      "requires": ["item:assembled_key", "flag:lesson_3"],
       "on_success": [
         "set_flag:wardrobe_unlocked",
         "journal:wardrobe_open",

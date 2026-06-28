@@ -5,6 +5,8 @@ import { publicUrl } from '../utils/publicUrl';
 const MODEL_URL = publicUrl('models/characters/man-papercraft.glb');
 const TARGET_HEIGHT = 1.7;
 
+const ARRIVAL_EPSILON = 0.08;
+
 export class PlayerMover {
   readonly root = new THREE.Group();
   private target: THREE.Vector3 | null = null;
@@ -109,7 +111,7 @@ export class PlayerMover {
     // Check if we are already close enough to target
     const dir = this.target.clone().sub(this.root.position);
     dir.y = 0;
-    if (dir.length() < 0.15) {
+    if (dir.length() < ARRIVAL_EPSILON) {
       this.target = null;
       this.setMoving(false);
       this.onArrival = null;
@@ -149,7 +151,7 @@ export class PlayerMover {
     const dir = this.target.clone().sub(this.root.position);
     dir.y = 0;
     const dist = dir.length();
-    if (dist < 0.15) {
+    if (dist < ARRIVAL_EPSILON) {
       this.target = null;
       this.setMoving(false);
       if (this.onArrival) {

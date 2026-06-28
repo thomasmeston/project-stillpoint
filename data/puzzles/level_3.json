@@ -1,0 +1,21 @@
+{
+  "puzzles": [
+    {
+      "id": "cavern_lock",
+      "type": "padlock",
+      "solution": "REST",
+      "on_success": [
+        "set_flag:lesson_3",
+        "journal:lesson_3_cavern",
+        "thought:lesson_3_cavern"
+      ]
+    }
+  ],
+  "gates": [],
+  "hotspots": [
+    { "id": "cavern_crystal", "action": "examine" },
+    { "id": "cavern_clue", "action": "examine" },
+    { "id": "cavern_chest", "action": "open_puzzle", "puzzle": "cavern_lock" }
+  ],
+  "item_uses": []
+}

@@ -1,16 +1,28 @@
 import * as THREE from 'three';
 import roomData from '../../data/rooms/bedroom.json';
 import shipRoomData from '../../data/rooms/pirate-ship.json';
+import level2RoomData from '../../data/rooms/level_2.json';
+import level3RoomData from '../../data/rooms/level_3.json';
+import level4RoomData from '../../data/rooms/level_4.json';
 import { Hotspot, type HotspotData } from './Hotspot';
 import { inferWallFace, type WallFace } from './WallFace';
 import type { ViewWallController } from './ViewWallController';
 import { publicUrl } from '../utils/publicUrl';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { WallNotesCluster } from './WallNotesCluster';
+import { PortalSwirlParticles } from './PortalSwirlParticles';
 import { PaintingRevealController } from './PaintingRevealController';
 import { buildDeskMug } from './DeskMugProp';
 import { buildBedsideLamp } from './BedsideLampProp';
 
+
+export type PortalDef = {
+  id: string;
+  target: string;
+  position: [number, number, number];
+  wall?: WallFace;
+  radius?: number;
+};
 
 type RoomFile = {
   palette: Record<string, string>;
@@ -30,8 +42,16 @@ type RoomFile = {
     wall?: WallFace;
   }>;
   hotspots: Array<HotspotData & { wall?: WallFace }>;
+  portals?: PortalDef[];
   lighting?: Record<string, { position: number[]; color: string; energy: number }>;
   spawn?: { player: [number, number, number] };
+};
+
+type PortalEntry = {
+  group: THREE.Group;
+  target: string;
+  disc: THREE.Mesh;
+  swirl: PortalSwirlParticles;
 };
 
 const FLOOR_ONLY_PROPS = new Set([
@@ -59,17 +79,21 @@ const FLOOR_ONLY_HOTSPOTS = new Set([
   'key_handle',
   'combine_station',
   'chair',
-  'floor_portal'
+  'portal_ship',
 ]);
 
 const OBSTACLE_IDS = new Set([
   'BedFrame', 'Desk', 'Chair', 'Bookshelf', 'Nightstand', 'Wardrobe',
   'Mast', 'TreasureChest', 'WheelStand', 'Barrel1', 'Barrel2', 'Cannon',
+  'Arbor', 'CrystalCluster', 'Telescope', 'StonePillar',
 ]);
 
 const ROOM_FILES: Record<string, unknown> = {
   bedroom: roomData,
   pirate_ship: shipRoomData,
+  level_2: level2RoomData,
+  level_3: level3RoomData,
+  level_4: level4RoomData,
 };
 
 export class RoomBuilder {
@@ -90,7 +114,8 @@ export class RoomBuilder {
   readonly wallNotesCluster: WallNotesCluster;
   wallSafeMesh: THREE.Object3D | null = null;
   phoneInSafeMesh: THREE.Object3D | null = null;
-  floorPortal: THREE.Object3D | null = null;
+  readonly portalDefs: PortalDef[] = [];
+  readonly portals = new Map<string, PortalEntry>();
   readonly roomId: string;
 
   private palette: Record<string, string>;
@@ -138,7 +163,8 @@ export class RoomBuilder {
             if (saved) {
               return {
                 ...original,
-                position: saved.position
+                position: saved.position,
+                size: saved.size ?? original.size,
               };
             }
             return original;
@@ -166,7 +192,8 @@ export class RoomBuilder {
       if (northWall) {
         this.wallNotesCluster.attachToWall(northWall);
       }
-      this.buildFloorPortal();
+      this.portalDefs.push(...(data.portals ?? []));
+      this.buildPortals(this.portalDefs);
     }
 
     // Register walls with wallCtrl AFTER everything is parented and in rest position!
@@ -530,6 +557,21 @@ export class RoomBuilder {
     }
   }
 
+  getHotspotWorldPosition(id: string): THREE.Vector3 | null {
+    const hs = this.hotspots.find((h) => h.id === id);
+    if (!hs) return null;
+    hs.mesh.updateMatrixWorld(true);
+    const pos = new THREE.Vector3();
+    hs.mesh.getWorldPosition(pos);
+    return pos;
+  }
+
+  getHotspotWallFace(id: string): WallFace | null {
+    const hs = this.hotspots.find((h) => h.id === id);
+    if (!hs) return null;
+    return (hs.mesh.userData.wallFace as WallFace) ?? 'floor';
+  }
+
   rebuildObstacles(): void {
     this.obstacles.length = 0;
     for (const prop of this.propsData) {
@@ -553,66 +595,136 @@ export class RoomBuilder {
     if (this.wallSafeMesh) this.wallSafeMesh.visible = true;
   }
 
-  private buildFloorPortal(): void {
-    const group = new THREE.Group();
-    group.name = 'FloorPortal';
-    group.userData.wallFace = 'floor';
+  getPortalTarget(portalId: string): string | null {
+    return this.portals.get(portalId)?.target ?? null;
+  }
 
-    const disc = new THREE.Mesh(
-      new THREE.CircleGeometry(0.62, 48),
-      new THREE.MeshBasicMaterial({ color: 0x05060a }),
-    );
-    disc.rotation.x = -Math.PI / 2;
-    group.add(disc);
+  private buildPortals(defs: PortalDef[]): void {
+    for (const def of defs) {
+      const group = new THREE.Group();
+      group.name = def.id;
+      const radius = def.radius ?? 0.5;
+      const face = def.wall ?? 'floor';
+      group.userData.wallFace = face;
 
-    const innerGlow = new THREE.Mesh(
-      new THREE.CircleGeometry(0.5, 48),
-      new THREE.MeshBasicMaterial({ color: 0x2a1d55, transparent: true, opacity: 0.85 }),
-    );
-    innerGlow.rotation.x = -Math.PI / 2;
-    innerGlow.position.y = 0.006;
-    group.add(innerGlow);
+      const disc = new THREE.Mesh(
+        new THREE.CircleGeometry(radius, 48),
+        new THREE.MeshBasicMaterial({ color: 0x000000 }),
+      );
+      this.orientPortalDisc(disc, face);
+      group.add(disc);
 
-    const ring = new THREE.Mesh(
-      new THREE.TorusGeometry(0.62, 0.06, 16, 48),
-      new THREE.MeshStandardMaterial({
-        color: 0x6f5bd0,
-        emissive: 0x6f5bd0,
-        emissiveIntensity: 1.4,
-        roughness: 0.4,
-      }),
-    );
-    ring.rotation.x = -Math.PI / 2;
-    ring.position.y = 0.01;
-    group.add(ring);
+      const swirl = new PortalSwirlParticles(radius);
+      disc.add(swirl.points);
 
-    group.position.set(0.4, 0.03, 1.3);
-    group.visible = false;
-    this.floorPortal = group;
+      group.position.set(def.position[0], def.position[1], def.position[2]);
+      group.visible = false;
+      this.portals.set(def.id, { group, target: def.target, disc, swirl });
+      this.attachPortal(group, face);
+    }
+  }
+
+  private orientPortalDisc(disc: THREE.Mesh, face: WallFace): void {
+    if (face === 'floor') {
+      disc.rotation.x = -Math.PI / 2;
+      return;
+    }
+    if (face === 'north') return;
+    if (face === 'south') {
+      disc.rotation.y = Math.PI;
+      return;
+    }
+    if (face === 'east') {
+      disc.rotation.y = -Math.PI / 2;
+      return;
+    }
+    if (face === 'west') {
+      disc.rotation.y = Math.PI / 2;
+    }
+  }
+
+  private attachPortal(group: THREE.Group, face: WallFace): void {
+    if (face !== 'floor') {
+      const wallMesh = this.wallMeshes.get(face);
+      if (wallMesh) {
+        group.position.sub(wallMesh.position);
+        wallMesh.add(group);
+        return;
+      }
+    }
     this.propsRoot.add(group);
   }
 
-  /** Animate the bedroom floor portal into view (after the meditation gate is met). */
-  revealFloorPortal(): void {
-    if (!this.floorPortal) return;
-    const target = this.floorPortal;
-    target.visible = true;
-    target.scale.setScalar(0.01);
-    const start = performance.now();
-    const dur = 650;
-    const animate = (t: number): void => {
-      const k = Math.min(1, (t - start) / dur);
-      const eased = 1 - Math.pow(1 - k, 3);
-      target.scale.setScalar(eased);
-      if (k < 1) requestAnimationFrame(animate);
-    };
-    requestAnimationFrame(animate);
+  /** Animate bedroom portals into view (defaults to all registered portals). */
+  revealPortals(portalIds?: string[]): void {
+    const ids = portalIds ?? [...this.portals.keys()];
+    let delay = 0;
+    for (const id of ids) {
+      const entry = this.portals.get(id);
+      if (!entry) continue;
+      const target = entry.group;
+      target.visible = true;
+      target.scale.setScalar(0.01);
+      const startAt = performance.now() + delay;
+      delay += 120;
+      const dur = 650;
+      const animate = (t: number): void => {
+        const k = Math.min(1, (t - startAt) / dur);
+        if (k < 0) {
+          requestAnimationFrame(animate);
+          return;
+        }
+        const eased = 1 - Math.pow(1 - k, 3);
+        target.scale.setScalar(eased);
+        if (k < 1) requestAnimationFrame(animate);
+      };
+      requestAnimationFrame(animate);
+    }
   }
 
-  syncPortalVisual(visible: boolean): void {
-    if (!this.floorPortal) return;
-    this.floorPortal.visible = visible;
-    this.floorPortal.scale.setScalar(1);
+  syncPortals(revealedIds: string[], solvedIds: string[]): void {
+    const revealed = new Set(revealedIds);
+    const solved = new Set(solvedIds);
+    for (const [id, entry] of this.portals) {
+      entry.group.visible = revealed.has(id);
+      entry.group.scale.setScalar(1);
+      const mat = entry.disc.material as THREE.MeshBasicMaterial;
+      const solvedPortal = solved.has(id);
+      if (solvedPortal) {
+        mat.color.setHex(0x111111);
+        mat.opacity = 0.55;
+        mat.transparent = true;
+      } else {
+        mat.color.setHex(0x000000);
+        mat.opacity = 1;
+        mat.transparent = false;
+      }
+      entry.swirl.setDimmed(solvedPortal);
+    }
+  }
+
+  updatePortals(dt: number): void {
+    for (const entry of this.portals.values()) {
+      if (entry.group.visible) {
+        entry.swirl.update(dt);
+      }
+    }
+  }
+
+  disposePortals(): void {
+    for (const entry of this.portals.values()) {
+      entry.swirl.dispose();
+    }
+  }
+
+  setPortalSolved(portalId: string): void {
+    const entry = this.portals.get(portalId);
+    if (!entry) return;
+    const mat = entry.disc.material as THREE.MeshBasicMaterial;
+    mat.color.setHex(0x111111);
+    mat.opacity = 0.55;
+    mat.transparent = true;
+    entry.swirl.setDimmed(true);
   }
 
   syncSafeContents(paintingMoved: boolean, safeUnlocked: boolean, phoneTaken: boolean): void {

@@ -30,14 +30,22 @@
 
       <div id="cursor-label">Walk</div>
 
-      <div id="thought-toast" class="hidden">
-        <p id="thought-text"></p>
-      </div>
+      <div id="thought-words-overlay" class="hidden" aria-live="polite"></div>
 
       <div id="examine-panel" class="panel hidden">
-        <h2 id="examine-title">Examine</h2>
+        <div class="examine-header">
+          <div class="examine-heading">
+            <span class="examine-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </span>
+            <h2 id="examine-title">Examine</h2>
+          </div>
+          <button id="examine-dismiss" type="button" class="examine-dismiss" aria-label="Close examine panel">×</button>
+        </div>
         <p id="examine-body"></p>
-        <button id="examine-close" type="button">Close</button>
       </div>
 
       <aside id="journal-panel" class="panel hidden">
@@ -181,12 +189,13 @@
     <!-- Dev Mode Dashboard -->
     <div id="dev-panel" class="hidden">
       <div class="dev-header">
-        <h3>Dev Mode</h3>
+        <h3>Dev Mode — <span id="dev-level-label">Bedroom</span></h3>
         <span id="dev-mode-indicator" class="dev-indicator">Layout</span>
       </div>
 
       <div class="dev-mode-tabs" role="tablist">
         <button type="button" id="dev-mode-layout" class="dev-mode-tab active" role="tab" aria-selected="true">Layout</button>
+        <button type="button" id="dev-mode-hotspots" class="dev-mode-tab" role="tab" aria-selected="false">Hotspots</button>
         <button type="button" id="dev-mode-text" class="dev-mode-tab" role="tab" aria-selected="false">Text</button>
       </div>
 
@@ -245,39 +254,130 @@
         <button id="dev-save-layout" class="dev-btn dev-btn-primary" type="button">Save Layout</button>
         <button id="dev-copy-json" class="dev-btn">Copy Layout JSON</button>
         <button id="dev-reset-layout" class="dev-btn dev-btn-danger">Reset Layout</button>
-        <p class="dev-mode-hint">Save Layout writes to <code>data/rooms/bedroom.json</code> (local dev server).</p>
+        <p id="dev-layout-save-hint" class="dev-mode-hint">Save Layout writes to <code>data/rooms/bedroom.json</code> (local dev server).</p>
       </div>
       </div>
 
+      <div id="dev-hotspots-section" class="hidden">
+        <p class="dev-mode-hint">Click an orange hotspot box in the scene or pick from the list. Position and size are saved with Layout.</p>
+        <div class="dev-selection-status">
+          Hotspot: <span id="dev-hotspot-layout-name">None</span>
+        </div>
+        <div class="dev-row dev-row-select">
+          <label for="dev-hotspot-layout-picker">Hotspot</label>
+          <select id="dev-hotspot-layout-picker" class="dev-select"></select>
+        </div>
+
+        <h4 class="dev-field-label">Position</h4>
+        <div class="dev-controls-group">
+          <div class="dev-row">
+            <label for="dev-hs-pos-x">Pos X</label>
+            <div class="nudge-container">
+              <button type="button" class="nudge-btn" id="dev-hs-x-dec">-</button>
+              <input type="text" id="dev-hs-pos-x" class="dev-input" value="0.00" disabled />
+              <button type="button" class="nudge-btn" id="dev-hs-x-inc">+</button>
+            </div>
+          </div>
+          <div class="dev-row">
+            <label for="dev-hs-pos-y">Pos Y</label>
+            <div class="nudge-container">
+              <button type="button" class="nudge-btn" id="dev-hs-y-dec">-</button>
+              <input type="text" id="dev-hs-pos-y" class="dev-input" value="0.00" disabled />
+              <button type="button" class="nudge-btn" id="dev-hs-y-inc">+</button>
+            </div>
+          </div>
+          <div class="dev-row">
+            <label for="dev-hs-pos-z">Pos Z</label>
+            <div class="nudge-container">
+              <button type="button" class="nudge-btn" id="dev-hs-z-dec">-</button>
+              <input type="text" id="dev-hs-pos-z" class="dev-input" value="0.00" disabled />
+              <button type="button" class="nudge-btn" id="dev-hs-z-inc">+</button>
+            </div>
+          </div>
+        </div>
+
+        <h4 class="dev-field-label">Size</h4>
+        <div class="dev-controls-group">
+          <div class="dev-row">
+            <label for="dev-hs-size-x">Size X</label>
+            <div class="nudge-container">
+              <button type="button" class="nudge-btn" id="dev-hs-sx-dec">-</button>
+              <input type="text" id="dev-hs-size-x" class="dev-input" value="0.00" disabled />
+              <button type="button" class="nudge-btn" id="dev-hs-sx-inc">+</button>
+            </div>
+          </div>
+          <div class="dev-row">
+            <label for="dev-hs-size-y">Size Y</label>
+            <div class="nudge-container">
+              <button type="button" class="nudge-btn" id="dev-hs-sy-dec">-</button>
+              <input type="text" id="dev-hs-size-y" class="dev-input" value="0.00" disabled />
+              <button type="button" class="nudge-btn" id="dev-hs-sy-inc">+</button>
+            </div>
+          </div>
+          <div class="dev-row">
+            <label for="dev-hs-size-z">Size Z</label>
+            <div class="nudge-container">
+              <button type="button" class="nudge-btn" id="dev-hs-sz-dec">-</button>
+              <input type="text" id="dev-hs-size-z" class="dev-input" value="0.00" disabled />
+              <button type="button" class="nudge-btn" id="dev-hs-sz-inc">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="dev-layout-actions">
+          <div class="dev-row-buttons">
+            <button id="dev-hotspot-undo" class="dev-btn" title="Undo (Ctrl+Z)" disabled>Undo</button>
+            <button id="dev-hotspot-redo" class="dev-btn" title="Redo (Ctrl+Y)" disabled>Redo</button>
+          </div>
+          <button id="dev-hotspot-save-layout" class="dev-btn dev-btn-primary" type="button">Save Layout</button>
+          <button id="dev-hotspot-copy-json" class="dev-btn" type="button">Copy Layout JSON</button>
+          <button id="dev-hotspot-reset-layout" class="dev-btn dev-btn-danger" type="button">Reset Layout</button>
+          <p class="dev-mode-hint">Hotspot changes are included in <code>data/rooms/*.json</code> when you save layout.</p>
+        </div>
+      </div>
+
       <div id="dev-content-section" class="dev-content-section hidden">
+        <p class="dev-mode-hint">Room-wide inner voices are not tied to a hotspot. Per-hotspot text is below — click an orange hotspot box or use the dropdown.</p>
+
+        <h4 class="dev-field-label">Room inner voices</h4>
+        <label class="dev-field-label" for="dev-opening-thought">Opening inner voice (first click anywhere)</label>
+        <textarea id="dev-opening-thought" class="dev-textarea" rows="3"></textarea>
+        <div id="dev-wake-thought-section">
+          <label class="dev-field-label" for="dev-wake-thought">Wake inner voice (after intro words)</label>
+          <textarea id="dev-wake-thought" class="dev-textarea" rows="3"></textarea>
+        </div>
+
+        <h4 class="dev-field-label">Hotspot examine text</h4>
         <div class="dev-selection-status">
           Editing: <span id="dev-content-selected-name">None</span>
         </div>
-        <p class="dev-mode-hint">Click an orange hotspot box or pick from the dropdowns below.</p>
         <div class="dev-row dev-row-select">
           <label for="dev-hotspot-picker">Hotspot</label>
           <select id="dev-hotspot-picker" class="dev-select"></select>
-        </div>
-        <div class="dev-row dev-row-select">
-          <label for="dev-item-picker">Item</label>
-          <select id="dev-item-picker" class="dev-select"></select>
         </div>
         <label class="dev-field-label" for="dev-examine-title">Examine title</label>
         <input type="text" id="dev-examine-title" class="dev-text-input" />
         <label class="dev-field-label" for="dev-examine-body">Examine body</label>
         <textarea id="dev-examine-body" class="dev-textarea dev-textarea-lg" rows="6"></textarea>
-        <label class="dev-field-label" for="dev-examine-thought">Inner voice (first examine)</label>
+        <label class="dev-field-label" for="dev-examine-thought">Inner voice (first examine of this hotspot)</label>
+        <p id="dev-examine-thought-hint" class="dev-mode-hint">Select a hotspot to edit its linked inner voice.</p>
         <textarea id="dev-examine-thought" class="dev-textarea" rows="4"></textarea>
+        <div id="dev-item-section">
+        <div class="dev-row dev-row-select">
+          <label for="dev-item-picker">Item</label>
+          <select id="dev-item-picker" class="dev-select"></select>
+        </div>
         <label class="dev-field-label" for="dev-item-label">Item label</label>
         <input type="text" id="dev-item-label" class="dev-text-input" />
         <label class="dev-field-label" for="dev-item-description">Item description</label>
         <textarea id="dev-item-description" class="dev-textarea" rows="4"></textarea>
+        </div>
         <button id="dev-save-content" class="dev-btn dev-btn-primary" type="button">Save Text</button>
         <button id="dev-apply-content" class="dev-btn" type="button">Preview Text (local)</button>
         <button id="dev-copy-content" class="dev-btn" type="button">Copy Content JSON</button>
         <button id="dev-reset-content" class="dev-btn dev-btn-danger" type="button">Reset Text Overrides</button>
         <button id="dev-close-btn-text" class="dev-btn dev-close-btn" type="button">Exit Dev Mode</button>
-        <p class="dev-mode-hint">Save Text writes to <code>data/story/bedroom-script.json</code> and <code>data/items.json</code>.</p>
+        <p id="dev-content-save-hint" class="dev-mode-hint">Save Text writes to <code>data/story/bedroom-script.json</code> and <code>data/items.json</code>.</p>
       </div>
       
       <div class="dev-actions">

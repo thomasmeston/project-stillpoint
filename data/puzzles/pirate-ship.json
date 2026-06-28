@@ -6,6 +6,7 @@
       "solution": "ANCHOR",
       "on_success": [
         "set_flag:ship_chest_opened",
+        "set_flag:lesson_1",
         "journal:ship_chest_opened",
         "thought:ship_chest_opened"
       ]

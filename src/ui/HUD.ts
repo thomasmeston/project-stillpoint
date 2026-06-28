@@ -1,14 +1,14 @@
 import type { Inventory } from '../game/Inventory';
 import type { NarrativeManager } from '../game/NarrativeManager';
 import type { PuzzleManager } from '../game/PuzzleManager';
+import { ThoughtOverlay } from './ThoughtOverlay';
 
 export class HUD {
   private examinePanel = document.getElementById('examine-panel')!;
   private examineTitle = document.getElementById('examine-title')!;
   private examineBody = document.getElementById('examine-body')!;
-  private examineClose = document.getElementById('examine-close')!;
-  private thoughtToast = document.getElementById('thought-toast')!;
-  private thoughtText = document.getElementById('thought-text')!;
+  private examineDismiss = document.getElementById('examine-dismiss')!;
+  private thoughtOverlay = new ThoughtOverlay();
   private journalPanel = document.getElementById('journal-panel')!;
   private journalList = document.getElementById('journal-list') as HTMLSelectElement;
   private journalDetail = document.getElementById('journal-detail')!;
@@ -25,17 +25,18 @@ export class HUD {
   private meditateReturnBtn = document.getElementById('meditate-return-btn')!;
   private returnRoomBtn = document.getElementById('return-room-btn')!;
 
-  private thoughtTimer: number | null = null;
+  onThoughtBlockingChange?: (active: boolean) => void;
   onZoomBack?: () => void;
   onMeditate?: () => void;
   onReturnToRoom?: () => void;
+  onExamineDismiss?: () => void;
 
   constructor(
     private inventory: Inventory,
     private narrative: NarrativeManager,
     private puzzleManager: PuzzleManager,
   ) {
-    this.examineClose.addEventListener('click', () => this.hideExamine());
+    this.examineDismiss.addEventListener('click', () => this.hideExamine());
     this.journalToggle.addEventListener('click', () => this.toggleJournal());
     this.journalList.addEventListener('change', () => this.renderJournalDetail());
     this.winRestart.addEventListener('click', () => location.reload());
@@ -43,6 +44,8 @@ export class HUD {
     this.meditateBtn.addEventListener('click', () => this.onMeditate?.());
     this.meditateReturnBtn.addEventListener('click', () => this.onMeditate?.());
     this.returnRoomBtn.addEventListener('click', () => this.onReturnToRoom?.());
+
+    this.thoughtOverlay.onBlockingChange = (active) => this.onThoughtBlockingChange?.(active);
 
     this.narrative.events.on('examineShown', ({ title, body }) => this.showExamine(title, body));
     this.narrative.events.on('thoughtShown', (text) => this.showThought(text));
@@ -62,25 +65,23 @@ export class HUD {
     this.cursorLabel.classList.toggle('hidden', !visible);
   }
 
+  isExamineOpen(): boolean {
+    return !this.examinePanel.classList.contains('hidden');
+  }
+
+  hideExamine(): void {
+    this.examinePanel.classList.add('hidden');
+    this.onExamineDismiss?.();
+  }
+
   private showExamine(title: string, body: string): void {
     this.examineTitle.textContent = title;
     this.examineBody.textContent = body;
     this.examinePanel.classList.remove('hidden');
   }
 
-  private hideExamine(): void {
-    this.examinePanel.classList.add('hidden');
-  }
-
   private showThought(text: string): void {
-    this.thoughtText.textContent = text;
-    this.thoughtToast.classList.remove('hidden');
-    this.thoughtToast.classList.add('visible');
-    if (this.thoughtTimer) window.clearTimeout(this.thoughtTimer);
-    this.thoughtTimer = window.setTimeout(() => {
-      this.thoughtToast.classList.remove('visible');
-      window.setTimeout(() => this.thoughtToast.classList.add('hidden'), 350);
-    }, 4000);
+    this.thoughtOverlay.show(text);
   }
 
   private toggleJournal(): void {

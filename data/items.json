@@ -39,7 +39,10 @@
   },
   "combine_rules": [
     {
-      "inputs": ["key_blade", "key_handle"],
+      "inputs": [
+        "key_blade",
+        "key_handle"
+      ],
       "result": "assembled_key",
       "on_success": [
         "journal:key_assembled",

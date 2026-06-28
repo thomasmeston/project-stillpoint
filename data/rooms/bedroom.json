@@ -149,7 +149,7 @@
     },
     {
       "id": "Nightstand",
-      "mesh": "box",
+      "mesh": "models/nightstand-quaternius.glb",
       "color": "wood",
       "size": [
         0.5,
@@ -158,7 +158,7 @@
       ],
       "position": [
         -0.75,
-        0.275,
+        0,
         -2.05
       ]
     },
@@ -812,20 +812,66 @@
       "color": "#aa8866"
     },
     {
-      "id": "floor_portal",
+      "id": "portal_ship",
       "label": "Dark Opening",
-      "position": [
-        0.4,
-        0.2,
-        1.3
-      ],
-      "size": [
-        1.3,
-        0.5,
-        1.3
-      ],
-      "color": "#6f5bd0",
+      "position": [0.4, 0.2, 1.3],
+      "size": [1.2, 0.5, 1.2],
+      "color": "#000000",
       "wall": "floor"
+    },
+    {
+      "id": "portal_garden",
+      "label": "Dark Opening",
+      "position": [-0.8, 1.45, -2.82],
+      "size": [0.9, 0.9, 0.2],
+      "color": "#000000",
+      "wall": "north"
+    },
+    {
+      "id": "portal_cavern",
+      "label": "Dark Opening",
+      "position": [-3.32, 1.35, 0.2],
+      "size": [0.2, 0.9, 0.9],
+      "color": "#000000",
+      "wall": "west"
+    },
+    {
+      "id": "portal_observatory",
+      "label": "Dark Opening",
+      "position": [3.32, 1.55, -0.3],
+      "size": [0.2, 0.9, 0.9],
+      "color": "#000000",
+      "wall": "east"
+    }
+  ],
+  "portals": [
+    {
+      "id": "portal_ship",
+      "target": "pirate_ship",
+      "position": [0.4, 0.03, 1.3],
+      "wall": "floor",
+      "radius": 0.55
+    },
+    {
+      "id": "portal_garden",
+      "target": "level_2",
+      "position": [-0.8, 1.45, -2.88],
+      "wall": "north",
+      "radius": 0.42
+    },
+    {
+      "id": "portal_cavern",
+      "target": "level_3",
+      "position": [-3.38, 1.35, 0.2],
+      "wall": "west",
+      "radius": 0.42
+    },
+    {
+      "id": "portal_observatory",
+      "target": "level_4",
+      "position": [3.38, 1.55, -0.3],
+      "wall": "east",
+      "radius": 0.42
     }
   ],
   "spawn": {

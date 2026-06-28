@@ -1,10 +1,10 @@
 import storyData from '../../data/story/bedroom-script.json';
 import shipStoryData from '../../data/story/pirate-ship-script.json';
+import level2StoryData from '../../data/story/level_2-script.json';
+import level3StoryData from '../../data/story/level_3-script.json';
+import level4StoryData from '../../data/story/level_4-script.json';
 import { EventBus } from '../utils/EventBus';
-import {
-  mergeExamineEntry,
-  resolveThoughtText,
-} from './DevContentOverrides';
+import { setDevContentRoom, mergeExamineEntry, resolveThoughtText, getEffectiveOpeningThought, getEffectiveThoughtText } from './DevContentOverrides';
 import type { GameState } from './GameState';
 
 type StoryFile = {
@@ -29,6 +29,9 @@ export class NarrativeManager {
   private readonly storyFiles: Record<string, StoryFile> = {
     bedroom: storyData as StoryFile,
     pirate_ship: shipStoryData as StoryFile,
+    level_2: level2StoryData as StoryFile,
+    level_3: level3StoryData as StoryFile,
+    level_4: level4StoryData as StoryFile,
   };
   private roomId = 'bedroom';
   private data = this.storyFiles.bedroom;
@@ -43,41 +46,39 @@ export class NarrativeManager {
   loadRoom(roomId: string): void {
     this.roomId = roomId;
     this.data = this.storyFiles[roomId] ?? this.storyFiles.bedroom;
+    setDevContentRoom(roomId);
   }
 
   getHeardThoughtCount(): number {
     return this.heardThoughtIds.size;
   }
 
-  /** Room-aware thought resolution: prefer the active room's text, falling back to the bedroom resolver. */
+  /** Room-aware thought resolution: prefer dev overrides, then active room's text. */
   private resolveThought(ref: string): string {
     if (!ref) return '';
-    return this.data.thoughts[ref] ?? resolveThoughtText(ref);
+    const effective = getEffectiveThoughtText(ref, this.roomId);
+    if (this.data.thoughts[ref] || effective !== ref) return effective;
+    return resolveThoughtText(ref);
   }
 
   onFirstInput(): void {
     if (this.openingShown) return;
     this.openingShown = true;
-    if (this.data.opening_thought) {
-      this.showThought(this.data.opening_thought);
+    const opening = getEffectiveOpeningThought(this.roomId);
+    if (opening) {
+      this.showThought(opening);
+    }
+  }
+
+  onRoomArrival(): void {
+    const opening = getEffectiveOpeningThought(this.roomId);
+    if (opening) {
+      this.events.emit('thoughtShown', opening);
     }
   }
 
   onExamine(hotspotId: string): void {
-    let entry: { title: string; body: string; thought?: string; journal?: string } | null;
-    if (this.roomId === 'bedroom') {
-      entry = mergeExamineEntry(hotspotId, this.data.examines[hotspotId]);
-    } else {
-      const base = this.data.examines[hotspotId];
-      entry = base
-        ? {
-            title: base.title,
-            body: base.body,
-            thought: base.thought ? this.resolveThought(base.thought) : undefined,
-            journal: base.journal,
-          }
-        : null;
-    }
+    const entry = mergeExamineEntry(hotspotId, this.data.examines[hotspotId], this.roomId);
     if (!entry) return;
     this.events.emit('examineShown', { title: entry.title, body: entry.body });
     this.fireTrigger(`examine:${hotspotId}`, entry);

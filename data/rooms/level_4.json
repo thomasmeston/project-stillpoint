@@ -1,0 +1,95 @@
+{
+  "id": "level_4",
+  "palette": {
+    "deck": "#2a2840",
+    "dome": "#4a4670",
+    "brass": "#c9a86c",
+    "lens": "#88ccff",
+    "star": "#fff8e8",
+    "night": "#0c0e18",
+    "accent": "#ffd966"
+  },
+  "shell": {
+    "size": { "x": 7, "z": 6 },
+    "wall_height": 0.6,
+    "floor_color": "deck",
+    "wall_color": "dome"
+  },
+  "props": [
+    {
+      "id": "NightSky",
+      "mesh": "box",
+      "color": "night",
+      "size": [60, 1, 60],
+      "position": [0, -0.75, 0],
+      "wall": "floor"
+    },
+    {
+      "id": "DomeRing",
+      "mesh": "cylinder",
+      "color": "dome",
+      "size": [3.2, 0.25, 3.2],
+      "position": [0, 0.12, 0],
+      "wall": "floor"
+    },
+    {
+      "id": "Telescope",
+      "mesh": "cylinder",
+      "color": "brass",
+      "size": [0.35, 1.6, 0.35],
+      "position": [0.8, 0.85, -0.6],
+      "rotation": [55, 0, 0],
+      "wall": "floor"
+    },
+    {
+      "id": "StarChart",
+      "mesh": "box",
+      "color": "star",
+      "size": [1.4, 0.06, 1.0],
+      "position": [-1.5, 0.85, 0.2],
+      "wall": "floor"
+    },
+    {
+      "id": "LessonChest",
+      "mesh": "box",
+      "color": "brass",
+      "size": [0.85, 0.5, 0.6],
+      "position": [-0.5, 0.27, 0.8],
+      "wall": "floor"
+    }
+  ],
+  "hotspots": [
+    {
+      "id": "observatory_telescope",
+      "label": "Telescope",
+      "position": [0.8, 1.0, -0.6],
+      "size": [0.8, 1.4, 0.8],
+      "color": "#c9a86c",
+      "wall": "floor"
+    },
+    {
+      "id": "observatory_chart",
+      "label": "Star Chart",
+      "position": [-1.5, 0.9, 0.2],
+      "size": [1.5, 0.4, 1.1],
+      "color": "#fff8e8",
+      "wall": "floor"
+    },
+    {
+      "id": "observatory_chest",
+      "label": "Brass Chest",
+      "position": [-0.5, 0.5, 0.8],
+      "size": [1.0, 0.8, 0.75],
+      "color": "#c9a86c",
+      "wall": "floor"
+    }
+  ],
+  "spawn": { "player": [0, 0, 0.5] },
+  "lighting": {
+    "starlight": {
+      "position": [0, 4, 2],
+      "color": "#b8d4ff",
+      "energy": 1.6
+    }
+  }
+}

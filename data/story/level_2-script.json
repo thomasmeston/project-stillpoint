@@ -1,0 +1,49 @@
+{
+  "opening_thought": "Green air. Petals underfoot. The bedroom feels very far away.",
+  "thoughts": {
+    "lesson_2_garden": "Growth. Things that were buried push toward light whether you watch or not.",
+    "garden_arbor_musings": "Vines remember the shape of every trellis they ever climbed.",
+    "garden_clue_musings": "Carved into the bed frame: GROWTH. The word wants to be used."
+  },
+  "journal_entries": {
+    "garden_clue_found": {
+      "title": "Garden Marker",
+      "body": "A wooden marker in the flower bed reads: GROWTH.",
+      "thought": "garden_clue_musings"
+    },
+    "lesson_2_garden": {
+      "title": "Lesson — Growth",
+      "body": "The garden chest opened to GROWTH. Something in the bedroom will listen now.",
+      "thought": "lesson_2_garden"
+    }
+  },
+  "examines": {
+    "garden_arbor": {
+      "title": "Arbor",
+      "body": "Wooden arches tangled with ivy. A place to pause before choosing a path.",
+      "thought": "garden_arbor_musings"
+    },
+    "garden_clue": {
+      "title": "Flower Bed",
+      "body": "Soil freshly turned. A wooden marker reads: GROWTH.",
+      "thought": "garden_clue_musings",
+      "journal": "garden_clue_found"
+    },
+    "garden_chest": {
+      "title": "Garden Chest",
+      "body": "A small chest at the path's end. Letter lock. It wants a word, not a number.",
+      "thought": "garden_clue_musings"
+    }
+  },
+  "on_flag": {
+    "lesson_2": {
+      "thought": "lesson_2_garden",
+      "journal": "lesson_2_garden"
+    }
+  },
+  "ending": {
+    "title": "Garden",
+    "body": "The path ends here for now.",
+    "journal_id": "lesson_2_garden"
+  }
+}

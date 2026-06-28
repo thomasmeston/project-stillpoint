@@ -1,12 +1,14 @@
-import roomData from '../../data/rooms/bedroom.json';
 import type { RoomBuilder } from '../scene/RoomBuilder';
 import {
   buildMergedItemsJson,
   buildMergedStoryJson,
   clearContentOverrides,
+  getDevContentRoomId,
 } from './DevContentOverrides';
+import { getDevLevel, isDevLevelId, type DevLevelId } from './DevLevelConfig';
 
 export type DevSavePayload = {
+  roomId?: DevLevelId;
   room?: Record<string, unknown>;
   story?: Record<string, unknown>;
   items?: Record<string, unknown>;
@@ -23,6 +25,9 @@ function round3(value: number): number {
 }
 
 export function buildRoomJson(room: RoomBuilder): Record<string, unknown> {
+  const level = getDevLevel(room.roomId);
+  const baseRoom = level?.roomData ?? {};
+
   const cleanProps = room.propsData.map((p) => {
     const formatted: Record<string, unknown> = {
       id: p.id,
@@ -87,7 +92,7 @@ export function buildRoomJson(room: RoomBuilder): Record<string, unknown> {
   const spawn = room.playerSpawn;
 
   return {
-    ...roomData,
+    ...baseRoom,
     props: cleanProps,
     hotspots: cleanHotspots,
     lighting: cleanLighting,
@@ -109,7 +114,14 @@ function downloadJson(data: unknown, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
+function filenameFromPath(filePath: string): string {
+  return filePath.split('/').pop() ?? filePath;
+}
+
 export async function saveDevFiles(payload: DevSavePayload): Promise<DevSaveResult> {
+  const roomId = payload.roomId;
+  const level = roomId ? getDevLevel(roomId) : null;
+
   if (import.meta.env.DEV) {
     try {
       const res = await fetch('/__dev/save', {
@@ -137,17 +149,17 @@ export async function saveDevFiles(payload: DevSavePayload): Promise<DevSaveResu
   }
 
   const downloads: string[] = [];
-  if (payload.room) {
-    downloadJson(payload.room, 'bedroom.json');
-    downloads.push('bedroom.json → data/rooms/bedroom.json');
+  if (payload.room && level) {
+    downloadJson(payload.room, filenameFromPath(level.roomPath));
+    downloads.push(`${level.roomPath}`);
   }
-  if (payload.story) {
-    downloadJson(payload.story, 'bedroom-script.json');
-    downloads.push('bedroom-script.json → data/story/bedroom-script.json');
+  if (payload.story && level) {
+    downloadJson(payload.story, filenameFromPath(level.storyPath));
+    downloads.push(`${level.storyPath}`);
   }
-  if (payload.items) {
-    downloadJson(payload.items, 'items.json');
-    downloads.push('items.json → data/items.json');
+  if (payload.items && level?.itemsPath) {
+    downloadJson(payload.items, filenameFromPath(level.itemsPath));
+    downloads.push(`${level.itemsPath}`);
   }
 
   if (downloads.length === 0) {
@@ -163,20 +175,38 @@ export async function saveDevFiles(payload: DevSavePayload): Promise<DevSaveResu
 }
 
 export async function saveLayoutToRepo(room: RoomBuilder): Promise<DevSaveResult> {
-  const result = await saveDevFiles({ room: buildRoomJson(room) });
+  if (!isDevLevelId(room.roomId)) {
+    return { ok: false, method: 'api', message: `Dev layout save is not supported for room "${room.roomId}".` };
+  }
+
+  const result = await saveDevFiles({
+    roomId: room.roomId,
+    room: buildRoomJson(room),
+  });
   if (result.ok && result.method === 'api') {
-    localStorage.removeItem('dev_room_layout_bedroom');
+    localStorage.removeItem(`dev_room_layout_${room.roomId}`);
   }
   return result;
 }
 
-export async function saveContentToRepo(): Promise<DevSaveResult> {
-  const result = await saveDevFiles({
-    story: buildMergedStoryJson(),
-    items: buildMergedItemsJson(),
-  });
+export async function saveContentToRepo(roomId?: DevLevelId): Promise<DevSaveResult> {
+  const levelId = roomId ?? getDevContentRoomId();
+  const level = getDevLevel(levelId);
+  if (!level) {
+    return { ok: false, method: 'api', message: `Dev text save is not supported for room "${levelId}".` };
+  }
+
+  const payload: DevSavePayload = {
+    roomId: levelId,
+    story: buildMergedStoryJson(levelId),
+  };
+  if (level.supportsItems) {
+    payload.items = buildMergedItemsJson();
+  }
+
+  const result = await saveDevFiles(payload);
   if (result.ok && result.method === 'api') {
-    clearContentOverrides();
+    clearContentOverrides(levelId);
   }
   return result;
 }

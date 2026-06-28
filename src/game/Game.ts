@@ -17,12 +17,56 @@ import { PuzzleUI } from '../ui/PuzzleUI';
 import { DevMover } from './DevMover';
 import { DeskSketchSpread } from '../scene/DeskSketchSpread';
 import { getWallNotesFocusOnWall } from '../scene/WallNotesCluster';
+import type { WallFace } from '../scene/WallFace';
+
+const INWARD_BY_WALL: Record<Exclude<WallFace, 'floor'>, THREE.Vector3> = {
+  north: new THREE.Vector3(0, 0, 1),
+  south: new THREE.Vector3(0, 0, -1),
+  east: new THREE.Vector3(-1, 0, 0),
+  west: new THREE.Vector3(1, 0, 0),
+};
+
+const PORTAL_HOTSPOTS = [
+  'portal_ship',
+  'portal_garden',
+  'portal_cavern',
+  'portal_observatory',
+] as const;
+
+const PORTAL_LESSON_FLAGS: Record<string, string> = {
+  portal_garden: 'lesson_2',
+  portal_cavern: 'lesson_3',
+  portal_observatory: 'lesson_4',
+};
+
+/** How far from a hotspot the player stops before examining (metres). */
+const HOTSPOT_STANDOFF_FLOOR = 1.2;
+const HOTSPOT_STANDOFF_WALL = 1.05;
+/** Extra clearance beyond standoff before the examine panel auto-dismisses (metres). */
+const EXAMINE_DISMISS_EXTRA = 0.85;
+
+const ROOM_TITLES: Record<string, string> = {
+  bedroom: 'Bedroom',
+  pirate_ship: 'Ship Deck',
+  level_2: 'Garden',
+  level_3: 'Cavern',
+  level_4: 'Observatory',
+};
+
+const ROOM_BACKGROUNDS: Record<string, number> = {
+  bedroom: 0x141820,
+  pirate_ship: 0x8fc1e3,
+  level_2: 0x87ceeb,
+  level_3: 0x0a0812,
+  level_4: 0x0c0e18,
+};
+
+const PORTAL_LEVEL_ROOMS = new Set(['pirate_ship', 'level_2', 'level_3', 'level_4']);
 
 export class Game {
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
   private sceneBg = new THREE.Color(0x141820);
-  private shipBg = new THREE.Color(0x8fc1e3);
   private isoCamera: IsoCamera;
   private wallCtrl: ViewWallController;
   private room: RoomBuilder;
@@ -49,8 +93,10 @@ export class Game {
   private isDeskZoomed = false;
   private isWallNotesZoomed = false;
   private introActive = false;
+  private thoughtActive = false;
   private meditateActive = false;
   private fallActive = false;
+  private examineAnchorHotspotId: string | null = null;
   private preMeditateCamera: CameraSnapshot | null = null;
   private meditation = new MeditationOverlay();
   private fallTransition = new FallTransition();
@@ -75,7 +121,7 @@ export class Game {
   }
 
   get isInputBlocked(): boolean {
-    return this.inMenu || this.escapeMenuOpen || this.introActive || this.meditateActive
+    return this.inMenu || this.escapeMenuOpen || this.introActive || this.thoughtActive || this.meditateActive
       || this.fallActive
       || (this.devMover && this.devMover.isActive());
   }
@@ -140,6 +186,9 @@ export class Game {
       if (flag === 'painting_moved' || flag === 'safe_unlocked') {
         this.syncSafeVisuals();
       }
+      if (flag === 'meditation_portal_opened' || flag.startsWith('lesson_')) {
+        this.syncPortals();
+      }
       this.saveGame();
     });
     this.gameState.events.on('puzzleSolved', () => this.saveGame());
@@ -194,6 +243,12 @@ export class Game {
     this.hud.onZoomBack = () => this.zoomOutFromDetail();
     this.hud.onMeditate = () => this.toggleMeditate();
     this.hud.onReturnToRoom = () => this.returnToBedroom();
+    this.hud.onThoughtBlockingChange = (active) => {
+      this.thoughtActive = active;
+    };
+    this.hud.onExamineDismiss = () => {
+      this.examineAnchorHotspotId = null;
+    };
 
     this.input.onFirstInput = () => {
       this.narrative.onFirstInput();
@@ -313,7 +368,7 @@ export class Game {
       }
 
       const isDevActive = this.devMover && this.devMover.isActive();
-      if (this.inMenu || this.escapeMenuOpen || this.introActive) return;
+      if (this.inMenu || this.escapeMenuOpen || this.introActive || this.thoughtActive) return;
 
       if (e.key === 'q' || e.key === 'Q') {
         this.rotateView('left');
@@ -327,7 +382,7 @@ export class Game {
   }
 
   private toggleDevMode(): void {
-    if (this.inMenu || this.introActive || this.meditateActive) return;
+    if (this.inMenu || this.introActive || this.thoughtActive || this.meditateActive) return;
     if (this.isDeskZoomed) {
       this.zoomOutFromDesk();
     }
@@ -336,7 +391,7 @@ export class Game {
   }
 
   private rotateView(direction: 'left' | 'right'): void {
-    if (this.inMenu || this.escapeMenuOpen || this.introActive || this.meditateActive) return;
+    if (this.inMenu || this.escapeMenuOpen || this.introActive || this.thoughtActive || this.meditateActive) return;
     if (this.isDeskZoomed) return;
     if (this.wallCtrl.isAnimating() || this.isoCamera.isRotating()) return;
     this.audio.playSfx('rotate');
@@ -351,8 +406,55 @@ export class Game {
 
   private handleHotspot(hotspotId: string): void {
     this.audio.playSfx('click');
-    if (hotspotId === 'floor_portal') {
-      this.startFallToShip();
+    this.walkToHotspot(hotspotId, () => {
+      this.performHotspotAction(hotspotId);
+      this.saveGame();
+    });
+  }
+
+  private walkToHotspot(hotspotId: string, onArrived: () => void): void {
+    let approach: THREE.Vector3;
+    if (hotspotId === 'desk') {
+      approach = this.getDeskApproachPosition();
+    } else if (hotspotId === 'wall_notes') {
+      approach = this.getWallNotesApproachPosition();
+    } else {
+      approach = this.getHotspotApproachPosition(hotspotId);
+    }
+    this.player.moveTo(approach, onArrived);
+  }
+
+  private getHotspotApproachPosition(hotspotId: string): THREE.Vector3 {
+    const world = this.room.getHotspotWorldPosition(hotspotId);
+    if (!world) return this.player.position.clone();
+
+    const face = this.room.getHotspotWallFace(hotspotId) ?? 'floor';
+    const inward = new THREE.Vector3();
+
+    if (face === 'floor') {
+      inward.subVectors(this.player.position, world);
+      inward.y = 0;
+      if (inward.lengthSq() < 0.04) {
+        inward.set(0, 0, 1);
+      } else {
+        inward.normalize();
+      }
+    } else {
+      inward.copy(INWARD_BY_WALL[face]);
+    }
+
+    const standoff = face === 'floor' ? HOTSPOT_STANDOFF_FLOOR : HOTSPOT_STANDOFF_WALL;
+    return new THREE.Vector3(
+      world.x + inward.x * standoff,
+      0,
+      world.z + inward.z * standoff,
+    );
+  }
+
+  private performHotspotAction(hotspotId: string): void {
+    if (hotspotId.startsWith('portal_')) {
+      const target = this.room.getPortalTarget(hotspotId);
+      if (target) this.enterPortal(target);
       return;
     }
     const action = this.puzzleManager.getHotspotAction(hotspotId);
@@ -369,7 +471,6 @@ export class Game {
     if (!handled) {
       if (hotspotId === 'wall_safe') {
         this.handleWallSafe();
-        this.saveGame();
         return;
       }
       switch (action) {
@@ -377,6 +478,9 @@ export class Game {
           this.handlePickup(hotspotId);
           break;
         case 'open_puzzle':
+          if (hotspotId === 'wall_clock' && this.inspectClockIfNeeded()) {
+            break;
+          }
           this.openPuzzle(hotspotId);
           break;
         case 'combine':
@@ -384,18 +488,42 @@ export class Game {
           break;
         case 'examine':
           if (hotspotId === 'desk') {
-            this.handleDeskExamine();
+            if (!this.isDetailZoomed) this.zoomToDesk();
           } else if (hotspotId === 'wall_notes') {
-            this.handleWallNotesExamine();
+            if (!this.isDetailZoomed) {
+              this.showHotspotExamine('wall_notes');
+              this.zoomToWallNotes();
+            }
           } else {
             this.handleExamine(hotspotId);
           }
           break;
         default:
-          this.narrative.onExamine(hotspotId);
+          this.showHotspotExamine(hotspotId);
       }
     }
-    this.saveGame();
+  }
+
+  private showHotspotExamine(hotspotId: string): void {
+    this.examineAnchorHotspotId = hotspotId;
+    this.narrative.onExamine(hotspotId);
+  }
+
+  private updateExamineDismiss(): void {
+    if (!this.hud.isExamineOpen() || !this.examineAnchorHotspotId || this.isDetailZoomed) return;
+
+    const world = this.room.getHotspotWorldPosition(this.examineAnchorHotspotId);
+    if (!world) return;
+
+    const face = this.room.getHotspotWallFace(this.examineAnchorHotspotId) ?? 'floor';
+    const standoff = face === 'floor' ? HOTSPOT_STANDOFF_FLOOR : HOTSPOT_STANDOFF_WALL;
+    const maxDistSq = (standoff + EXAMINE_DISMISS_EXTRA) ** 2;
+
+    const dx = this.player.position.x - world.x;
+    const dz = this.player.position.z - world.z;
+    if (dx * dx + dz * dz > maxDistSq) {
+      this.hud.hideExamine();
+    }
   }
 
   private handleExamine(hotspotId: string): void {
@@ -407,7 +535,7 @@ export class Game {
       if (!this.inventory.hasItem('photo_set')) this.inventory.addItem('photo_set');
       if (!this.inventory.hasItem('receipt_stub')) this.inventory.addItem('receipt_stub');
     }
-    this.narrative.onExamine(hotspotId);
+    this.showHotspotExamine(hotspotId);
   }
 
   private handleWallSafe(): void {
@@ -417,7 +545,7 @@ export class Game {
       if (!this.inventory.hasItem('key_blade')) this.inventory.addItem('key_blade');
       if (!this.inventory.hasItem('phone')) this.inventory.addItem('phone');
       this.syncSafeVisuals();
-      this.narrative.onExamine('wall_safe');
+      this.showHotspotExamine('wall_safe');
       return;
     }
 
@@ -426,7 +554,7 @@ export class Game {
       return;
     }
 
-    this.narrative.onExamine('wall_safe_locked');
+    this.showHotspotExamine('wall_safe_locked');
   }
 
   private syncSafeVisuals(): void {
@@ -447,7 +575,7 @@ export class Game {
       }
     };
 
-    this.narrative.onExamine('painting');
+    this.showHotspotExamine('painting');
 
     if (this.gameState.hasFlag('painting_moved')) {
       openPhotoIfReady();
@@ -466,12 +594,12 @@ export class Game {
     const def = this.puzzleManager.getHotspotDef(hotspotId);
     const itemId = def.item ?? '';
     if (!itemId) {
-      this.narrative.onExamine(hotspotId);
+      this.showHotspotExamine(hotspotId);
       return;
     }
     if (this.inventory.addItem(itemId)) {
       this.puzzleManager.applyConsequence(`disable_hotspot:${hotspotId}`);
-      this.narrative.onExamine(hotspotId);
+      this.showHotspotExamine(hotspotId);
     }
   }
 
@@ -517,28 +645,17 @@ export class Game {
     }
   }
 
-  private handleDeskExamine(): void {
+  /** Called from e2e tests and dev tooling. */
+  handleDeskExamine(): void {
     if (this.isDetailZoomed) return;
-
-    const approach = this.getDeskApproachPosition();
-
-    this.player.moveTo(approach, () => {
+    this.walkToHotspot('desk', () => {
       this.zoomToDesk();
-    });
-  }
-
-  private handleWallNotesExamine(): void {
-    if (this.isDetailZoomed) return;
-
-    this.narrative.onExamine('wall_notes');
-    this.player.moveTo(this.getWallNotesApproachPosition(), () => {
-      this.zoomToWallNotes();
     });
   }
 
   private getWallNotesApproachPosition(): THREE.Vector3 {
     const focus = getWallNotesFocusOnWall();
-    return new THREE.Vector3(focus.x, 0, 1.05);
+    return new THREE.Vector3(focus.x, 0, 1.3);
   }
 
   private getWallNotesTarget(): THREE.Vector3 {
@@ -564,6 +681,7 @@ export class Game {
     this.isWallNotesZoomed = false;
     this.player.root.visible = true;
     this.room.wallNotesCluster.resetInspect();
+    this.hud.hideExamine();
 
     const currentViewYaw = this.isoCamera.getYawForViewIndex(this.isoCamera.getViewIndex());
     const ISO_PITCH = THREE.MathUtils.degToRad(-35);
@@ -577,8 +695,20 @@ export class Game {
     else if (this.isWallNotesZoomed) this.zoomOutFromWallNotes();
   }
 
+  /** First visit to the clock is examine-only; unlocks the first meditation portal afterward. */
+  private inspectClockIfNeeded(): boolean {
+    if (this.gameState.hasFlag('clock_inspected')) return false;
+    this.gameState.setFlag('clock_inspected');
+    this.showHotspotExamine('wall_clock');
+    return true;
+  }
+
+  private updateMeditateAvailability(): void {
+    this.hud.setMeditateAvailable(this.currentRoomId === 'bedroom');
+  }
+
   private toggleMeditate(): void {
-    if (this.inMenu || this.introActive || this.isDetailZoomed || this.fallActive) return;
+    if (this.inMenu || this.introActive || this.thoughtActive || this.isDetailZoomed || this.fallActive) return;
     if (this.currentRoomId !== 'bedroom') return;
     if (this.meditateActive) {
       this.exitMeditate();
@@ -602,7 +732,7 @@ export class Game {
     );
 
     const canOpenPortal = this.currentRoomId === 'bedroom'
-      && this.narrative.getHeardThoughtCount() >= 4
+      && this.gameState.hasFlag('clock_inspected')
       && !this.gameState.hasFlag('meditation_portal_opened');
 
     this.meditation.show(this.narrative.getMeditationFragments(), {
@@ -628,39 +758,50 @@ export class Game {
     this.hud.setMeditating(false);
     this.hud.setCursorHintVisible(true);
 
-    // Reveal the floor portal once the meditation gate has been cleared.
+    // Reveal the ship portal after the first successful meditation hold.
     if (
       this.currentRoomId === 'bedroom'
       && this.gameState.hasFlag('meditation_portal_opened')
-      && this.puzzleManager.getHotspotDef('floor_portal').disabled
     ) {
-      this.puzzleManager.applyConsequence('enable_hotspot:floor_portal');
-      this.room.revealFloorPortal();
-      this.narrative.showThought('door_opening');
+      const wasShipVisible = this.room.portals.get('portal_ship')?.group.visible ?? false;
+      this.syncPortals();
+      if (!wasShipVisible) {
+        this.room.revealPortals(['portal_ship']);
+      }
+      this.refreshHotspotVisibility();
     }
   }
 
-  private startFallToShip(): void {
+  private enterPortal(targetRoom: string): void {
     if (this.fallActive) return;
     this.fallActive = true;
     this.player.cancelMovement();
     this.audio.playSfx('rotate');
-    this.fallTransition.play(
+    this.fallTransition.playFall(
       () => {
-        this.loadRoom('pirate_ship');
+        this.loadRoom(targetRoom);
         this.player.setPosition(this.room.playerSpawn);
         this.saveGame();
       },
       () => {
         this.fallActive = false;
-        this.narrative.addJournalEntry('ship_arrival');
-        this.narrative.showThought('ship_arrival');
+        this.onPortalArrival(targetRoom);
       },
     );
   }
 
+  private onPortalArrival(roomId: string): void {
+    if (roomId === 'pirate_ship') {
+      this.narrative.addJournalEntry('ship_arrival');
+      this.narrative.showThought('ship_arrival');
+      return;
+    }
+    this.narrative.onRoomArrival();
+  }
+
   private loadRoom(roomId: string): void {
     this.scene.remove(this.room.root);
+    this.room.disposePortals();
     this.disposeObject3D(this.room.root);
     this.wallCtrl.reset();
     this.wallCtrl.setInMenu(this.inMenu);
@@ -679,10 +820,10 @@ export class Game {
     this.input.setTargets(this.room.floorMeshes, this.room.hotspots.map((h) => h.mesh));
     this.devMover.setRoom(this.room);
 
-    this.scene.background = roomId === 'pirate_ship' ? this.shipBg : this.sceneBg;
-    this.hud.setRoomTitle(roomId === 'pirate_ship' ? 'Ship Deck' : 'Bedroom');
-    this.hud.setMeditateAvailable(roomId === 'bedroom');
-    this.hud.setReturnToRoomVisible(roomId === 'pirate_ship');
+    this.scene.background = new THREE.Color(ROOM_BACKGROUNDS[roomId] ?? ROOM_BACKGROUNDS.bedroom);
+    this.hud.setRoomTitle(ROOM_TITLES[roomId] ?? 'Bedroom');
+    this.updateMeditateAvailability();
+    this.hud.setReturnToRoomVisible(PORTAL_LEVEL_ROOMS.has(roomId));
 
     this.refreshHotspotVisibility();
 
@@ -693,7 +834,7 @@ export class Game {
         this.gameState.hasFlag('safe_unlocked'),
         this.inventory.hasItem('phone'),
       );
-      this.syncPortalState();
+      this.syncPortals();
     }
 
     this.isoCamera.setViewIndex(0);
@@ -701,12 +842,20 @@ export class Game {
   }
 
   private returnToBedroom(): void {
-    if (this.currentRoomId !== 'pirate_ship' || this.inMenu || this.fallActive) return;
+    if (this.currentRoomId === 'bedroom' || this.inMenu || this.fallActive) return;
+    this.fallActive = true;
     this.player.cancelMovement();
     this.audio.playSfx('click');
-    this.loadRoom('bedroom');
-    this.player.setPosition(this.room.playerSpawn);
-    this.saveGame();
+    this.fallTransition.playReturn(
+      () => {
+        this.loadRoom('bedroom');
+        this.player.setPosition(this.room.playerSpawn);
+        this.saveGame();
+      },
+      () => {
+        this.fallActive = false;
+      },
+    );
   }
 
   private refreshHotspotVisibility(): void {
@@ -716,13 +865,44 @@ export class Game {
     }
   }
 
-  private syncPortalState(): void {
-    if (this.currentRoomId !== 'bedroom') return;
-    const opened = this.gameState.hasFlag('meditation_portal_opened');
-    if (opened) {
-      this.puzzleManager.applyConsequence('enable_hotspot:floor_portal');
+  private getSolvedPortalIds(): string[] {
+    const solved: string[] = [];
+    if (this.gameState.hasFlag('lesson_1')) {
+      solved.push('portal_ship');
     }
-    this.room.syncPortalVisual(opened);
+    for (const [portalId, flag] of Object.entries(PORTAL_LESSON_FLAGS)) {
+      if (this.gameState.hasFlag(flag)) {
+        solved.push(portalId);
+      }
+    }
+    return solved;
+  }
+
+  private getRevealedPortalIds(): string[] {
+    const revealed: string[] = [];
+    if (this.gameState.hasFlag('meditation_portal_opened')) {
+      revealed.push('portal_ship');
+    }
+    for (const [portalId, lessonFlag] of Object.entries(PORTAL_LESSON_FLAGS)) {
+      if (this.gameState.hasFlag(lessonFlag)) {
+        revealed.push(portalId);
+      }
+    }
+    return revealed;
+  }
+
+  private syncPortals(): void {
+    if (this.currentRoomId !== 'bedroom') return;
+    const revealedIds = this.getRevealedPortalIds();
+    for (const id of PORTAL_HOTSPOTS) {
+      if (revealedIds.includes(id)) {
+        this.puzzleManager.applyConsequence(`enable_hotspot:${id}`);
+      } else {
+        this.puzzleManager.applyConsequence(`disable_hotspot:${id}`);
+      }
+    }
+    this.room.syncPortals(revealedIds, this.getSolvedPortalIds());
+    this.refreshHotspotVisibility();
   }
 
   private disposeObject3D(root: THREE.Object3D): void {
@@ -745,7 +925,7 @@ export class Game {
       const deskPos = new THREE.Vector3();
       deskMesh.getWorldPosition(deskPos);
       // Stand south of the desk (+Z), clear of chair/desk collision boxes
-      return new THREE.Vector3(deskPos.x - 0.3, 0, deskPos.z + 0.85);
+      return new THREE.Vector3(deskPos.x - 0.3, 0, deskPos.z + 1.15);
     }
     return new THREE.Vector3(1.5, 0, 0.85);
   }
@@ -788,7 +968,7 @@ export class Game {
     const def = this.puzzleManager.getHotspotDef(hotspotId);
     const puzzleId = def.puzzle ?? '';
     if (!puzzleId) {
-      this.narrative.onExamine(hotspotId);
+      this.showHotspotExamine(hotspotId);
       return;
     }
     this.puzzleManager.requestPuzzle(puzzleId);
@@ -889,7 +1069,7 @@ export class Game {
     this.deskSketchSpread.reset();
     this.room.wallNotesCluster.resetInspect();
     this.room.syncPaintingReveal(false, false, false);
-    this.room.syncPortalVisual(false);
+    this.syncPortals();
     this.syncSafeVisuals();
 
     document.getElementById('escape-menu')?.classList.add('hidden');
@@ -907,7 +1087,7 @@ export class Game {
     this.hud.showZoomControls(false);
     this.hud.setMeditating(false);
     this.hud.setRoomTitle('Bedroom');
-    this.hud.setMeditateAvailable(true);
+    this.updateMeditateAvailability();
     this.hud.setReturnToRoomVisible(false);
   }
 
@@ -947,9 +1127,10 @@ export class Game {
         this.gameState.hasFlag('safe_unlocked'),
         this.inventory.hasItem('phone'),
       );
-      this.syncPortalState();
+      this.syncPortals();
     }
 
+    this.updateMeditateAvailability();
     this.transitionToGame();
   }
 
@@ -1138,7 +1319,9 @@ export class Game {
     this.deskSketchSpread.update(dt);
     this.room.paintingReveal.update(dt);
     this.room.wallNotesCluster.update(dt);
+    this.room.updatePortals(dt);
     this.player.update(dt, this.room.obstacles, this.room.shellSize);
+    this.updateExamineDismiss();
 
     if (wasMoving && !this.player.isMoving) {
       this.saveGame();

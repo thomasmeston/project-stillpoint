@@ -1,18 +1,31 @@
 import * as THREE from 'three';
 import type { RoomBuilder } from '../scene/RoomBuilder';
-import puzzleData from '../../data/puzzles/bedroom.json';
 import {
   clearContentOverrides,
   getBaseExamine,
   getBaseItem,
+  getBaseOpeningThought,
   getBaseThoughtForExamine,
+  getBaseWakeThought,
   getContentOverrides,
   getExamineOverride,
+  getExamineThoughtKey,
   getItemOverride,
+  getOpeningThoughtOverride,
+  getWakeThoughtOverride,
   listItemIds,
+  setDevContentRoom,
   setExamineOverride,
   setItemOverride,
+  setOpeningThoughtOverride,
+  setWakeThoughtOverride,
 } from './DevContentOverrides';
+import {
+  getDevLevel,
+  isDevLevelId,
+  layoutStorageKey,
+  type DevLevelId,
+} from './DevLevelConfig';
 import {
   buildRoomJson,
   saveContentToRepo,
@@ -87,12 +100,6 @@ const RELATIONSHIPS: Record<string, { props: string[]; hotspots: string[]; light
   }
 };
 
-const HOTSPOT_ITEM = new Map(
-  puzzleData.hotspots
-    .filter((h): h is typeof h & { item: string } => Boolean(h.item))
-    .map((h) => [h.id, h.item]),
-);
-
 type HistoryState = {
   props: Array<{
     id: string;
@@ -102,17 +109,20 @@ type HistoryState = {
   hotspots: Array<{
     id: string;
     position: [number, number, number];
+    size: [number, number, number];
   }>;
   lighting: Record<string, {
     position: [number, number, number];
   }>;
 };
 
-type EditMode = 'layout' | 'text';
+type EditMode = 'layout' | 'hotspots' | 'text';
 
 export class DevMover {
   private active = false;
   private editMode: EditMode = 'layout';
+  private roomId: DevLevelId = 'bedroom';
+  private hotspotItemMap = new Map<string, string>();
   // Selection state
   private selectedProps = new Map<string, THREE.Object3D>(); // id -> mesh
   private boxHelpers = new Map<string, THREE.BoxHelper>(); // id -> BoxHelper
@@ -126,8 +136,10 @@ export class DevMover {
   private panelEl: HTMLElement | null = null;
   private modeIndicatorEl: HTMLElement | null = null;
   private layoutSectionEl: HTMLElement | null = null;
+  private hotspotsSectionEl: HTMLElement | null = null;
   private contentSectionEl: HTMLElement | null = null;
   private layoutModeTab: HTMLButtonElement | null = null;
+  private hotspotsModeTab: HTMLButtonElement | null = null;
   private textModeTab: HTMLButtonElement | null = null;
   private nameEl: HTMLElement | null = null;
   private contentNameEl: HTMLElement | null = null;
@@ -139,13 +151,33 @@ export class DevMover {
   private redoBtn: HTMLButtonElement | null = null;
 
   private selectedHotspotId: string | null = null;
+  private selectedLayoutHotspotId: string | null = null;
+  private hotspotBoxHelper: THREE.BoxHelper | null = null;
   private hotspotPicker: HTMLSelectElement | null = null;
+  private hotspotLayoutPicker: HTMLSelectElement | null = null;
+  private hotspotLayoutNameEl: HTMLElement | null = null;
+  private hsPosXInput: HTMLInputElement | null = null;
+  private hsPosYInput: HTMLInputElement | null = null;
+  private hsPosZInput: HTMLInputElement | null = null;
+  private hsSizeXInput: HTMLInputElement | null = null;
+  private hsSizeYInput: HTMLInputElement | null = null;
+  private hsSizeZInput: HTMLInputElement | null = null;
+  private hotspotUndoBtn: HTMLButtonElement | null = null;
+  private hotspotRedoBtn: HTMLButtonElement | null = null;
   private itemPicker: HTMLSelectElement | null = null;
   private examineTitleInput: HTMLInputElement | null = null;
   private examineBodyInput: HTMLTextAreaElement | null = null;
   private examineThoughtInput: HTMLTextAreaElement | null = null;
+  private examineThoughtHintEl: HTMLElement | null = null;
+  private openingThoughtInput: HTMLTextAreaElement | null = null;
+  private wakeThoughtInput: HTMLTextAreaElement | null = null;
+  private wakeThoughtSectionEl: HTMLElement | null = null;
   private itemLabelInput: HTMLInputElement | null = null;
   private itemDescInput: HTMLTextAreaElement | null = null;
+  private levelLabelEl: HTMLElement | null = null;
+  private layoutHintEl: HTMLElement | null = null;
+  private contentHintEl: HTMLElement | null = null;
+  private itemSectionEl: HTMLElement | null = null;
 
   // Event handler bounds
   private clickHandlerBound = this.handleClick.bind(this);
@@ -165,8 +197,10 @@ export class DevMover {
     this.panelEl = document.getElementById('dev-panel');
     this.modeIndicatorEl = document.getElementById('dev-mode-indicator');
     this.layoutSectionEl = document.getElementById('dev-layout-section');
+    this.hotspotsSectionEl = document.getElementById('dev-hotspots-section');
     this.contentSectionEl = document.getElementById('dev-content-section');
     this.layoutModeTab = document.getElementById('dev-mode-layout') as HTMLButtonElement;
+    this.hotspotsModeTab = document.getElementById('dev-mode-hotspots') as HTMLButtonElement;
     this.textModeTab = document.getElementById('dev-mode-text') as HTMLButtonElement;
     this.nameEl = document.getElementById('dev-selected-name');
     this.contentNameEl = document.getElementById('dev-content-selected-name');
@@ -201,17 +235,61 @@ export class DevMover {
     });
 
     this.hotspotPicker = document.getElementById('dev-hotspot-picker') as HTMLSelectElement;
+    this.hotspotLayoutPicker = document.getElementById('dev-hotspot-layout-picker') as HTMLSelectElement;
+    this.hotspotLayoutNameEl = document.getElementById('dev-hotspot-layout-name');
+    this.hsPosXInput = document.getElementById('dev-hs-pos-x') as HTMLInputElement;
+    this.hsPosYInput = document.getElementById('dev-hs-pos-y') as HTMLInputElement;
+    this.hsPosZInput = document.getElementById('dev-hs-pos-z') as HTMLInputElement;
+    this.hsSizeXInput = document.getElementById('dev-hs-size-x') as HTMLInputElement;
+    this.hsSizeYInput = document.getElementById('dev-hs-size-y') as HTMLInputElement;
+    this.hsSizeZInput = document.getElementById('dev-hs-size-z') as HTMLInputElement;
+    this.hotspotUndoBtn = document.getElementById('dev-hotspot-undo') as HTMLButtonElement;
+    this.hotspotRedoBtn = document.getElementById('dev-hotspot-redo') as HTMLButtonElement;
     this.itemPicker = document.getElementById('dev-item-picker') as HTMLSelectElement;
     this.examineTitleInput = document.getElementById('dev-examine-title') as HTMLInputElement;
     this.examineBodyInput = document.getElementById('dev-examine-body') as HTMLTextAreaElement;
     this.examineThoughtInput = document.getElementById('dev-examine-thought') as HTMLTextAreaElement;
+    this.examineThoughtHintEl = document.getElementById('dev-examine-thought-hint');
+    this.openingThoughtInput = document.getElementById('dev-opening-thought') as HTMLTextAreaElement;
+    this.wakeThoughtInput = document.getElementById('dev-wake-thought') as HTMLTextAreaElement;
+    this.wakeThoughtSectionEl = document.getElementById('dev-wake-thought-section');
     this.itemLabelInput = document.getElementById('dev-item-label') as HTMLInputElement;
     this.itemDescInput = document.getElementById('dev-item-description') as HTMLTextAreaElement;
+    this.levelLabelEl = document.getElementById('dev-level-label');
+    this.layoutHintEl = document.getElementById('dev-layout-save-hint');
+    this.contentHintEl = document.getElementById('dev-content-save-hint');
+    this.itemSectionEl = document.getElementById('dev-item-section');
 
     this.populateContentPickers();
+    this.populateHotspotLayoutPicker();
     this.hotspotPicker?.addEventListener('change', () => {
       if (this.hotspotPicker?.value) this.selectHotspot(this.hotspotPicker.value);
     });
+    this.hotspotLayoutPicker?.addEventListener('change', () => {
+      if (this.hotspotLayoutPicker?.value) this.selectLayoutHotspot(this.hotspotLayoutPicker.value);
+      else this.deselectHotspotLayout();
+    });
+
+    this.wireNudge('dev-hs-x-dec', 'dev-hs-x-inc', 'x', 'hotspot-pos');
+    this.wireNudge('dev-hs-y-dec', 'dev-hs-y-inc', 'y', 'hotspot-pos');
+    this.wireNudge('dev-hs-z-dec', 'dev-hs-z-inc', 'z', 'hotspot-pos');
+    this.wireNudge('dev-hs-sx-dec', 'dev-hs-sx-inc', 'x', 'hotspot-size');
+    this.wireNudge('dev-hs-sy-dec', 'dev-hs-sy-inc', 'y', 'hotspot-size');
+    this.wireNudge('dev-hs-sz-dec', 'dev-hs-sz-inc', 'z', 'hotspot-size');
+
+    const triggerHotspotChange = () => this.applyHotspotInputs();
+    this.hsPosXInput?.addEventListener('change', triggerHotspotChange);
+    this.hsPosYInput?.addEventListener('change', triggerHotspotChange);
+    this.hsPosZInput?.addEventListener('change', triggerHotspotChange);
+    this.hsSizeXInput?.addEventListener('change', triggerHotspotChange);
+    this.hsSizeYInput?.addEventListener('change', triggerHotspotChange);
+    this.hsSizeZInput?.addEventListener('change', triggerHotspotChange);
+
+    document.getElementById('dev-hotspot-save-layout')?.addEventListener('click', () => this.saveLayoutToDisk());
+    document.getElementById('dev-hotspot-copy-json')?.addEventListener('click', () => this.copyJson());
+    document.getElementById('dev-hotspot-reset-layout')?.addEventListener('click', () => this.resetLayout());
+    this.hotspotUndoBtn?.addEventListener('click', () => this.undo());
+    this.hotspotRedoBtn?.addEventListener('click', () => this.redo());
     this.itemPicker?.addEventListener('change', () => {
       const itemId = this.itemPicker?.value ?? '';
       if (itemId) {
@@ -232,6 +310,7 @@ export class DevMover {
     document.getElementById('dev-reset-content')?.addEventListener('click', () => this.resetContent());
 
     this.layoutModeTab?.addEventListener('click', () => this.setEditMode('layout'));
+    this.hotspotsModeTab?.addEventListener('click', () => this.setEditMode('hotspots'));
     this.textModeTab?.addEventListener('click', () => this.setEditMode('text'));
   }
 
@@ -241,38 +320,65 @@ export class DevMover {
 
     if (mode === 'layout') {
       this.deselectContent();
+      this.deselectHotspotLayout();
+    } else if (mode === 'hotspots') {
+      this.deselectLayout();
+      this.deselectContent();
+      this.populateHotspotLayoutPicker();
     } else {
       this.deselectLayout();
+      this.deselectHotspotLayout();
     }
 
     this.layoutSectionEl?.classList.toggle('hidden', mode !== 'layout');
+    this.hotspotsSectionEl?.classList.toggle('hidden', mode !== 'hotspots');
     this.contentSectionEl?.classList.toggle('hidden', mode !== 'text');
     this.layoutModeTab?.classList.toggle('active', mode === 'layout');
+    this.hotspotsModeTab?.classList.toggle('active', mode === 'hotspots');
     this.textModeTab?.classList.toggle('active', mode === 'text');
     this.layoutModeTab?.setAttribute('aria-selected', mode === 'layout' ? 'true' : 'false');
+    this.hotspotsModeTab?.setAttribute('aria-selected', mode === 'hotspots' ? 'true' : 'false');
     this.textModeTab?.setAttribute('aria-selected', mode === 'text' ? 'true' : 'false');
 
     if (this.modeIndicatorEl) {
-      this.modeIndicatorEl.textContent = mode === 'layout' ? 'Layout' : 'Text';
+      const labels: Record<EditMode, string> = {
+        layout: 'Layout',
+        hotspots: 'Hotspots',
+        text: 'Text',
+      };
+      this.modeIndicatorEl.textContent = labels[mode];
+    }
+
+    if (mode === 'text') {
+      this.loadRoomContentFields();
     }
 
     this.updateHotspotDebugVisibility();
   }
 
   private updateHotspotDebugVisibility(): void {
-    const showHotspots = this.active && this.editMode === 'text';
+    const showHotspots = this.active && (this.editMode === 'text' || this.editMode === 'hotspots');
     for (const hs of this.room.hotspots) {
       hs.setVisibleDebug(showHotspots);
     }
   }
 
-  private wireNudge(decId: string, incId: string, axis: 'x' | 'y' | 'z' | 'ry'): void {
+  private wireNudge(
+    decId: string,
+    incId: string,
+    axis: 'x' | 'y' | 'z' | 'ry',
+    target: 'prop' | 'hotspot-pos' | 'hotspot-size' = 'prop',
+  ): void {
     const step = axis === 'ry' ? 15 : 0.05;
     document.getElementById(decId)?.addEventListener('click', () => {
-      this.nudge(axis, -step);
+      if (target === 'prop') this.nudge(axis, -step);
+      else if (target === 'hotspot-pos') this.nudgeHotspotPosition(axis as 'x' | 'y' | 'z', -step);
+      else this.nudgeHotspotSize(axis as 'x' | 'y' | 'z', -step);
     });
     document.getElementById(incId)?.addEventListener('click', () => {
-      this.nudge(axis, step);
+      if (target === 'prop') this.nudge(axis, step);
+      else if (target === 'hotspot-pos') this.nudgeHotspotPosition(axis as 'x' | 'y' | 'z', step);
+      else this.nudgeHotspotSize(axis as 'x' | 'y' | 'z', step);
     });
   }
 
@@ -282,18 +388,67 @@ export class DevMover {
 
   setRoom(room: RoomBuilder): void {
     this.room = room;
+    if (isDevLevelId(room.roomId)) {
+      this.bindLevel(room.roomId);
+    }
     if (this.active) this.updateHotspotDebugVisibility();
+  }
+
+  private bindLevel(roomId: DevLevelId): void {
+    this.roomId = roomId;
+    setDevContentRoom(roomId);
+
+    const level = getDevLevel(roomId);
+    if (!level) return;
+
+    this.hotspotItemMap = new Map(
+      level.puzzleHotspots
+        .filter((h): h is typeof h & { id: string; item: string } => Boolean(h.id && h.item))
+        .map((h) => [h.id, h.item]),
+    );
+
+    if (this.levelLabelEl) {
+      this.levelLabelEl.textContent = level.title;
+    }
+    if (this.layoutHintEl) {
+      this.layoutHintEl.innerHTML = `Save Layout writes to <code>${level.roomPath}</code> (local dev server).`;
+    }
+    if (this.contentHintEl) {
+      const itemsHint = level.supportsItems && level.itemsPath
+        ? ` and <code>${level.itemsPath}</code>`
+        : '';
+      this.contentHintEl.innerHTML = `Save Text writes to <code>${level.storyPath}</code>${itemsHint}.`;
+    }
+    if (this.itemSectionEl) {
+      this.itemSectionEl.classList.toggle('hidden', !level.supportsItems);
+    }
+
+    this.deselectAll();
+    this.undoStack = [];
+    this.redoStack = [];
+    this.updateHistoryButtons();
+    this.populateContentPickers();
+    this.populateHotspotLayoutPicker();
+    this.loadRoomContentFields();
   }
 
   setActive(active: boolean): void {
     if (this.active === active) return;
+
+    if (active && !isDevLevelId(this.room.roomId)) {
+      alert(`Dev Mode is not available in "${this.room.roomId}".`);
+      return;
+    }
+
     this.active = active;
 
     if (active) {
       this.editMode = 'layout';
       this.layoutSectionEl?.classList.remove('hidden');
+      this.hotspotsSectionEl?.classList.add('hidden');
       this.contentSectionEl?.classList.add('hidden');
       this.layoutModeTab?.classList.add('active');
+      this.hotspotsModeTab?.classList.remove('active');
       this.textModeTab?.classList.remove('active');
       if (this.modeIndicatorEl) this.modeIndicatorEl.textContent = 'Layout';
       this.panelEl?.classList.remove('hidden');
@@ -322,6 +477,82 @@ export class DevMover {
   }
 
   private handleKeyDown(e: KeyboardEvent): void {
+    if (this.editMode === 'hotspots') {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+        e.preventDefault();
+        this.undo();
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) {
+        e.preventDefault();
+        this.redo();
+        return;
+      }
+
+      if (!this.selectedLayoutHotspotId) return;
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      const moveStep = e.shiftKey ? 0.01 : 0.05;
+      const sizeStep = e.shiftKey ? 0.01 : 0.05;
+
+      switch (e.key) {
+        case 'ArrowLeft':
+          this.nudgeHotspotPosition('x', -moveStep);
+          e.preventDefault();
+          break;
+        case 'ArrowRight':
+          this.nudgeHotspotPosition('x', moveStep);
+          e.preventDefault();
+          break;
+        case 'ArrowUp':
+          this.nudgeHotspotPosition('z', -moveStep);
+          e.preventDefault();
+          break;
+        case 'ArrowDown':
+          this.nudgeHotspotPosition('z', moveStep);
+          e.preventDefault();
+          break;
+        case 'PageUp':
+          this.nudgeHotspotPosition('y', moveStep);
+          e.preventDefault();
+          break;
+        case 'PageDown':
+          this.nudgeHotspotPosition('y', -moveStep);
+          e.preventDefault();
+          break;
+        case '[':
+          this.nudgeHotspotSize('x', -sizeStep);
+          e.preventDefault();
+          break;
+        case ']':
+          this.nudgeHotspotSize('x', sizeStep);
+          e.preventDefault();
+          break;
+        case '{':
+          this.nudgeHotspotSize('y', -sizeStep);
+          e.preventDefault();
+          break;
+        case '}':
+          this.nudgeHotspotSize('y', sizeStep);
+          e.preventDefault();
+          break;
+        case '-':
+          this.nudgeHotspotSize('z', -sizeStep);
+          e.preventDefault();
+          break;
+        case '=':
+        case '+':
+          this.nudgeHotspotSize('z', sizeStep);
+          e.preventDefault();
+          break;
+        case 'Escape':
+          this.deselectHotspotLayout();
+          e.preventDefault();
+          break;
+      }
+      return;
+    }
+
     if (this.editMode !== 'layout') return;
 
     if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
@@ -405,6 +636,24 @@ export class DevMover {
       return;
     }
 
+    if (this.editMode === 'hotspots') {
+      raycaster.layers.set(1);
+      raycaster.setFromCamera(mouse, this.camera);
+      const hotspotHits = raycaster.intersectObjects(
+        this.room.hotspots.map((h) => h.mesh),
+        false,
+      );
+      if (hotspotHits.length > 0) {
+        const hotspotId = hotspotHits[0].object.userData.hotspotId as string;
+        this.selectLayoutHotspot(hotspotId);
+        return;
+      }
+      if (!toggle) {
+        this.deselectHotspotLayout();
+      }
+      return;
+    }
+
     raycaster.layers.set(0);
     raycaster.setFromCamera(mouse, this.camera);
 
@@ -474,6 +723,7 @@ export class DevMover {
 
   private deselectAll(): void {
     this.deselectLayout();
+    this.deselectHotspotLayout();
     this.deselectContent();
   }
 
@@ -490,6 +740,141 @@ export class DevMover {
     this.selectedHotspotId = null;
     if (this.hotspotPicker) this.hotspotPicker.value = '';
     if (this.contentNameEl) this.contentNameEl.textContent = 'None';
+  }
+
+  private deselectHotspotLayout(): void {
+    this.selectedLayoutHotspotId = null;
+    if (this.hotspotLayoutPicker) this.hotspotLayoutPicker.value = '';
+    if (this.hotspotLayoutNameEl) this.hotspotLayoutNameEl.textContent = 'None';
+    if (this.hotspotBoxHelper) {
+      this.scene.remove(this.hotspotBoxHelper);
+      this.hotspotBoxHelper = null;
+    }
+    this.updateHotspotLayoutUIFields();
+  }
+
+  private selectLayoutHotspot(hotspotId: string): void {
+    this.selectedLayoutHotspotId = hotspotId;
+    if (this.hotspotLayoutPicker) this.hotspotLayoutPicker.value = hotspotId;
+    if (this.hotspotLayoutNameEl) {
+      const hs = this.room.hotspotsData.find((h) => h.id === hotspotId);
+      this.hotspotLayoutNameEl.textContent = hs?.label ? `${hotspotId} (${hs.label})` : hotspotId;
+    }
+
+    const hs = this.room.hotspots.find((h) => h.id === hotspotId);
+    if (hs) {
+      if (this.hotspotBoxHelper) {
+        this.scene.remove(this.hotspotBoxHelper);
+      }
+      this.hotspotBoxHelper = new THREE.BoxHelper(hs.mesh, 0xff8800);
+      this.scene.add(this.hotspotBoxHelper);
+    }
+
+    this.updateHotspotLayoutUIFields();
+  }
+
+  private updateHotspotLayoutUIFields(): void {
+    const hsData = this.selectedLayoutHotspotId
+      ? this.room.hotspotsData.find((h) => h.id === this.selectedLayoutHotspotId)
+      : null;
+
+    const setField = (input: HTMLInputElement | null, value: string, enabled: boolean) => {
+      if (!input) return;
+      input.disabled = !enabled;
+      input.value = value;
+    };
+
+    if (hsData) {
+      setField(this.hsPosXInput, hsData.position[0].toFixed(2), true);
+      setField(this.hsPosYInput, hsData.position[1].toFixed(2), true);
+      setField(this.hsPosZInput, hsData.position[2].toFixed(2), true);
+      setField(this.hsSizeXInput, hsData.size[0].toFixed(2), true);
+      setField(this.hsSizeYInput, hsData.size[1].toFixed(2), true);
+      setField(this.hsSizeZInput, hsData.size[2].toFixed(2), true);
+    } else {
+      setField(this.hsPosXInput, '0.00', false);
+      setField(this.hsPosYInput, '0.00', false);
+      setField(this.hsPosZInput, '0.00', false);
+      setField(this.hsSizeXInput, '0.00', false);
+      setField(this.hsSizeYInput, '0.00', false);
+      setField(this.hsSizeZInput, '0.00', false);
+    }
+  }
+
+  private nudgeHotspotPosition(axis: 'x' | 'y' | 'z', amount: number): void {
+    if (!this.selectedLayoutHotspotId) return;
+    const hsData = this.room.hotspotsData.find((h) => h.id === this.selectedLayoutHotspotId);
+    if (!hsData) return;
+
+    this.pushHistory();
+    if (axis === 'x') hsData.position[0] += amount;
+    else if (axis === 'y') hsData.position[1] += amount;
+    else hsData.position[2] += amount;
+
+    this.applyHotspotVisual(this.selectedLayoutHotspotId);
+    this.updateHotspotLayoutUIFields();
+    this.persistLayoutDraft();
+  }
+
+  private nudgeHotspotSize(axis: 'x' | 'y' | 'z', amount: number): void {
+    if (!this.selectedLayoutHotspotId) return;
+    const hsData = this.room.hotspotsData.find((h) => h.id === this.selectedLayoutHotspotId);
+    if (!hsData) return;
+
+    this.pushHistory();
+    const idx = axis === 'x' ? 0 : axis === 'y' ? 1 : 2;
+    hsData.size[idx] = Math.max(0.05, hsData.size[idx] + amount);
+
+    this.applyHotspotVisual(this.selectedLayoutHotspotId);
+    this.updateHotspotLayoutUIFields();
+    this.persistLayoutDraft();
+  }
+
+  private applyHotspotInputs(): void {
+    if (!this.selectedLayoutHotspotId) return;
+    const hsData = this.room.hotspotsData.find((h) => h.id === this.selectedLayoutHotspotId);
+    if (!hsData) return;
+
+    const x = parseFloat(this.hsPosXInput?.value ?? '0');
+    const y = parseFloat(this.hsPosYInput?.value ?? '0');
+    const z = parseFloat(this.hsPosZInput?.value ?? '0');
+    const sx = parseFloat(this.hsSizeXInput?.value ?? '0');
+    const sy = parseFloat(this.hsSizeYInput?.value ?? '0');
+    const sz = parseFloat(this.hsSizeZInput?.value ?? '0');
+
+    const changed =
+      (!isNaN(x) && x !== hsData.position[0]) ||
+      (!isNaN(y) && y !== hsData.position[1]) ||
+      (!isNaN(z) && z !== hsData.position[2]) ||
+      (!isNaN(sx) && sx !== hsData.size[0]) ||
+      (!isNaN(sy) && sy !== hsData.size[1]) ||
+      (!isNaN(sz) && sz !== hsData.size[2]);
+
+    if (!changed) return;
+
+    this.pushHistory();
+    if (!isNaN(x)) hsData.position[0] = x;
+    if (!isNaN(y)) hsData.position[1] = y;
+    if (!isNaN(z)) hsData.position[2] = z;
+    if (!isNaN(sx)) hsData.size[0] = Math.max(0.05, sx);
+    if (!isNaN(sy)) hsData.size[1] = Math.max(0.05, sy);
+    if (!isNaN(sz)) hsData.size[2] = Math.max(0.05, sz);
+
+    this.applyHotspotVisual(this.selectedLayoutHotspotId);
+    this.updateHotspotLayoutUIFields();
+    this.persistLayoutDraft();
+  }
+
+  private applyHotspotVisual(hotspotId: string): void {
+    const hsData = this.room.hotspotsData.find((h) => h.id === hotspotId);
+    const hs = this.room.hotspots.find((h) => h.id === hotspotId);
+    if (!hsData || !hs) return;
+
+    hs.setSize(hsData.size);
+    this.applyTransformToHotspotMesh(hs.mesh, hsData);
+    if (this.hotspotBoxHelper && this.selectedLayoutHotspotId === hotspotId) {
+      this.hotspotBoxHelper.update();
+    }
   }
 
   private updateBoxHelpers(): void {
@@ -803,7 +1188,8 @@ export class DevMover {
 
     const hotspotsCopy = this.room.hotspotsData.map((h) => ({
       id: h.id,
-      position: [...h.position] as [number, number, number]
+      position: [...h.position] as [number, number, number],
+      size: [...h.size] as [number, number, number],
     }));
 
     const lightingCopy: Record<string, { position: [number, number, number] }> = {};
@@ -831,7 +1217,8 @@ export class DevMover {
     }));
     const currentHotspots = this.room.hotspotsData.map((h) => ({
       id: h.id,
-      position: [...h.position] as [number, number, number]
+      position: [...h.position] as [number, number, number],
+      size: [...h.size] as [number, number, number],
     }));
     const currentLighting: Record<string, { position: [number, number, number] }> = {};
     for (const [key, spec] of Object.entries(this.room.lightingData || {})) {
@@ -855,7 +1242,8 @@ export class DevMover {
     }));
     const currentHotspots = this.room.hotspotsData.map((h) => ({
       id: h.id,
-      position: [...h.position] as [number, number, number]
+      position: [...h.position] as [number, number, number],
+      size: [...h.size] as [number, number, number],
     }));
     const currentLighting: Record<string, { position: [number, number, number] }> = {};
     for (const [key, spec] of Object.entries(this.room.lightingData || {})) {
@@ -888,10 +1276,8 @@ export class DevMover {
       const hsData = this.room.hotspotsData.find((h) => h.id === savedHs.id);
       if (hsData) {
         hsData.position = [...savedHs.position];
-        const hs = this.room.hotspots.find((h) => h.id === savedHs.id);
-        if (hs) {
-          this.applyTransformToHotspotMesh(hs.mesh, hsData);
-        }
+        hsData.size = [...savedHs.size];
+        this.applyHotspotVisual(savedHs.id);
       }
     }
 
@@ -912,22 +1298,27 @@ export class DevMover {
     this.persistLayoutDraft();
     this.updateBoxHelpers();
     this.updateUIFields();
+    this.updateHotspotLayoutUIFields();
     this.updateHistoryButtons();
   }
 
   private updateHistoryButtons(): void {
-    if (this.undoBtn) this.undoBtn.disabled = this.undoStack.length === 0;
-    if (this.redoBtn) this.redoBtn.disabled = this.redoStack.length === 0;
+    const canUndo = this.undoStack.length > 0;
+    const canRedo = this.redoStack.length > 0;
+    if (this.undoBtn) this.undoBtn.disabled = !canUndo;
+    if (this.redoBtn) this.redoBtn.disabled = !canRedo;
+    if (this.hotspotUndoBtn) this.hotspotUndoBtn.disabled = !canUndo;
+    if (this.hotspotRedoBtn) this.hotspotRedoBtn.disabled = !canRedo;
   }
 
   private persistLayoutDraft(): void {
     localStorage.setItem(
-      'dev_room_layout_bedroom',
+      layoutStorageKey(this.roomId),
       JSON.stringify({
         props: this.room.propsData,
         hotspots: this.room.hotspotsData,
-        lighting: this.room.lightingData
-      })
+        lighting: this.room.lightingData,
+      }),
     );
   }
 
@@ -946,7 +1337,10 @@ export class DevMover {
   }
 
   private async saveLayoutToDisk(): Promise<void> {
-    if (!confirm('Save layout to data/rooms/bedroom.json? This overwrites the file on disk.')) {
+    const level = getDevLevel(this.roomId);
+    if (!level) return;
+
+    if (!confirm(`Save layout to ${level.roomPath}? This overwrites the file on disk.`)) {
       return;
     }
 
@@ -958,10 +1352,27 @@ export class DevMover {
   }
 
   private resetLayout(): void {
-    if (confirm('Are you sure you want to reset all custom layout placements?')) {
-      localStorage.removeItem('dev_room_layout_bedroom');
+    if (confirm('Are you sure you want to reset all custom layout placements for this level?')) {
+      localStorage.removeItem(layoutStorageKey(this.roomId));
       location.reload();
     }
+  }
+
+  private populateHotspotLayoutPicker(): void {
+    if (!this.hotspotLayoutPicker) return;
+    const current = this.selectedLayoutHotspotId ?? '';
+    this.hotspotLayoutPicker.innerHTML = '';
+    const blank = document.createElement('option');
+    blank.value = '';
+    blank.textContent = '— select hotspot —';
+    this.hotspotLayoutPicker.appendChild(blank);
+    for (const hs of this.room.hotspotsData) {
+      const opt = document.createElement('option');
+      opt.value = hs.id;
+      opt.textContent = hs.label ? `${hs.id} (${hs.label})` : hs.id;
+      this.hotspotLayoutPicker.appendChild(opt);
+    }
+    this.hotspotLayoutPicker.value = current;
   }
 
   private populateContentPickers(): void {
@@ -984,11 +1395,13 @@ export class DevMover {
       blank.value = '';
       blank.textContent = '— select item —';
       this.itemPicker.appendChild(blank);
-      for (const itemId of listItemIds()) {
-        const opt = document.createElement('option');
-        opt.value = itemId;
-        opt.textContent = itemId;
-        this.itemPicker.appendChild(opt);
+      if (getDevLevel(this.roomId)?.supportsItems) {
+        for (const itemId of listItemIds()) {
+          const opt = document.createElement('option');
+          opt.value = itemId;
+          opt.textContent = itemId;
+          this.itemPicker.appendChild(opt);
+        }
       }
     }
   }
@@ -1002,9 +1415,25 @@ export class DevMover {
     this.loadContentFields(hotspotId);
   }
 
+  private loadRoomContentFields(): void {
+    const level = getDevLevel(this.roomId);
+    if (this.openingThoughtInput) {
+      this.openingThoughtInput.value =
+        getOpeningThoughtOverride() ?? getBaseOpeningThought(this.roomId);
+    }
+    if (this.wakeThoughtSectionEl) {
+      this.wakeThoughtSectionEl.classList.toggle('hidden', !level?.afterIntroThoughtKey);
+    }
+    if (this.wakeThoughtInput && level?.afterIntroThoughtKey) {
+      this.wakeThoughtInput.value =
+        getWakeThoughtOverride() ?? getBaseWakeThought(this.roomId);
+    }
+  }
+
   private loadContentFields(hotspotId: string): void {
-    const base = getBaseExamine(hotspotId);
+    const base = getBaseExamine(hotspotId, this.roomId);
     const ov = getExamineOverride(hotspotId);
+    const thoughtKey = getExamineThoughtKey(hotspotId, this.roomId);
 
     if (this.examineTitleInput) {
       this.examineTitleInput.value = ov?.title ?? base?.title ?? '';
@@ -1014,13 +1443,28 @@ export class DevMover {
     }
     if (this.examineThoughtInput) {
       this.examineThoughtInput.value =
-        ov?.thought ?? getBaseThoughtForExamine(hotspotId);
+        ov?.thought ?? getBaseThoughtForExamine(hotspotId, this.roomId);
+    }
+    if (this.examineThoughtHintEl) {
+      if (!base) {
+        this.examineThoughtHintEl.textContent =
+          'No story entry for this hotspot yet. Save Text creates one on disk.';
+      } else if (thoughtKey) {
+        this.examineThoughtHintEl.textContent =
+          `Linked in story as "${thoughtKey}" under thoughts. Shown once on first examine.`;
+      } else {
+        this.examineThoughtHintEl.textContent =
+          'This hotspot has no first-examine inner voice in the story file yet.';
+      }
     }
 
-    const linkedItem = HOTSPOT_ITEM.get(hotspotId);
-    if (linkedItem && this.itemPicker) {
+    const linkedItem = this.hotspotItemMap.get(hotspotId);
+    if (linkedItem && this.itemPicker && getDevLevel(this.roomId)?.supportsItems) {
       this.itemPicker.value = linkedItem;
       this.loadItemFields(linkedItem);
+    } else {
+      this.clearItemFields();
+      if (this.itemPicker) this.itemPicker.value = '';
     }
   }
 
@@ -1050,6 +1494,13 @@ export class DevMover {
   }
 
   private applyContentToOverrides(): void {
+    if (this.openingThoughtInput) {
+      setOpeningThoughtOverride(this.openingThoughtInput.value);
+    }
+    if (this.wakeThoughtInput && getDevLevel(this.roomId)?.afterIntroThoughtKey) {
+      setWakeThoughtOverride(this.wakeThoughtInput.value);
+    }
+
     if (this.selectedHotspotId) {
       setExamineOverride(this.selectedHotspotId, {
         title: this.examineTitleInput?.value ?? '',
@@ -1059,7 +1510,7 @@ export class DevMover {
     }
 
     const itemId = this.itemPicker?.value;
-    if (itemId) {
+    if (itemId && getDevLevel(this.roomId)?.supportsItems) {
       setItemOverride(itemId, {
         label: this.itemLabelInput?.value ?? '',
         description: this.itemDescInput?.value ?? '',
@@ -1070,15 +1521,21 @@ export class DevMover {
   private async saveContent(): Promise<void> {
     this.applyContentToOverrides();
 
+    const level = getDevLevel(this.roomId);
+    if (!level) return;
+
+    const itemsHint = level.supportsItems && level.itemsPath
+      ? ` and ${level.itemsPath}`
+      : '';
     if (
       !confirm(
-        'Save text to data/story/bedroom-script.json and data/items.json? This overwrites those files on disk.',
+        `Save text to ${level.storyPath}${itemsHint}? This overwrites those files on disk.`,
       )
     ) {
       return;
     }
 
-    const result = await saveContentToRepo();
+    const result = await saveContentToRepo(this.roomId);
     alert(result.message);
     if (result.ok && result.method === 'api') {
       location.reload();
@@ -1097,14 +1554,15 @@ export class DevMover {
   }
 
   private resetContent(): void {
-    if (!confirm('Reset all dev text overrides?')) return;
-    clearContentOverrides();
+    if (!confirm(`Reset all dev text overrides for ${getDevLevel(this.roomId)?.title ?? this.roomId}?`)) return;
+    clearContentOverrides(this.roomId);
+    this.loadRoomContentFields();
     if (this.selectedHotspotId) {
       this.loadContentFields(this.selectedHotspotId);
     }
-    if (this.itemPicker?.value) {
+    if (this.itemPicker?.value && getDevLevel(this.roomId)?.supportsItems) {
       this.loadItemFields(this.itemPicker.value);
     }
-    alert('Text overrides cleared.');
+    alert('Text overrides cleared for this level.');
   }
 }

@@ -1,0 +1,50 @@
+{
+  "opening_thought": "Stars through glass. Brass and silence. The word STILL is written everywhere up here.",
+  "thoughts": {
+    "lesson_4_observatory": "Still. The last lesson. The door will know when you carry it home.",
+    "all_lessons_learned": "Four lessons. Four worlds. The bedroom door waits for all of them.",
+    "observatory_telescope_musings": "Every star is a pin in a map you forgot you made.",
+    "observatory_chart_musings": "The chart highlights one word among the constellations: STILL."
+  },
+  "journal_entries": {
+    "observatory_clue_found": {
+      "title": "Star Chart Clue",
+      "body": "One word circled on the chart: STILL.",
+      "thought": "observatory_chart_musings"
+    },
+    "lesson_4_observatory": {
+      "title": "Lesson — Still",
+      "body": "The brass chest opened to STILL. The bedroom door can hear you now.",
+      "thought": "lesson_4_observatory"
+    }
+  },
+  "examines": {
+    "observatory_telescope": {
+      "title": "Telescope",
+      "body": "Brass tube aimed at a sky that shouldn't exist indoors. The lens is clean as a held breath.",
+      "thought": "observatory_telescope_musings"
+    },
+    "observatory_chart": {
+      "title": "Star Chart",
+      "body": "Constellations traced in gold ink. One word circled again and again: STILL.",
+      "thought": "observatory_chart_musings",
+      "journal": "observatory_clue_found"
+    },
+    "observatory_chest": {
+      "title": "Brass Chest",
+      "body": "The final lock in the four worlds. It wants the word the stars keep repeating.",
+      "thought": "observatory_chart_musings"
+    }
+  },
+  "on_flag": {
+    "lesson_4": {
+      "thought": "lesson_4_observatory",
+      "journal": "lesson_4_observatory"
+    }
+  },
+  "ending": {
+    "title": "Observatory",
+    "body": "The dome turns. You have what you came for.",
+    "journal_id": "lesson_4_observatory"
+  }
+}

@@ -1,5 +1,8 @@
 import puzzleData from '../../data/puzzles/bedroom.json';
 import shipPuzzleData from '../../data/puzzles/pirate-ship.json';
+import level2PuzzleData from '../../data/puzzles/level_2.json';
+import level3PuzzleData from '../../data/puzzles/level_3.json';
+import level4PuzzleData from '../../data/puzzles/level_4.json';
 import { EventBus } from '../utils/EventBus';
 import type { GameState } from './GameState';
 import type { Inventory } from './Inventory';
@@ -46,6 +49,9 @@ export class PuzzleManager {
   private readonly roomFiles: Record<string, PuzzlesFile> = {
     bedroom: puzzleData as PuzzlesFile,
     pirate_ship: shipPuzzleData as PuzzlesFile,
+    level_2: level2PuzzleData as PuzzlesFile,
+    level_3: level3PuzzleData as PuzzlesFile,
+    level_4: level4PuzzleData as PuzzlesFile,
   };
   private data = this.roomFiles.bedroom;
   private puzzles = new Map(this.data.puzzles.map((p) => [p.id, p]));

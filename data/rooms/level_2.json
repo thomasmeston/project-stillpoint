@@ -1,0 +1,103 @@
+{
+  "id": "level_2",
+  "palette": {
+    "grass": "#5a9d4a",
+    "grass_dark": "#3d7a32",
+    "path": "#c4a574",
+    "flower": "#e85d8a",
+    "leaf": "#2d6b28",
+    "sky": "#87ceeb",
+    "wood": "#6e4a2b",
+    "accent": "#ffd966"
+  },
+  "shell": {
+    "size": { "x": 7, "z": 6 },
+    "wall_height": 0.5,
+    "floor_color": "grass",
+    "wall_color": "leaf"
+  },
+  "props": [
+    {
+      "id": "Sky",
+      "mesh": "box",
+      "color": "sky",
+      "size": [60, 1, 60],
+      "position": [0, -0.75, 0],
+      "wall": "floor"
+    },
+    {
+      "id": "Path",
+      "mesh": "box",
+      "color": "path",
+      "size": [1.2, 0.06, 4.5],
+      "position": [0, 0.02, 0],
+      "wall": "floor"
+    },
+    {
+      "id": "Arbor",
+      "mesh": "box",
+      "color": "wood",
+      "size": [2.2, 2.4, 0.3],
+      "position": [0, 1.2, -2.2],
+      "wall": "floor"
+    },
+    {
+      "id": "FlowerBed1",
+      "mesh": "box",
+      "color": "flower",
+      "size": [1.0, 0.35, 0.8],
+      "position": [-2.2, 0.18, 1.2],
+      "wall": "floor"
+    },
+    {
+      "id": "FlowerBed2",
+      "mesh": "box",
+      "color": "accent",
+      "size": [0.8, 0.3, 0.7],
+      "position": [2.1, 0.16, 1.5],
+      "wall": "floor"
+    },
+    {
+      "id": "LessonChest",
+      "mesh": "box",
+      "color": "wood",
+      "size": [0.85, 0.5, 0.6],
+      "position": [0, 0.27, -1.2],
+      "wall": "floor"
+    }
+  ],
+  "hotspots": [
+    {
+      "id": "garden_arbor",
+      "label": "Arbor",
+      "position": [0, 1.2, -2.0],
+      "size": [2.2, 2.4, 0.6],
+      "color": "#6e4a2b",
+      "wall": "floor"
+    },
+    {
+      "id": "garden_clue",
+      "label": "Flower Bed",
+      "position": [-2.2, 0.4, 1.2],
+      "size": [1.1, 0.6, 0.9],
+      "color": "#e85d8a",
+      "wall": "floor"
+    },
+    {
+      "id": "garden_chest",
+      "label": "Garden Chest",
+      "position": [0, 0.5, -1.2],
+      "size": [1.0, 0.8, 0.75],
+      "color": "#6e4a2b",
+      "wall": "floor"
+    }
+  ],
+  "spawn": { "player": [0, 0, 1.2] },
+  "lighting": {
+    "sun": {
+      "position": [2, 5, 3],
+      "color": "#fff8e0",
+      "energy": 2.0
+    }
+  }
+}

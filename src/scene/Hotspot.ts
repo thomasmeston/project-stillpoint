@@ -32,4 +32,9 @@ export class Hotspot {
     mat.opacity = enabled ? 0.25 : 0;
     mat.color.setHex(0xffcc66);
   }
+
+  setSize(size: [number, number, number]): void {
+    this.mesh.geometry.dispose();
+    this.mesh.geometry = new THREE.BoxGeometry(size[0], size[1], size[2]);
+  }
 }

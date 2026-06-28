@@ -52,7 +52,7 @@
 
 .dev-mode-tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 6px;
 }
 
@@ -105,7 +105,8 @@
 }
 
 #dev-content-section.hidden,
-#dev-layout-section.hidden {
+#dev-layout-section.hidden,
+#dev-item-section.hidden {
   display: none !important;
 }
 

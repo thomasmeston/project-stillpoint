@@ -1,7 +1,7 @@
 {
-  "opening_thought": "White noise behind my eyes. I know this room — no, I know I knew it. The walls are the right wrong distance apart.",
+  "opening_thought": "Moving hurts. Why does it feel like i have to remember how to walk?",
   "thoughts": {
-    "wake_beside_bed": "Standing. When did standing happen. The bed still holds heat like something that just stopped speaking.",
+    "wake_beside_bed": "Head...fuzzy. Was I awake this whole time? Or how long was I sleeping?",
     "locked_hint": "Not yet. Some other part of me remembers before I do.",
     "door_locked": "Layered shut. I stacked the locks myself — I just can't recall why.",
     "drawer_unlocked": "Wood exhales. I was waiting for that sound. I think I was.",
@@ -9,16 +9,17 @@
     "key_ready": "Metal finds wood. The fit is older than this forgetting.",
     "wardrobe_open": "Cold breath. Paper smell. Ink. A name I signed somewhere between sleep and waking.",
     "door_opening": "Something unlatches that was never barred from the outside.",
+    "all_lessons_learned": "Four lessons. Four worlds. The bedroom door waits for all of them.",
     "desk_drawer_loot": "Faces turned away. Dates that don't belong to me — except my hand wrote the receipt.",
     "safe_opened": "Brass tongue. A blade without a handle. Rest — the word pulsing like a second heartbeat.",
-    "bed_musings": "Indentation in the linen. Someone lay here. Was it me, before I woke into not-knowing?",
+    "bed_musings": "Indentation in the sheets. Someone slept here. Was it me?",
     "clock_musings": "Twelve frozen on the face. A minute buried somewhere. I circled it once — the ink remembers.",
     "desk_musings": "Brown ring in the grain. Thoughts left half-finished. The chair still angled toward forgetting.",
     "sketchbook_musings": "Black feathers. Lines I don't recall drawing. STILL — then an arrow I can't follow yet.",
-    "wall_notes_musings": "Paper constellation. My script on every scrap. I don't remember writing — only that it's true.",
+    "wall_notes_musings": "Scribbles everywhere. I recognize my writing, but I don't remember making these.",
     "painting_musings": "Oak in oil. Roots in paint. Wind I felt somewhere that wasn't this room.",
-    "window_musings": "Blue too clean. Sun lies flat. Real places are dimmer than this.",
-    "nightstand_musings": "Grip worn smooth. Snapped off something that wanted to stay shut.",
+    "window_musings": "Blues are too blue. Sun looks fake. Real places are dimmer than this.",
+    "nightstand_musings": "",
     "bookshelf_musings": "Dream Cartography. I was mapping exits on paper before I built one in wood.",
     "wardrobe_musings": "Dark inside. Things I folded away when waking hurt too much to carry.",
     "lamp_musings": "Gold pool on the desk. For one blink the room fits around me like skin.",
@@ -74,7 +75,7 @@
   "examines": {
     "bed": {
       "title": "Bed",
-      "body": "Sheets still warm. A calendar scrap peeks from under the mattress edge.",
+      "body": "A nice comfy, inviting bed. Blue sheets, one pillow.",
       "thought": "bed_musings",
       "journal": "calendar_clue"
     },
@@ -109,7 +110,7 @@
     },
     "nightstand": {
       "title": "Nightstand",
-      "body": "A wooden key handle in the drawer. It snapped off something heavier.",
+      "body": "A wooden key handle in the drawer. It snapped off something.",
       "thought": "nightstand_musings"
     },
     "key_handle": {
@@ -123,7 +124,7 @@
     },
     "wall_notes": {
       "title": "Pinned Notes",
-      "body": "Cryptic sketches and half-sentences pinned across the wall — portals, spirals, diagrams. Someone mapped a maze in pencil and never took it down.",
+      "body": "Cryptic sketches and half-sentences pinned across the wall — portals, spirals, diagrams.",
       "thought": "wall_notes_musings"
     },
     "wall_safe": {
@@ -151,7 +152,7 @@
     },
     "window": {
       "title": "Window",
-      "body": "It's a paradise out there. Too bad I'm couped up in here.",
+      "body": "Beautiful view of a tropical paradise. Sunny and peaceful.",
       "thought": "window_musings"
     },
     "combine_station": {

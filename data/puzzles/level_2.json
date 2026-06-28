@@ -1,0 +1,21 @@
+{
+  "puzzles": [
+    {
+      "id": "garden_lock",
+      "type": "padlock",
+      "solution": "GROWTH",
+      "on_success": [
+        "set_flag:lesson_2",
+        "journal:lesson_2_garden",
+        "thought:lesson_2_garden"
+      ]
+    }
+  ],
+  "gates": [],
+  "hotspots": [
+    { "id": "garden_arbor", "action": "examine" },
+    { "id": "garden_clue", "action": "examine" },
+    { "id": "garden_chest", "action": "open_puzzle", "puzzle": "garden_lock" }
+  ],
+  "item_uses": []
+}
