@@ -89,6 +89,7 @@ export class Game {
   private currentSlot: number | null = null;
   private currentRoomId = 'bedroom';
   private inMenu = true;
+  private loadMenuFromPause = false;
   private escapeMenuOpen = false;
   private isDeskZoomed = false;
   private isWallNotesZoomed = false;
@@ -122,7 +123,7 @@ export class Game {
 
   get isInputBlocked(): boolean {
     return this.inMenu || this.escapeMenuOpen || this.introActive || this.thoughtActive || this.meditateActive
-      || this.fallActive
+      || this.fallActive || this.hud.isItemInspectOpen()
       || (this.devMover && this.devMover.isActive());
   }
 
@@ -179,6 +180,7 @@ export class Game {
     this.puzzleManager.events.on('hotspotStateChanged', (id) => {
       const def = this.puzzleManager.getHotspotDef(id);
       this.room.setHotspotVisible(id, !def.disabled);
+      this.syncPickupProps();
     });
 
     // Wire up autosave event listeners
@@ -348,6 +350,18 @@ export class Game {
       if (e.key === '`') {
         e.preventDefault();
         this.toggleDevMode();
+        return;
+      }
+
+      if (e.key === 'Escape' && this.hud.isItemInspectOpen()) {
+        e.preventDefault();
+        this.hud.hideItemInspect();
+        return;
+      }
+
+      if (e.key === 'Escape' && this.loadMenuFromPause) {
+        e.preventDefault();
+        this.closeLoadSaveScreen();
         return;
       }
 
@@ -563,6 +577,12 @@ export class Game {
       this.gameState.hasFlag('safe_unlocked'),
       this.inventory.hasItem('phone'),
     );
+  }
+
+  private syncPickupProps(): void {
+    if (this.currentRoomId !== 'bedroom') return;
+    const scrapTaken = this.puzzleManager.getHotspotDef('calendar_scrap').disabled;
+    this.room.setPropVisible('CalendarScrap', !scrapTaken);
   }
 
   private handlePaintingExamine(): void {
@@ -829,6 +849,7 @@ export class Game {
 
     if (roomId === 'bedroom') {
       this.syncSafeVisuals();
+      this.syncPickupProps();
       this.room.syncPaintingReveal(
         this.gameState.hasFlag('painting_moved'),
         this.gameState.hasFlag('safe_unlocked'),
@@ -935,8 +956,12 @@ export class Game {
     const deskTarget = new THREE.Vector3();
     if (deskMesh) {
       deskMesh.updateMatrixWorld(true);
-      deskMesh.getWorldPosition(deskTarget);
-      deskTarget.y += 0.375;
+      const box = new THREE.Box3().setFromObject(deskMesh);
+      deskTarget.set(
+        (box.min.x + box.max.x) * 0.5,
+        box.max.y,
+        (box.min.z + box.max.z) * 0.5,
+      );
     } else {
       deskTarget.set(1.8, 0.75, 0.0);
     }
@@ -990,6 +1015,11 @@ export class Game {
     mainMenuEl.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
       if (!target || !target.classList.contains('menu-btn')) return;
+
+      if (target.id === 'menu-back-btn') {
+        this.closeLoadSaveScreen();
+        return;
+      }
 
       const slotAttr = target.getAttribute('data-slot');
       if (!slotAttr) return;
@@ -1143,6 +1173,7 @@ export class Game {
 
   private transitionToGame(): void {
     this.inMenu = false;
+    this.loadMenuFromPause = false;
     this.wallCtrl.setInMenu(false);
 
     this.isoCamera.setViewIndex(0);
@@ -1153,6 +1184,7 @@ export class Game {
       menuEl.classList.add('fade-out');
       setTimeout(() => menuEl.classList.add('hidden'), 500);
     }
+    document.getElementById('menu-back-btn')?.classList.add('hidden');
 
     if (!this.gameState.hasFlag('intro_words_cleared')) {
       this.introActive = true;
@@ -1332,11 +1364,13 @@ export class Game {
 
   private initEscapeMenu(): void {
     const resumeBtn = document.getElementById('resume-btn');
+    const loadSaveBtn = document.getElementById('load-save-btn');
     const muteMusicCheck = document.getElementById('mute-music') as HTMLInputElement;
     const musicVolumeSlider = document.getElementById('music-volume') as HTMLInputElement;
     const devToggleBtn = document.getElementById('dev-toggle-btn');
 
     resumeBtn?.addEventListener('click', () => this.toggleEscapeMenu());
+    loadSaveBtn?.addEventListener('click', () => this.openLoadSaveScreen());
     devToggleBtn?.addEventListener('click', () => this.toggleDevMode());
 
     muteMusicCheck?.addEventListener('change', (e) => {
@@ -1369,5 +1403,33 @@ export class Game {
     } else {
       escapeMenuEl?.classList.add('hidden');
     }
+  }
+
+  private openLoadSaveScreen(): void {
+    this.escapeMenuOpen = false;
+    document.getElementById('escape-menu')?.classList.add('hidden');
+
+    this.loadMenuFromPause = true;
+    this.inMenu = true;
+    this.wallCtrl.setInMenu(true);
+
+    for (let slot = 1; slot <= 3; slot++) {
+      this.refreshSlotCard(slot);
+    }
+
+    const menuEl = document.getElementById('main-menu');
+    menuEl?.classList.remove('hidden', 'fade-out');
+    document.getElementById('menu-back-btn')?.classList.remove('hidden');
+  }
+
+  private closeLoadSaveScreen(): void {
+    this.loadMenuFromPause = false;
+    this.inMenu = false;
+    this.wallCtrl.setInMenu(false);
+
+    const menuEl = document.getElementById('main-menu');
+    menuEl?.classList.add('hidden');
+    menuEl?.classList.remove('fade-out');
+    document.getElementById('menu-back-btn')?.classList.add('hidden');
   }
 }

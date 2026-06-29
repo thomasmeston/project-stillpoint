@@ -31,7 +31,9 @@ body {
 #hud button,
 #hud select,
 #hud .panel,
-#inventory-bar,
+#inventory-rail,
+#inventory-rail button,
+#item-inspect-overlay,
 #view-controls button {
   pointer-events: auto;
 }
@@ -150,7 +152,7 @@ body {
 #examine-panel {
   position: fixed;
   left: 50%;
-  bottom: 88px;
+  bottom: 24px;
   transform: translateX(-50%);
   width: min(560px, 90vw);
   padding: 0;
@@ -319,30 +321,346 @@ body {
   text-shadow: 0 0 20px rgba(255, 255, 255, 0.9), 0 0 30px rgba(201, 168, 108, 0.5);
 }
 
-#inventory-bar {
+#inventory-rail {
   position: fixed;
-  bottom: 14px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: center;
-  max-width: 90vw;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  padding: 10px 8px;
+  min-width: 56px;
+  max-height: min(70vh, 520px);
+  overflow-y: auto;
+  background: rgba(14, 18, 28, 0.38);
+  border: 1px solid rgba(106, 93, 69, 0.25);
+  border-left: none;
+  border-radius: 0 10px 10px 0;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: background 0.2s ease;
+  z-index: 5;
 }
 
-.inv-slot {
-  background: #2a3140;
-  border: 1px solid #4a5568;
-  color: #e8e4dc;
-  padding: 8px 14px;
+#inventory-rail:hover {
+  background: rgba(14, 18, 28, 0.55);
+}
+
+.inv-rail-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 3px;
+  border: 1px solid rgba(106, 93, 69, 0.35);
+  border-radius: 8px;
+  background: rgba(26, 32, 44, 0.45);
+  cursor: pointer;
+  opacity: 0.72;
+  transition: opacity 0.18s ease, background 0.18s ease, border-color 0.18s ease, transform 0.15s ease;
+}
+
+.inv-rail-visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.item-rail-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+}
+
+.calendar-scrap-rail-thumb {
+  position: relative;
+  width: 34px;
+  height: 26px;
+  background: linear-gradient(145deg, #ebe0cc 0%, #d8ccb6 100%);
+  border-radius: 2px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35) inset, 0 1px 3px rgba(0, 0, 0, 0.25);
+  transform: rotate(-4deg);
+}
+
+.calendar-scrap-rail-thumb::after {
+  content: '';
+  position: absolute;
+  right: -3px;
+  bottom: -2px;
+  width: 10px;
+  height: 8px;
+  background: linear-gradient(145deg, #ebe0cc 0%, #d0c4ae 100%);
+  transform: rotate(18deg);
+  border-radius: 1px;
+}
+
+.csr-month {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: 0.42rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #5a5048;
+}
+
+.csr-mark {
+  position: absolute;
+  right: 5px;
+  bottom: 4px;
+  font-family: Georgia, serif;
+  font-size: 0.55rem;
+  font-weight: 700;
+  color: #9a3838;
+}
+
+.inv-rail-slot:hover,
+.inv-rail-slot:focus-visible {
+  opacity: 1;
+  background: rgba(42, 49, 64, 0.92);
+  border-color: rgba(201, 168, 108, 0.65);
+  transform: translateX(2px);
+  outline: none;
+}
+
+.inv-rail-slot.armed {
+  opacity: 1;
+  background: rgba(58, 53, 64, 0.95);
+  border-color: #c9a86c;
+  box-shadow: 0 0 0 1px rgba(201, 168, 108, 0.35);
+}
+
+#item-inspect-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 7, 12, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 15;
+}
+
+#item-inspect-panel {
+  position: relative;
+  width: min(380px, 90vw);
+  padding: 24px 24px 20px;
+  text-align: center;
+  background: rgba(18, 22, 30, 0.96);
+  border-color: rgba(201, 168, 108, 0.55);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+}
+
+#item-inspect-panel:has(.calendar-mode) {
+  width: min(420px, 92vw);
+}
+
+.item-inspect-dismiss {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border: none;
   border-radius: 6px;
+  background: transparent;
+  color: #a0aab8;
+  font-size: 1.4rem;
+  line-height: 1;
   cursor: pointer;
 }
 
-.inv-slot.selected {
+.item-inspect-dismiss:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #e8e4dc;
+}
+
+.item-inspect-visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 96px;
+  margin: 0 auto 16px;
+}
+
+.item-inspect-visual.calendar-mode {
+  min-height: auto;
+  margin-bottom: 12px;
+}
+
+.item-inspect-preview {
+  max-width: 200px;
+  max-height: 160px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
+}
+
+.calendar-scrap-inspect {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.calendar-scrap-paper {
+  position: relative;
+  width: min(280px, 100%);
+  padding: 14px 16px 18px;
+  background: linear-gradient(160deg, #f0e6d4 0%, #e2d4bc 48%, #d8cab0 100%);
+  border-radius: 3px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.45) inset,
+    0 8px 24px rgba(0, 0, 0, 0.28);
+  transform: rotate(-1.5deg);
+  color: #3a342c;
+}
+
+.calendar-scrap-paper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 28px;
+  height: 22px;
+  background: linear-gradient(135deg, transparent 45%, #d0c0a8 46%, #e8dcc8 100%);
+  clip-path: polygon(100% 0, 0 0, 100% 100%);
+}
+
+.calendar-scrap-header {
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-align: center;
+  margin-bottom: 10px;
+  color: #4a4038;
+}
+
+.calendar-scrap-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px 2px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.calendar-scrap-dow {
+  text-align: center;
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: #7a6e62;
+  padding-bottom: 4px;
+}
+
+.calendar-scrap-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  color: #3a342c;
+}
+
+.calendar-scrap-day.blank {
+  visibility: hidden;
+}
+
+.calendar-scrap-day.circled {
+  color: #8a2828;
+  font-weight: 700;
+  box-shadow: 0 0 0 2px #b84040;
+}
+
+.calendar-scrap-margin {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(74, 64, 56, 0.35);
+  text-align: right;
+}
+
+.calendar-scrap-note {
+  font-family: 'Outfit', cursive, system-ui, sans-serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #3a342c;
+  transform: rotate(-2deg);
+  display: inline-block;
+}
+
+#item-inspect-title {
+  margin: 0 0 12px;
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: #ffd9a0;
+}
+
+#item-inspect-body {
+  margin: 0 0 16px;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: #c8cdd8;
+  text-align: left;
+}
+
+#item-inspect-body.hidden {
+  display: none;
+}
+
+.item-inspect-use {
+  background: #2a3140;
+  border: 1px solid #6a5d45;
+  color: #e8e4dc;
+  padding: 8px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.item-inspect-use:hover {
+  background: #3a4458;
   border-color: #c9a86c;
-  background: #3a3540;
+}
+
+.item-inspect-use.armed {
+  background: rgba(201, 168, 108, 0.15);
+  border-color: #c9a86c;
+  color: #c9a86c;
+}
+
+@media (max-width: 640px) {
+  #inventory-rail {
+    top: auto;
+    bottom: 12px;
+    left: 8px;
+    transform: none;
+    flex-direction: row;
+    max-height: none;
+    max-width: calc(100vw - 16px);
+    overflow-x: auto;
+    border-radius: 10px;
+    border-left: 1px solid rgba(106, 93, 69, 0.25);
+  }
+
+  .inv-rail-slot:hover,
+  .inv-rail-slot:focus-visible {
+    transform: translateY(-2px);
+  }
 }
 
 .modal {

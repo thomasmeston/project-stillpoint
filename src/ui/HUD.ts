@@ -2,6 +2,7 @@ import type { Inventory } from '../game/Inventory';
 import type { NarrativeManager } from '../game/NarrativeManager';
 import type { PuzzleManager } from '../game/PuzzleManager';
 import { ThoughtOverlay } from './ThoughtOverlay';
+import { mountItemInspectVisual, mountItemRailVisual } from './itemVisuals';
 
 export class HUD {
   private examinePanel = document.getElementById('examine-panel')!;
@@ -13,7 +14,13 @@ export class HUD {
   private journalList = document.getElementById('journal-list') as HTMLSelectElement;
   private journalDetail = document.getElementById('journal-detail')!;
   private journalToggle = document.getElementById('journal-toggle')!;
-  private inventoryBar = document.getElementById('inventory-bar')!;
+  private inventoryRail = document.getElementById('inventory-rail')!;
+  private itemInspectOverlay = document.getElementById('item-inspect-overlay')!;
+  private itemInspectVisual = document.getElementById('item-inspect-visual')!;
+  private itemInspectTitle = document.getElementById('item-inspect-title')!;
+  private itemInspectBody = document.getElementById('item-inspect-body')!;
+  private itemInspectDismiss = document.getElementById('item-inspect-dismiss')!;
+  private itemInspectUse = document.getElementById('item-inspect-use')!;
   private cursorLabel = document.getElementById('cursor-label')!;
   private winOverlay = document.getElementById('win-overlay')!;
   private winTitle = document.getElementById('win-title')!;
@@ -24,6 +31,8 @@ export class HUD {
   private meditateBtn = document.getElementById('meditate-btn')!;
   private meditateReturnBtn = document.getElementById('meditate-return-btn')!;
   private returnRoomBtn = document.getElementById('return-room-btn')!;
+
+  private inspectedItemId = '';
 
   onThoughtBlockingChange?: (active: boolean) => void;
   onZoomBack?: () => void;
@@ -45,6 +54,12 @@ export class HUD {
     this.meditateReturnBtn.addEventListener('click', () => this.onMeditate?.());
     this.returnRoomBtn.addEventListener('click', () => this.onReturnToRoom?.());
 
+    this.itemInspectDismiss.addEventListener('click', () => this.hideItemInspect());
+    this.itemInspectOverlay.addEventListener('click', (e) => {
+      if (e.target === this.itemInspectOverlay) this.hideItemInspect();
+    });
+    this.itemInspectUse.addEventListener('click', () => this.toggleItemArmed());
+
     this.thoughtOverlay.onBlockingChange = (active) => this.onThoughtBlockingChange?.(active);
 
     this.narrative.events.on('examineShown', ({ title, body }) => this.showExamine(title, body));
@@ -52,7 +67,12 @@ export class HUD {
     this.narrative.events.on('journalUpdated', () => this.refreshJournal());
     this.narrative.events.on('winNarrative', ({ title, body }) => this.showWin(title, body));
     this.inventory.events.on('changed', () => this.renderInventory());
-    this.inventory.events.on('itemSelected', () => this.renderInventory());
+    this.inventory.events.on('itemSelected', () => {
+      this.renderInventory();
+      this.updateItemInspectUseButton();
+    });
+
+    this.renderInventory();
   }
 
   setCursorHint(hint: string, x: number, y: number): void {
@@ -69,9 +89,22 @@ export class HUD {
     return !this.examinePanel.classList.contains('hidden');
   }
 
+  isItemInspectOpen(): boolean {
+    return !this.itemInspectOverlay.classList.contains('hidden');
+  }
+
   hideExamine(): void {
     this.examinePanel.classList.add('hidden');
     this.onExamineDismiss?.();
+  }
+
+  hideItemInspect(): void {
+    this.itemInspectOverlay.classList.add('hidden');
+    this.itemInspectOverlay.setAttribute('aria-hidden', 'true');
+    this.inspectedItemId = '';
+    this.itemInspectVisual.innerHTML = '';
+    this.itemInspectVisual.classList.remove('calendar-mode');
+    this.itemInspectBody.classList.remove('hidden');
   }
 
   private showExamine(title: string, body: string): void {
@@ -108,15 +141,74 @@ export class HUD {
   }
 
   private renderInventory(): void {
-    this.inventoryBar.innerHTML = '';
+    this.inventoryRail.innerHTML = '';
+    const hasItems = this.inventory.items.length > 0;
+    this.inventoryRail.classList.toggle('hidden', !hasItems);
+
     for (const itemId of this.inventory.items) {
       const btn = document.createElement('button');
-      btn.className = 'inv-slot';
-      if (this.inventory.selectedItem === itemId) btn.classList.add('selected');
-      btn.textContent = this.inventory.getLabel(itemId);
-      btn.addEventListener('click', () => this.inventory.selectItem(itemId));
-      this.inventoryBar.appendChild(btn);
+      btn.type = 'button';
+      btn.className = 'inv-rail-slot';
+      btn.dataset.itemId = itemId;
+      btn.title = this.inventory.getLabel(itemId);
+      btn.setAttribute('aria-label', this.inventory.getLabel(itemId));
+      if (this.inventory.selectedItem === itemId) btn.classList.add('armed');
+
+      const visual = document.createElement('span');
+      visual.className = 'inv-rail-visual';
+      mountItemRailVisual(itemId, visual);
+      btn.appendChild(visual);
+
+      btn.addEventListener('click', () => this.showItemInspect(itemId));
+      this.inventoryRail.appendChild(btn);
     }
+
+    if (this.inspectedItemId && !this.inventory.hasItem(this.inspectedItemId)) {
+      this.hideItemInspect();
+    } else if (this.inspectedItemId && this.isItemInspectOpen()) {
+      this.showItemInspect(this.inspectedItemId);
+    }
+  }
+
+  private showItemInspect(itemId: string): void {
+    if (!this.inventory.hasItem(itemId)) return;
+
+    this.inspectedItemId = itemId;
+    this.itemInspectTitle.textContent = this.inventory.getLabel(itemId);
+
+    const { hideDescription } = mountItemInspectVisual(itemId, this.itemInspectVisual);
+    this.itemInspectVisual.classList.toggle('calendar-mode', itemId === 'calendar_scrap');
+
+    if (hideDescription) {
+      this.itemInspectBody.textContent = '';
+      this.itemInspectBody.classList.add('hidden');
+    } else {
+      this.itemInspectBody.textContent = this.inventory.getDescription(itemId);
+      this.itemInspectBody.classList.remove('hidden');
+    }
+
+    this.itemInspectOverlay.classList.remove('hidden');
+    this.itemInspectOverlay.setAttribute('aria-hidden', 'false');
+    this.updateItemInspectUseButton();
+  }
+
+  private updateItemInspectUseButton(): void {
+    if (!this.inspectedItemId) return;
+    const armed = this.inventory.selectedItem === this.inspectedItemId;
+    this.itemInspectUse.classList.remove('hidden');
+    this.itemInspectUse.classList.toggle('armed', armed);
+    this.itemInspectUse.textContent = armed ? 'Cancel use' : 'Use on object';
+  }
+
+  private toggleItemArmed(): void {
+    if (!this.inspectedItemId) return;
+    if (this.inventory.selectedItem === this.inspectedItemId) {
+      this.inventory.selectItem('');
+    } else {
+      this.inventory.selectItem(this.inspectedItemId);
+    }
+    this.updateItemInspectUseButton();
+    this.renderInventory();
   }
 
   private showWin(title: string, body: string): void {
@@ -127,6 +219,7 @@ export class HUD {
 
   getHintForHotspot(id: string | null): string {
     if (!id) return 'Walk';
+    if (this.inventory.selectedItem) return 'Use item';
     if (!this.puzzleManager.isHotspotAvailable(id)) return 'Locked';
     const action = this.puzzleManager.getHotspotAction(id);
     switch (action) {

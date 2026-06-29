@@ -54,7 +54,17 @@
         <p id="journal-detail">Clues appear here.</p>
       </aside>
 
-      <footer id="inventory-bar"></footer>
+      <aside id="inventory-rail" class="hidden" aria-label="Inventory"></aside>
+
+      <div id="item-inspect-overlay" class="hidden" aria-hidden="true">
+        <div id="item-inspect-panel" class="panel" role="dialog" aria-modal="true" aria-labelledby="item-inspect-title">
+          <button id="item-inspect-dismiss" type="button" class="item-inspect-dismiss" aria-label="Close">×</button>
+          <div id="item-inspect-visual" class="item-inspect-visual" aria-hidden="true"></div>
+          <h2 id="item-inspect-title"></h2>
+          <p id="item-inspect-body"></p>
+          <button id="item-inspect-use" type="button" class="item-inspect-use hidden">Use on object</button>
+        </div>
+      </div>
     </div>
 
     <div id="clock-modal" class="modal hidden">
@@ -140,6 +150,8 @@
             </div>
           </div>
         </div>
+
+        <button id="menu-back-btn" class="menu-btn hidden" type="button">Back to Game</button>
       </div>
     </div>
 
@@ -164,6 +176,7 @@
           </div>
         </div>
         
+        <button id="load-save-btn" class="menu-btn">Load Game</button>
         <button id="resume-btn" class="menu-btn resume-btn">Resume</button>
       </div>
     </div>
@@ -196,6 +209,7 @@
       <div class="dev-mode-tabs" role="tablist">
         <button type="button" id="dev-mode-layout" class="dev-mode-tab active" role="tab" aria-selected="true">Layout</button>
         <button type="button" id="dev-mode-hotspots" class="dev-mode-tab" role="tab" aria-selected="false">Hotspots</button>
+        <button type="button" id="dev-mode-lighting" class="dev-mode-tab" role="tab" aria-selected="false">Lighting</button>
         <button type="button" id="dev-mode-text" class="dev-mode-tab" role="tab" aria-selected="false">Text</button>
       </div>
 
@@ -333,6 +347,45 @@
           <button id="dev-hotspot-copy-json" class="dev-btn" type="button">Copy Layout JSON</button>
           <button id="dev-hotspot-reset-layout" class="dev-btn dev-btn-danger" type="button">Reset Layout</button>
           <p class="dev-mode-hint">Hotspot changes are included in <code>data/rooms/*.json</code> when you save layout.</p>
+        </div>
+      </div>
+
+      <div id="dev-lighting-section" class="hidden">
+        <p class="dev-mode-hint">Pick a room light or click a lamp/window prop in the scene. Color and brightness save with Layout.</p>
+        <div class="dev-selection-status">
+          Light: <span id="dev-light-name">None</span>
+        </div>
+        <div class="dev-row dev-row-select">
+          <label for="dev-light-picker">Source</label>
+          <select id="dev-light-picker" class="dev-select"></select>
+        </div>
+
+        <div class="dev-row">
+          <label for="dev-light-color">Color</label>
+          <div class="dev-color-row">
+            <input type="color" id="dev-light-color" value="#ffd9a0" disabled />
+            <input type="text" id="dev-light-color-hex" class="dev-input" value="#ffd9a0" disabled />
+          </div>
+        </div>
+
+        <div class="dev-row">
+          <label for="dev-light-energy">Brightness</label>
+          <div class="dev-range-row">
+            <button type="button" class="nudge-btn" id="dev-light-energy-dec">-</button>
+            <input type="range" id="dev-light-energy" min="0" max="3" step="0.05" value="1" disabled />
+            <input type="text" id="dev-light-energy-val" class="dev-input" value="1.00" disabled />
+            <button type="button" class="nudge-btn" id="dev-light-energy-inc">+</button>
+          </div>
+        </div>
+
+        <div class="dev-layout-actions">
+          <div class="dev-row-buttons">
+            <button id="dev-light-undo" class="dev-btn" title="Undo (Ctrl+Z)" disabled>Undo</button>
+            <button id="dev-light-redo" class="dev-btn" title="Redo (Ctrl+Y)" disabled>Redo</button>
+          </div>
+          <button id="dev-light-save-layout" class="dev-btn dev-btn-primary" type="button">Save Layout</button>
+          <button id="dev-light-copy-json" class="dev-btn" type="button">Copy Layout JSON</button>
+          <button id="dev-light-reset-layout" class="dev-btn dev-btn-danger" type="button">Reset Layout</button>
         </div>
       </div>
 

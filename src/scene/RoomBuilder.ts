@@ -14,6 +14,9 @@ import { PortalSwirlParticles } from './PortalSwirlParticles';
 import { PaintingRevealController } from './PaintingRevealController';
 import { buildDeskMug } from './DeskMugProp';
 import { buildBedsideLamp } from './BedsideLampProp';
+import { buildNightstandReadingLight } from './NightstandReadingLightProp';
+import { buildCalendarScrap } from './CalendarScrapProp';
+import { buildSketchbook } from './SketchbookProp';
 
 
 export type PortalDef = {
@@ -60,13 +63,14 @@ const FLOOR_ONLY_PROPS = new Set([
   'Mattress',
   'Pillow',
   'Desk',
-  'DeskTop',
   'Chair',
   'Nightstand',
+  'NightstandReadingLight',
   'LampBase',
   'LampShade',
   'Sketchbook',
-  'CrowFigurine'
+  'CrowFigurine',
+  'CalendarScrap',
 ]);
 
 const FLOOR_ONLY_HOTSPOTS = new Set([
@@ -174,7 +178,10 @@ export class RoomBuilder {
           this.lightingData = { ...this.lightingData };
           for (const key of Object.keys(parsed.lighting)) {
             if (this.lightingData[key]) {
-              this.lightingData[key].position = [...parsed.lighting[key].position];
+              const saved = parsed.lighting[key];
+              this.lightingData[key].position = [...saved.position];
+              if (saved.color) this.lightingData[key].color = saved.color;
+              if (saved.energy != null) this.lightingData[key].energy = saved.energy;
             }
           }
         }
@@ -318,6 +325,51 @@ export class RoomBuilder {
         continue;
       }
 
+      if (prop.id === 'NightstandReadingLight') {
+        const group = buildNightstandReadingLight();
+        group.position.set(prop.position[0], prop.position[1], prop.position[2]);
+        if (prop.rotation) {
+          group.rotation.set(
+            THREE.MathUtils.degToRad(prop.rotation[0]),
+            THREE.MathUtils.degToRad(prop.rotation[1]),
+            THREE.MathUtils.degToRad(prop.rotation[2]),
+          );
+        }
+        group.userData.wallFace = 'floor';
+        this.propsRoot.add(group);
+        continue;
+      }
+
+      if (prop.id === 'CalendarScrap') {
+        const group = buildCalendarScrap();
+        group.position.set(prop.position[0], prop.position[1], prop.position[2]);
+        if (prop.rotation) {
+          group.rotation.set(
+            THREE.MathUtils.degToRad(prop.rotation[0]),
+            THREE.MathUtils.degToRad(prop.rotation[1]),
+            THREE.MathUtils.degToRad(prop.rotation[2]),
+          );
+        }
+        group.userData.wallFace = 'floor';
+        this.propsRoot.add(group);
+        continue;
+      }
+
+      if (prop.id === 'Sketchbook') {
+        const group = buildSketchbook();
+        group.position.set(prop.position[0], prop.position[1], prop.position[2]);
+        if (prop.rotation) {
+          group.rotation.set(
+            THREE.MathUtils.degToRad(prop.rotation[0]),
+            THREE.MathUtils.degToRad(prop.rotation[1]),
+            THREE.MathUtils.degToRad(prop.rotation[2]),
+          );
+        }
+        group.userData.wallFace = 'floor';
+        this.propsRoot.add(group);
+        continue;
+      }
+
       if (prop.mesh && (prop.mesh.endsWith('.glb') || prop.mesh.endsWith('.gltf'))) {
         loader.load(publicUrl(prop.mesh), (gltf) => {
           const model = gltf.scene;
@@ -331,12 +383,15 @@ export class RoomBuilder {
 
               const meshChild = child as THREE.Mesh;
               if (meshChild.material) {
-                const origMat = meshChild.material as any;
+                const origMat = meshChild.material as THREE.MeshStandardMaterial;
+                const paletteTint = prop.color && this.palette[prop.color]
+                  ? this.color(prop.color)
+                  : null;
                 meshChild.material = new THREE.MeshStandardMaterial({
-                  color: origMat.color || new THREE.Color(0xffffff),
-                  map: origMat.map || null,
+                  color: paletteTint ?? origMat.color ?? new THREE.Color(0xffffff),
+                  map: paletteTint ? null : (origMat.map || null),
                   roughness: 0.85,
-                  metalness: 0.1
+                  metalness: 0.1,
                 });
               }
             }
@@ -507,7 +562,8 @@ export class RoomBuilder {
 
     const LIGHT_PARENTS: Record<string, string> = {
       lamp: 'LampBase',
-      window: 'WindowFrame'
+      window: 'WindowFrame',
+      reading_lamp: 'NightstandReadingLight',
     };
 
     for (const [key, spec] of Object.entries(lighting ?? {})) {
@@ -549,12 +605,25 @@ export class RoomBuilder {
     }
   }
 
+  applyLightSettings(key: string): void {
+    const spec = this.lightingData?.[key];
+    const light = this.lights.get(key);
+    if (!spec || !light) return;
+    light.color.set(spec.color);
+    light.intensity = spec.energy;
+  }
+
   setHotspotVisible(id: string, visible: boolean): void {
     const hs = this.hotspots.find((h) => h.id === id);
     if (hs) {
       hs.mesh.userData.puzzleHidden = !visible;
       if (!visible) hs.mesh.visible = false;
     }
+  }
+
+  setPropVisible(id: string, visible: boolean): void {
+    const mesh = this.propsRoot.getObjectByName(id);
+    if (mesh) mesh.visible = visible;
   }
 
   getHotspotWorldPosition(id: string): THREE.Vector3 | null {

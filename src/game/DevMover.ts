@@ -34,12 +34,12 @@ import {
 
 const RELATIONSHIPS: Record<string, { props: string[]; hotspots: string[]; lights: string[] }> = {
   BedFrame: {
-    props: ['Mattress', 'Pillow', 'BedsideLamp'],
+    props: ['Mattress', 'Pillow', 'BedsideLamp', 'CalendarScrap'],
     hotspots: ['bed', 'calendar_scrap'],
     lights: []
   },
   Desk: {
-    props: ['DeskTop', 'LampBase', 'LampShade', 'Sketchbook', 'DeskMug'],
+    props: ['LampBase', 'LampShade', 'Sketchbook', 'DeskMug', 'CrowFigurine'],
     hotspots: ['desk', 'desk_drawer', 'sketchbook', 'combine_station', 'lamp'],
     lights: ['lamp']
   },
@@ -59,9 +59,14 @@ const RELATIONSHIPS: Record<string, { props: string[]; hotspots: string[]; light
     lights: []
   },
   Nightstand: {
-    props: ['CrowFigurine'],
+    props: ['CrowFigurine', 'NightstandReadingLight'],
     hotspots: ['nightstand', 'key_handle'],
-    lights: []
+    lights: ['reading_lamp'],
+  },
+  NightstandReadingLight: {
+    props: [],
+    hotspots: ['nightstand'],
+    lights: ['reading_lamp'],
   },
   Wardrobe: {
     props: ['WardrobeDoor'],
@@ -113,10 +118,12 @@ type HistoryState = {
   }>;
   lighting: Record<string, {
     position: [number, number, number];
+    color: string;
+    energy: number;
   }>;
 };
 
-type EditMode = 'layout' | 'hotspots' | 'text';
+type EditMode = 'layout' | 'hotspots' | 'lighting' | 'text';
 
 export class DevMover {
   private active = false;
@@ -137,9 +144,11 @@ export class DevMover {
   private modeIndicatorEl: HTMLElement | null = null;
   private layoutSectionEl: HTMLElement | null = null;
   private hotspotsSectionEl: HTMLElement | null = null;
+  private lightingSectionEl: HTMLElement | null = null;
   private contentSectionEl: HTMLElement | null = null;
   private layoutModeTab: HTMLButtonElement | null = null;
   private hotspotsModeTab: HTMLButtonElement | null = null;
+  private lightingModeTab: HTMLButtonElement | null = null;
   private textModeTab: HTMLButtonElement | null = null;
   private nameEl: HTMLElement | null = null;
   private contentNameEl: HTMLElement | null = null;
@@ -164,6 +173,15 @@ export class DevMover {
   private hsSizeZInput: HTMLInputElement | null = null;
   private hotspotUndoBtn: HTMLButtonElement | null = null;
   private hotspotRedoBtn: HTMLButtonElement | null = null;
+  private selectedLightId: string | null = null;
+  private lightPicker: HTMLSelectElement | null = null;
+  private lightNameEl: HTMLElement | null = null;
+  private lightColorInput: HTMLInputElement | null = null;
+  private lightColorHexInput: HTMLInputElement | null = null;
+  private lightEnergyRange: HTMLInputElement | null = null;
+  private lightEnergyValInput: HTMLInputElement | null = null;
+  private lightUndoBtn: HTMLButtonElement | null = null;
+  private lightRedoBtn: HTMLButtonElement | null = null;
   private itemPicker: HTMLSelectElement | null = null;
   private examineTitleInput: HTMLInputElement | null = null;
   private examineBodyInput: HTMLTextAreaElement | null = null;
@@ -198,9 +216,11 @@ export class DevMover {
     this.modeIndicatorEl = document.getElementById('dev-mode-indicator');
     this.layoutSectionEl = document.getElementById('dev-layout-section');
     this.hotspotsSectionEl = document.getElementById('dev-hotspots-section');
+    this.lightingSectionEl = document.getElementById('dev-lighting-section');
     this.contentSectionEl = document.getElementById('dev-content-section');
     this.layoutModeTab = document.getElementById('dev-mode-layout') as HTMLButtonElement;
     this.hotspotsModeTab = document.getElementById('dev-mode-hotspots') as HTMLButtonElement;
+    this.lightingModeTab = document.getElementById('dev-mode-lighting') as HTMLButtonElement;
     this.textModeTab = document.getElementById('dev-mode-text') as HTMLButtonElement;
     this.nameEl = document.getElementById('dev-selected-name');
     this.contentNameEl = document.getElementById('dev-content-selected-name');
@@ -245,6 +265,14 @@ export class DevMover {
     this.hsSizeZInput = document.getElementById('dev-hs-size-z') as HTMLInputElement;
     this.hotspotUndoBtn = document.getElementById('dev-hotspot-undo') as HTMLButtonElement;
     this.hotspotRedoBtn = document.getElementById('dev-hotspot-redo') as HTMLButtonElement;
+    this.lightPicker = document.getElementById('dev-light-picker') as HTMLSelectElement;
+    this.lightNameEl = document.getElementById('dev-light-name');
+    this.lightColorInput = document.getElementById('dev-light-color') as HTMLInputElement;
+    this.lightColorHexInput = document.getElementById('dev-light-color-hex') as HTMLInputElement;
+    this.lightEnergyRange = document.getElementById('dev-light-energy') as HTMLInputElement;
+    this.lightEnergyValInput = document.getElementById('dev-light-energy-val') as HTMLInputElement;
+    this.lightUndoBtn = document.getElementById('dev-light-undo') as HTMLButtonElement;
+    this.lightRedoBtn = document.getElementById('dev-light-redo') as HTMLButtonElement;
     this.itemPicker = document.getElementById('dev-item-picker') as HTMLSelectElement;
     this.examineTitleInput = document.getElementById('dev-examine-title') as HTMLInputElement;
     this.examineBodyInput = document.getElementById('dev-examine-body') as HTMLTextAreaElement;
@@ -304,6 +332,36 @@ export class DevMover {
         }
       }
     });
+    document.getElementById('dev-light-save-layout')?.addEventListener('click', () => this.saveLayoutToDisk());
+    document.getElementById('dev-light-copy-json')?.addEventListener('click', () => this.copyJson());
+    document.getElementById('dev-light-reset-layout')?.addEventListener('click', () => this.resetLayout());
+    this.lightUndoBtn?.addEventListener('click', () => this.undo());
+    this.lightRedoBtn?.addEventListener('click', () => this.redo());
+
+    this.populateLightPicker();
+    this.lightPicker?.addEventListener('change', () => {
+      if (this.lightPicker?.value) this.selectLight(this.lightPicker.value);
+      else this.deselectLight();
+    });
+
+    const applyLightingInputs = () => this.applyLightingInputs();
+    this.lightColorInput?.addEventListener('input', () => {
+      if (this.lightColorInput && this.lightColorHexInput) {
+        this.lightColorHexInput.value = this.lightColorInput.value;
+      }
+      applyLightingInputs();
+    });
+    this.lightColorHexInput?.addEventListener('change', applyLightingInputs);
+    this.lightEnergyRange?.addEventListener('input', () => {
+      if (this.lightEnergyRange && this.lightEnergyValInput) {
+        this.lightEnergyValInput.value = parseFloat(this.lightEnergyRange.value).toFixed(2);
+      }
+      applyLightingInputs();
+    });
+    this.lightEnergyValInput?.addEventListener('change', applyLightingInputs);
+    document.getElementById('dev-light-energy-dec')?.addEventListener('click', () => this.nudgeLightEnergy(-0.05));
+    document.getElementById('dev-light-energy-inc')?.addEventListener('click', () => this.nudgeLightEnergy(0.05));
+
     document.getElementById('dev-apply-content')?.addEventListener('click', () => this.applyContent());
     document.getElementById('dev-save-content')?.addEventListener('click', () => this.saveContent());
     document.getElementById('dev-copy-content')?.addEventListener('click', () => this.copyContentJson());
@@ -311,6 +369,7 @@ export class DevMover {
 
     this.layoutModeTab?.addEventListener('click', () => this.setEditMode('layout'));
     this.hotspotsModeTab?.addEventListener('click', () => this.setEditMode('hotspots'));
+    this.lightingModeTab?.addEventListener('click', () => this.setEditMode('lighting'));
     this.textModeTab?.addEventListener('click', () => this.setEditMode('text'));
   }
 
@@ -321,29 +380,41 @@ export class DevMover {
     if (mode === 'layout') {
       this.deselectContent();
       this.deselectHotspotLayout();
+      this.deselectLight();
     } else if (mode === 'hotspots') {
       this.deselectLayout();
       this.deselectContent();
+      this.deselectLight();
       this.populateHotspotLayoutPicker();
+    } else if (mode === 'lighting') {
+      this.deselectLayout();
+      this.deselectContent();
+      this.deselectHotspotLayout();
+      this.populateLightPicker();
     } else {
       this.deselectLayout();
       this.deselectHotspotLayout();
+      this.deselectLight();
     }
 
     this.layoutSectionEl?.classList.toggle('hidden', mode !== 'layout');
     this.hotspotsSectionEl?.classList.toggle('hidden', mode !== 'hotspots');
+    this.lightingSectionEl?.classList.toggle('hidden', mode !== 'lighting');
     this.contentSectionEl?.classList.toggle('hidden', mode !== 'text');
     this.layoutModeTab?.classList.toggle('active', mode === 'layout');
     this.hotspotsModeTab?.classList.toggle('active', mode === 'hotspots');
+    this.lightingModeTab?.classList.toggle('active', mode === 'lighting');
     this.textModeTab?.classList.toggle('active', mode === 'text');
     this.layoutModeTab?.setAttribute('aria-selected', mode === 'layout' ? 'true' : 'false');
     this.hotspotsModeTab?.setAttribute('aria-selected', mode === 'hotspots' ? 'true' : 'false');
+    this.lightingModeTab?.setAttribute('aria-selected', mode === 'lighting' ? 'true' : 'false');
     this.textModeTab?.setAttribute('aria-selected', mode === 'text' ? 'true' : 'false');
 
     if (this.modeIndicatorEl) {
       const labels: Record<EditMode, string> = {
         layout: 'Layout',
         hotspots: 'Hotspots',
+        lighting: 'Lighting',
         text: 'Text',
       };
       this.modeIndicatorEl.textContent = labels[mode];
@@ -429,6 +500,7 @@ export class DevMover {
     this.updateHistoryButtons();
     this.populateContentPickers();
     this.populateHotspotLayoutPicker();
+    this.populateLightPicker();
     this.loadRoomContentFields();
   }
 
@@ -446,9 +518,11 @@ export class DevMover {
       this.editMode = 'layout';
       this.layoutSectionEl?.classList.remove('hidden');
       this.hotspotsSectionEl?.classList.add('hidden');
+      this.lightingSectionEl?.classList.add('hidden');
       this.contentSectionEl?.classList.add('hidden');
       this.layoutModeTab?.classList.add('active');
       this.hotspotsModeTab?.classList.remove('active');
+      this.lightingModeTab?.classList.remove('active');
       this.textModeTab?.classList.remove('active');
       if (this.modeIndicatorEl) this.modeIndicatorEl.textContent = 'Layout';
       this.panelEl?.classList.remove('hidden');
@@ -477,6 +551,24 @@ export class DevMover {
   }
 
   private handleKeyDown(e: KeyboardEvent): void {
+    if (this.editMode === 'lighting') {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+        e.preventDefault();
+        this.undo();
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) {
+        e.preventDefault();
+        this.redo();
+        return;
+      }
+      if (e.key === 'Escape') {
+        this.deselectLight();
+        e.preventDefault();
+      }
+      return;
+    }
+
     if (this.editMode === 'hotspots') {
       if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
         e.preventDefault();
@@ -654,19 +746,48 @@ export class DevMover {
       return;
     }
 
+    if (this.editMode === 'lighting') {
+      const propId = this.pickPropIdAt(clientX, clientY);
+      if (propId) {
+        const lightId = this.findLightIdForProp(propId);
+        if (lightId) {
+          this.selectLight(lightId);
+          return;
+        }
+      }
+      if (!toggle) {
+        this.deselectLight();
+      }
+      return;
+    }
+
+    const propId = this.pickPropIdAt(clientX, clientY);
+    if (propId) {
+      const mesh = this.findMeshForProp(propId);
+      if (mesh) {
+        this.toggleSelection(propId, mesh, toggle);
+        return;
+      }
+    } else if (!toggle) {
+      this.deselectLayout();
+    }
+  }
+
+  private pickPropIdAt(clientX: number, clientY: number): string | null {
+    const mouse = new THREE.Vector2(
+      (clientX / window.innerWidth) * 2 - 1,
+      -(clientY / window.innerHeight) * 2 + 1,
+    );
+    const raycaster = new THREE.Raycaster();
     raycaster.layers.set(0);
     raycaster.setFromCamera(mouse, this.camera);
 
     const targets: THREE.Object3D[] = [];
-
-    // Traverse all meshes that correspond to props
     this.room.propsRoot.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         targets.push(child);
       }
     });
-
-    // Also check props loaded on walls
     this.room.root.traverse((child) => {
       if (
         (child as THREE.Mesh).isMesh &&
@@ -681,20 +802,16 @@ export class DevMover {
     });
 
     const hits = raycaster.intersectObjects(targets, true);
-    if (hits.length > 0) {
-      let current: THREE.Object3D | null = hits[0].object;
-      while (current && current !== this.scene) {
-        const id = current.name;
-        const exists = this.room.propsData.some((p) => p.id === id);
-        if (exists) {
-          this.toggleSelection(id, current, toggle);
-          return;
-        }
-        current = current.parent;
-      }
-    } else if (!toggle) {
-      this.deselectLayout();
+    if (hits.length === 0) return null;
+
+    let current: THREE.Object3D | null = hits[0].object;
+    while (current && current !== this.scene) {
+      const id = current.name;
+      const exists = this.room.propsData.some((p) => p.id === id);
+      if (exists) return id;
+      current = current.parent;
     }
+    return null;
   }
 
   private toggleSelection(id: string, mesh: THREE.Object3D, toggle: boolean): void {
@@ -724,6 +841,7 @@ export class DevMover {
   private deselectAll(): void {
     this.deselectLayout();
     this.deselectHotspotLayout();
+    this.deselectLight();
     this.deselectContent();
   }
 
@@ -751,6 +869,107 @@ export class DevMover {
       this.hotspotBoxHelper = null;
     }
     this.updateHotspotLayoutUIFields();
+  }
+
+  private findLightIdForProp(propId: string): string | null {
+    const lights = RELATIONSHIPS[propId]?.lights;
+    return lights?.length ? lights[0] : null;
+  }
+
+  private deselectLight(): void {
+    this.selectedLightId = null;
+    if (this.lightPicker) this.lightPicker.value = '';
+    if (this.lightNameEl) this.lightNameEl.textContent = 'None';
+    this.updateLightingUIFields();
+  }
+
+  private selectLight(lightId: string): void {
+    this.selectedLightId = lightId;
+    if (this.lightPicker) this.lightPicker.value = lightId;
+    if (this.lightNameEl) this.lightNameEl.textContent = lightId;
+    this.updateLightingUIFields();
+  }
+
+  private updateLightingUIFields(): void {
+    const spec = this.selectedLightId
+      ? this.room.lightingData?.[this.selectedLightId]
+      : null;
+    const enabled = Boolean(spec);
+
+    if (this.lightColorInput) {
+      this.lightColorInput.disabled = !enabled;
+      if (spec) this.lightColorInput.value = this.toColorInputHex(spec.color);
+    }
+    if (this.lightColorHexInput) {
+      this.lightColorHexInput.disabled = !enabled;
+      if (spec) this.lightColorHexInput.value = spec.color;
+    }
+    if (this.lightEnergyRange) {
+      this.lightEnergyRange.disabled = !enabled;
+      if (spec) this.lightEnergyRange.value = String(spec.energy);
+    }
+    if (this.lightEnergyValInput) {
+      this.lightEnergyValInput.disabled = !enabled;
+      if (spec) this.lightEnergyValInput.value = spec.energy.toFixed(2);
+    }
+  }
+
+  private toColorInputHex(color: string): string {
+    const c = new THREE.Color(color);
+    return `#${c.getHexString()}`;
+  }
+
+  private normalizeHexColor(raw: string): string | null {
+    const trimmed = raw.trim();
+    if (/^#[0-9a-fA-F]{6}$/.test(trimmed)) return trimmed.toLowerCase();
+    if (/^[0-9a-fA-F]{6}$/.test(trimmed)) return `#${trimmed.toLowerCase()}`;
+    return null;
+  }
+
+  private nudgeLightEnergy(delta: number): void {
+    if (!this.selectedLightId || !this.room.lightingData) return;
+    const spec = this.room.lightingData[this.selectedLightId];
+    if (!spec) return;
+
+    this.pushHistory();
+    spec.energy = THREE.MathUtils.clamp(spec.energy + delta, 0, 3);
+    this.room.applyLightSettings(this.selectedLightId);
+    this.updateLightingUIFields();
+    this.persistLayoutDraft();
+  }
+
+  private applyLightingInputs(): void {
+    if (!this.selectedLightId || !this.room.lightingData) return;
+    const spec = this.room.lightingData[this.selectedLightId];
+    if (!spec) return;
+
+    const hex = this.normalizeHexColor(
+      this.lightColorHexInput?.value ?? this.lightColorInput?.value ?? spec.color,
+    );
+    const energy = parseFloat(this.lightEnergyValInput?.value ?? this.lightEnergyRange?.value ?? `${spec.energy}`);
+    if (!hex || Number.isNaN(energy)) return;
+
+    const nextEnergy = THREE.MathUtils.clamp(energy, 0, 3);
+    if (hex === spec.color && nextEnergy === spec.energy) return;
+
+    this.pushHistory();
+    spec.color = hex;
+    spec.energy = nextEnergy;
+    this.room.applyLightSettings(this.selectedLightId);
+    this.updateLightingUIFields();
+    this.persistLayoutDraft();
+  }
+
+  private copyLightingState(): HistoryState['lighting'] {
+    const copy: HistoryState['lighting'] = {};
+    for (const [key, spec] of Object.entries(this.room.lightingData || {})) {
+      copy[key] = {
+        position: [...spec.position] as [number, number, number],
+        color: spec.color,
+        energy: spec.energy,
+      };
+    }
+    return copy;
   }
 
   private selectLayoutHotspot(hotspotId: string): void {
@@ -1192,12 +1411,7 @@ export class DevMover {
       size: [...h.size] as [number, number, number],
     }));
 
-    const lightingCopy: Record<string, { position: [number, number, number] }> = {};
-    for (const [key, spec] of Object.entries(this.room.lightingData || {})) {
-      lightingCopy[key] = {
-        position: [...spec.position] as [number, number, number]
-      };
-    }
+    const lightingCopy = this.copyLightingState();
 
     this.undoStack.push({ props: propsCopy, hotspots: hotspotsCopy, lighting: lightingCopy });
     if (this.undoStack.length > this.maxHistory) {
@@ -1220,13 +1434,11 @@ export class DevMover {
       position: [...h.position] as [number, number, number],
       size: [...h.size] as [number, number, number],
     }));
-    const currentLighting: Record<string, { position: [number, number, number] }> = {};
-    for (const [key, spec] of Object.entries(this.room.lightingData || {})) {
-      currentLighting[key] = {
-        position: [...spec.position] as [number, number, number]
-      };
-    }
-    this.redoStack.push({ props: currentProps, hotspots: currentHotspots, lighting: currentLighting });
+    this.redoStack.push({
+      props: currentProps,
+      hotspots: currentHotspots,
+      lighting: this.copyLightingState(),
+    });
 
     const state = this.undoStack.pop()!;
     this.restoreState(state);
@@ -1245,13 +1457,11 @@ export class DevMover {
       position: [...h.position] as [number, number, number],
       size: [...h.size] as [number, number, number],
     }));
-    const currentLighting: Record<string, { position: [number, number, number] }> = {};
-    for (const [key, spec] of Object.entries(this.room.lightingData || {})) {
-      currentLighting[key] = {
-        position: [...spec.position] as [number, number, number]
-      };
-    }
-    this.undoStack.push({ props: currentProps, hotspots: currentHotspots, lighting: currentLighting });
+    this.undoStack.push({
+      props: currentProps,
+      hotspots: currentHotspots,
+      lighting: this.copyLightingState(),
+    });
 
     const state = this.redoStack.pop()!;
     this.restoreState(state);
@@ -1286,6 +1496,9 @@ export class DevMover {
         const ltData = this.room.lightingData ? this.room.lightingData[key] : undefined;
         if (ltData) {
           ltData.position = [...savedLt.position];
+          if (savedLt.color) ltData.color = savedLt.color;
+          if (savedLt.energy != null) ltData.energy = savedLt.energy;
+          this.room.applyLightSettings(key);
           const pointLight = this.room.lights.get(key);
           if (pointLight && !pointLight.userData.parentPropId) {
             pointLight.position.set(ltData.position[0], ltData.position[1], ltData.position[2]);
@@ -1299,6 +1512,7 @@ export class DevMover {
     this.updateBoxHelpers();
     this.updateUIFields();
     this.updateHotspotLayoutUIFields();
+    this.updateLightingUIFields();
     this.updateHistoryButtons();
   }
 
@@ -1309,6 +1523,8 @@ export class DevMover {
     if (this.redoBtn) this.redoBtn.disabled = !canRedo;
     if (this.hotspotUndoBtn) this.hotspotUndoBtn.disabled = !canUndo;
     if (this.hotspotRedoBtn) this.hotspotRedoBtn.disabled = !canRedo;
+    if (this.lightUndoBtn) this.lightUndoBtn.disabled = !canUndo;
+    if (this.lightRedoBtn) this.lightRedoBtn.disabled = !canRedo;
   }
 
   private persistLayoutDraft(): void {
@@ -1356,6 +1572,23 @@ export class DevMover {
       localStorage.removeItem(layoutStorageKey(this.roomId));
       location.reload();
     }
+  }
+
+  private populateLightPicker(): void {
+    if (!this.lightPicker) return;
+    const current = this.selectedLightId ?? '';
+    this.lightPicker.innerHTML = '';
+    const blank = document.createElement('option');
+    blank.value = '';
+    blank.textContent = '— select light —';
+    this.lightPicker.appendChild(blank);
+    for (const key of Object.keys(this.room.lightingData || {})) {
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = key;
+      this.lightPicker.appendChild(opt);
+    }
+    this.lightPicker.value = current;
   }
 
   private populateHotspotLayoutPicker(): void {

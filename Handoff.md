@@ -1,6 +1,6 @@
 # Handoff — Project Stillpoint (Room 1 + Ship Deck)
 
-> Last updated: 2026-06-27 (dev hotspots tab, examine UX, portal polish)
+> Last updated: 2026-06-27 (bedroom props, inventory rail, dev lighting tab)
 
 ## Context
 
@@ -44,13 +44,13 @@ The game now supports **multi-room loading** (`bedroom`, `pirate_ship`, `level_2
 - Camera rotation woosh (`playSfx('rotate')`) on view rotation start
 - Glassmorphic **Main Menu** with 3 save slots, orbit camera showcase, load/delete/reset
 - **Autosave** to localStorage on flag change, puzzle solve, inventory change, journal update, hotspot state change, player walk stop, and room transitions
-- **Escape Menu** (ESC): BGM volume + mute; blocks movement and rotation while open
+- **Escape Menu** (ESC): BGM volume + mute, **Load Game** (opens save-slot picker with Back to Game / Esc cancel); blocks movement and rotation while open
 - **Floating Words Intro** on new game: 65 words (13 core + 52 themed), Outfit font, 8×9 grid layout, sizes 0.7–5.5 rem; click 5 to clear with tick SFX and fade-out; skipped via `intro_words_cleared` flag on load
 - Fixed intro overlay CSS parse error (`hud.css` `-webkit-mask` missing `)`) that prevented intro styles from applying
 
 ### Meditate
 
-- **Meditate** button at bottom center of HUD (inventory bar sits above it); **hidden on Ship Deck**
+- **Meditate** button in header controls; **hidden on Ship Deck**
 - Click → camera swings to close-up on player face (`PlayerMover.getHeadWorldPosition()` + facing yaw); canvas blurs; discovered journal clues and inner thoughts float on screen (intro-style drift animation via `MeditationOverlay.ts`)
 - Content from `NarrativeManager.getMeditationFragments()` — journal entries, heard thoughts, examine/flag inner voice; fallback words if nothing discovered yet
 - **Dedicated Return button** inside meditate overlay (`#meditate-return-btn`) — always visible, not blurred
@@ -93,16 +93,20 @@ The game now supports **multi-room loading** (`bedroom`, `pirate_ship`, `level_2
 - **Oak tree painting:** procedural canvas texture (`OakTreePaintingArt.ts`); **swing-open animation** on first examine (`PaintingRevealController.ts`) sets `painting_moved` and reveals wall safe
 - **Wall notes cluster:** ~30 procedural cryptic papers pinned on north wall (`WallNotesCluster.ts`, `CrypticPaperArt.ts`); examine hotspot walks player in and enters detail zoom
 - **Desk sketch spread:** procedural papers + sketchbook on desk surface (`DeskSketchSpread.ts`); visible during desk detail zoom — toggle sketchbook open/close, inspect individual papers
-- **Procedural props:** bedside lamp (`BedsideLampProp.ts`), desk mug with pens (`DeskMugProp.ts`)
+- **Sketchbook prop:** canvas-textured closed notebook on desk (`SketchbookProp.ts`) — cover, spine, page edges, elastic band, feather sketch
+- **Procedural props:** bedside lamp (`BedsideLampProp.ts`), desk mug with pens (`DeskMugProp.ts`), **calendar scrap on bed** (`CalendarScrapProp.ts`), **nightstand reading lamp** (`NightstandReadingLightProp.ts`)
 - **Chair GLB:** poly.pizza wooden chair at `public/models/chair.glb` (CC0)
+- **Desk GLB:** Quaternius desk at `public/models/desk-quaternius.glb` (CC0; alternate `desk-kenney.glb` in repo)
 - **Nightstand GLB:** Quaternius nightstand with drawer at `public/models/nightstand-quaternius.glb` (CC0; alternates `nightstand-kenney.glb`, `nightstand-quaternius-simple.glb` in repo for A/B)
-- Desk lamp detached from wall fold logic (`LampBase`, `LampShade` in `FLOOR_ONLY_PROPS`)
-- Individual desk/nightstand props in room data: `Phone`, `Sketchbook`, `CrowFigurine` with examine hotspots and narrative text
+- **Crow figurine GLB:** Quaternius bird tinted `crow_art` at `public/models/crow-quaternius.glb` (CC0) on desk
+- Desk lamp detached from wall fold logic (`LampBase`, `LampShade` in `FLOOR_ONLY_PROPS`); `reading_lamp` in `bedroom.json` lighting for nightstand clip lamp
+- Individual desk/nightstand props in room data: `Phone`, `Sketchbook`, `CrowFigurine`, `CalendarScrap` with examine/pickup hotspots and narrative text; calendar scrap prop hides on pickup
 - **Phone-in-safe puzzle:** phone prop hidden in wall safe until unlocked; `syncSafeVisuals()` toggles safe/phone visibility; phone added to inventory on safe open
 
 ### UI & narrative presentation
 
 - **Examine panel:** centered bottom panel with eye icon header, **×** dismiss (top-right), auto-closes when player walks away from the examined hotspot
+- **Inventory rail:** semi-transparent **left-side** strip (`#inventory-rail`); each item shows a **3D shape preview** (rendered from `ItemMeshFactory` / `ItemPreviewRenderer`); hover solidifies slot; click opens **close-up inspect** overlay; **Use on object** arms item for hotspot use; calendar scrap inspect shows readable **March calendar** with **17** circled and **3:17** margin note (`calendarScrapInspect.ts`)
 - **Inner thoughts:** floating sentence overlay (`ThoughtOverlay.ts`) — words fade in staggered, whole sentence drifts; click to dismiss; room-level opening/wake thoughts editable in dev Text tab
 - **Walk-to interact:** all hotspot clicks walk the player to a standoff position before examine/puzzle action (floor ~1.2 m, wall ~1.05 m)
 
@@ -121,10 +125,11 @@ Shared `isDetailZoomed` flag blocks normal input (walk, rotation, wheel zoom) wh
 
 ### Dev Mode
 
-Toggle from escape menu or `` ` `` key. Three tabs. **Level-aware** — follows current room via `DevLevelConfig.ts` (bedroom, ship, garden, cavern, observatory).
+Toggle from escape menu or `` ` `` key. **Four tabs.** **Level-aware** — follows current room via `DevLevelConfig.ts` (bedroom, ship, garden, cavern, observatory).
 
-- **Layout:** select props/lights (Ctrl/Shift multi-select), nudge position/rotation, 50-state undo/redo (`Ctrl+Z`/`Ctrl+Y`), copy layout JSON, reset from repo defaults, **Save Layout** → writes `data/rooms/{level}.json` via Vite dev plugin (`/__dev/save`) or downloads JSON
+- **Layout:** select props (Ctrl/Shift multi-select), nudge position/rotation, 50-state undo/redo (`Ctrl+Z`/`Ctrl+Y`), copy layout JSON, reset from repo defaults, **Save Layout** → writes `data/rooms/{level}.json` via Vite dev plugin (`/__dev/save`) or downloads JSON
 - **Hotspots:** click orange hotspot boxes or use dropdown; nudge **position** (X/Y/Z) and **size** (X/Y/Z); keyboard arrows/PageUp-Down move; `[`/`]` `{`/`}` `-`/`+` scale; undo/redo shared with Layout; saved with **Save Layout**
+- **Lighting:** pick `lamp`, `window`, or `reading_lamp` (or click lamp / nightstand reading light props); edit color + brightness (0–3); undo/redo; persisted in layout draft + **Save Layout** (`bedroom.json` `lighting` block)
 - **Text:** edit room opening/wake inner voices, per-hotspot examine copy, and item labels/descriptions with localStorage preview overrides (`DevContentOverrides.ts`); **Save Text** → writes `data/story/{level}-script.json` + `data/items.json` (items bedroom only); **Exit Dev Mode** in Text tab
 
 Parent/child relationships for grouped prop nudging defined in `DevMover.ts` `RELATIONSHIPS` map. Hotspot debug boxes visible in **Hotspots** and **Text** tabs.
@@ -182,7 +187,7 @@ Parent/child relationships for grouped prop nudging defined in `DevMover.ts` `RE
 4. **Wall notes** — tie inspected papers to journal clues or a future puzzle beat (visual inspect only today)
 5. **Meditate polish** — tune face close-up framing for papercraft model; filter/tokenize floating fragments for readability at high journal count
 6. **Add OGG SFX** to `public/audio/` (click, door unlock, rotate). Synth fallback works; real audio will feel better
-7. **Replace remaining placeholder box/cylinder props** with GLB art (bed, desk, bookshelf, wardrobe — chair and nightstand done)
+7. **Replace remaining placeholder box/cylinder props** with GLB art (bed, bookshelf, wardrobe — chair, nightstand, desk done)
 8. **Enable GitHub Pages** on repo Settings → Pages (workflow deploys from `main`)
 9. Expand Playwright coverage (full escape path with real 5 s meditate hold, all four portal round-trips)
 10. ~~**Dev Mode on portal levels**~~ — layout/text/hotspots editor now level-aware; polish UX on ship/garden levels
@@ -205,7 +210,12 @@ Parent/child relationships for grouped prop nudging defined in `DevMover.ts` `RE
 - [x] Portal swirl particles on revealed portal discs
 - [x] Examine panel UX (eye icon, × dismiss, walk-away auto-close)
 - [x] Floating thought overlay + walk-to-all-hotspots
-- [x] Dev Mode: Layout + Hotspots + Text tabs; level-aware save (`DevLevelConfig.ts`)
+- [x] Dev Mode: Layout + Hotspots + Lighting + Text tabs; level-aware save (`DevLevelConfig.ts`)
+- [x] Desk GLB (`public/models/desk-quaternius.glb`)
+- [x] Calendar scrap bed prop + crow figurine GLB + sketchbook cover texture
+- [x] Nightstand reading lamp (procedural) + dev lighting for `reading_lamp`
+- [x] Left-side inventory rail with 3D item previews + inspect overlay
+- [x] Escape menu Load Game → save-slot screen (Back / Esc cancel)
 - [x] Chair GLB (`public/models/chair.glb`)
 - [x] Dev Mode layout + text + hotspot editor with save-to-repo (dev server)
 - [x] Playwright desk-zoom, intro, meditation-portal smoke tests
@@ -226,7 +236,12 @@ Parent/child relationships for grouped prop nudging defined in `DevMover.ts` `RE
 | `src/game/PuzzleManager.ts` | Per-room puzzles/hotspots via `loadRoom(roomId)` |
 | `src/game/SaveLoad.ts` | Save v2 with `currentRoom` |
 | `src/ui/MeditationOverlay.ts` | Focus ball, hold/pulse, portal message, unlock callback |
-| `src/ui/HUD.ts` | Examine panel, meditate/return buttons, thought overlay hook |
+| `src/ui/HUD.ts` | Examine panel, inventory rail + item inspect, meditate/return buttons |
+| `src/ui/itemVisuals.ts` | Rail/inspect 3D previews; calendar scrap HTML inspect |
+| `src/ui/ItemMeshFactory.ts` | Inventory item shape meshes for preview renders |
+| `src/scene/SketchbookProp.ts` | Canvas-textured desk sketchbook |
+| `src/scene/CalendarScrapProp.ts` | Torn calendar scrap on bed |
+| `src/scene/NightstandReadingLightProp.ts` | Clip lamp on nightstand |
 | `src/ui/ThoughtOverlay.ts` | Floating inner-thought sentence display |
 | `src/scene/PortalSwirlParticles.ts` | Additive swirl on portal discs |
 | `src/scene/RoomBuilder.ts` | Room build by `roomId`, portals + particles, per-level lighting |

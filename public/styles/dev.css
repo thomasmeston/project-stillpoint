@@ -52,18 +52,18 @@
 
 .dev-mode-tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 6px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
 }
 
 .dev-mode-tab {
   background: #1e2533;
   border: 1px solid rgba(201, 168, 108, 0.25);
   color: #a8b2c4;
-  padding: 8px 10px;
+  padding: 7px 6px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   font-weight: 600;
   transition: all 0.15s ease;
 }
@@ -77,6 +77,43 @@
   background: rgba(201, 168, 108, 0.2);
   border-color: #c9a86c;
   color: #c9a86c;
+}
+
+.dev-color-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dev-color-row input[type="color"] {
+  width: 36px;
+  height: 32px;
+  padding: 2px;
+  border: 1px solid rgba(201, 168, 108, 0.35);
+  border-radius: 6px;
+  background: #1a1f2a;
+  cursor: pointer;
+}
+
+.dev-color-row .dev-input {
+  flex: 1;
+}
+
+.dev-range-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dev-range-row input[type="range"] {
+  flex: 1;
+  accent-color: #c9a86c;
+}
+
+.dev-range-row .dev-input {
+  width: 52px;
+  flex-shrink: 0;
+  text-align: center;
 }
 
 .dev-layout-actions {
