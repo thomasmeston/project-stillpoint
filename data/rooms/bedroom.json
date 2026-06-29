@@ -857,8 +857,8 @@
       "label": "Dark Opening",
       "position": [
         -0.8,
-        1.45,
-        -2.82
+        1.2,
+        -2.87
       ],
       "size": [
         0.9,
@@ -873,8 +873,8 @@
       "label": "Dark Opening",
       "position": [
         -3.32,
-        1.35,
-        0.2
+        0.45,
+        0.9
       ],
       "size": [
         0.2,
@@ -888,9 +888,9 @@
       "id": "portal_observatory",
       "label": "Dark Opening",
       "position": [
-        3.32,
-        1.55,
-        -0.3
+        4.82,
+        -0.5,
+        0.7
       ],
       "size": [
         0.2,

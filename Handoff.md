@@ -1,6 +1,6 @@
 # Handoff — Project Stillpoint (Room 1 + Ship Deck)
 
-> Last updated: 2026-06-27 (bedroom props, inventory rail, dev lighting tab)
+> Last updated: 2026-06-27 (dev layout object picker, portal hotspot tweaks)
 
 ## Context
 
@@ -127,7 +127,7 @@ Shared `isDetailZoomed` flag blocks normal input (walk, rotation, wheel zoom) wh
 
 Toggle from escape menu or `` ` `` key. **Four tabs.** **Level-aware** — follows current room via `DevLevelConfig.ts` (bedroom, ship, garden, cavern, observatory).
 
-- **Layout:** select props (Ctrl/Shift multi-select), nudge position/rotation, 50-state undo/redo (`Ctrl+Z`/`Ctrl+Y`), copy layout JSON, reset from repo defaults, **Save Layout** → writes `data/rooms/{level}.json` via Vite dev plugin (`/__dev/save`) or downloads JSON
+- **Layout:** click props in the scene or pick from **Object / item** dropdown — **Objects** lists all room props; **Items** lists inventory pickups (selects linked prop when present, otherwise jumps to Hotspots tab for the pickup zone); Ctrl/Shift multi-select in scene; nudge position/rotation; 50-state undo/redo (`Ctrl+Z`/`Ctrl+Y`); copy layout JSON; reset from repo defaults; **Save Layout** → writes `data/rooms/{level}.json` via Vite dev plugin (`/__dev/save`) or downloads JSON
 - **Hotspots:** click orange hotspot boxes or use dropdown; nudge **position** (X/Y/Z) and **size** (X/Y/Z); keyboard arrows/PageUp-Down move; `[`/`]` `{`/`}` `-`/`+` scale; undo/redo shared with Layout; saved with **Save Layout**
 - **Lighting:** pick `lamp`, `window`, or `reading_lamp` (or click lamp / nightstand reading light props); edit color + brightness (0–3); undo/redo; persisted in layout draft + **Save Layout** (`bedroom.json` `lighting` block)
 - **Text:** edit room opening/wake inner voices, per-hotspot examine copy, and item labels/descriptions with localStorage preview overrides (`DevContentOverrides.ts`); **Save Text** → writes `data/story/{level}-script.json` + `data/items.json` (items bedroom only); **Exit Dev Mode** in Text tab
@@ -218,6 +218,7 @@ Parent/child relationships for grouped prop nudging defined in `DevMover.ts` `RE
 - [x] Escape menu Load Game → save-slot screen (Back / Esc cancel)
 - [x] Chair GLB (`public/models/chair.glb`)
 - [x] Dev Mode layout + text + hotspot editor with save-to-repo (dev server)
+- [x] Dev Mode Layout tab: object/item dropdown picker (props + inventory pickups)
 - [x] Playwright desk-zoom, intro, meditation-portal smoke tests
 - [x] `npm run build && npm run preview` — no console errors
 - [ ] GitHub Pages live after first deploy

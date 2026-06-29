@@ -214,10 +214,15 @@
       </div>
 
       <div id="dev-layout-section">
-      <div class="dev-selection-status">
-        Selected: <span id="dev-selected-name">None</span>
-      </div>
-      
+        <p class="dev-mode-hint">Click a prop in the scene or pick from the list. Shift/Ctrl+click to multi-select.</p>
+        <div class="dev-selection-status">
+          Selected: <span id="dev-selected-name">None</span>
+        </div>
+        <div class="dev-row dev-row-select">
+          <label for="dev-prop-layout-picker">Object / item</label>
+          <select id="dev-prop-layout-picker" class="dev-select"></select>
+        </div>
+
       <div class="dev-controls-group">
         <!-- Position X -->
         <div class="dev-row">

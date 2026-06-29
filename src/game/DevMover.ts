@@ -165,6 +165,7 @@ export class DevMover {
   private hotspotPicker: HTMLSelectElement | null = null;
   private hotspotLayoutPicker: HTMLSelectElement | null = null;
   private hotspotLayoutNameEl: HTMLElement | null = null;
+  private propLayoutPicker: HTMLSelectElement | null = null;
   private hsPosXInput: HTMLInputElement | null = null;
   private hsPosYInput: HTMLInputElement | null = null;
   private hsPosZInput: HTMLInputElement | null = null;
@@ -257,6 +258,7 @@ export class DevMover {
     this.hotspotPicker = document.getElementById('dev-hotspot-picker') as HTMLSelectElement;
     this.hotspotLayoutPicker = document.getElementById('dev-hotspot-layout-picker') as HTMLSelectElement;
     this.hotspotLayoutNameEl = document.getElementById('dev-hotspot-layout-name');
+    this.propLayoutPicker = document.getElementById('dev-prop-layout-picker') as HTMLSelectElement;
     this.hsPosXInput = document.getElementById('dev-hs-pos-x') as HTMLInputElement;
     this.hsPosYInput = document.getElementById('dev-hs-pos-y') as HTMLInputElement;
     this.hsPosZInput = document.getElementById('dev-hs-pos-z') as HTMLInputElement;
@@ -290,12 +292,33 @@ export class DevMover {
 
     this.populateContentPickers();
     this.populateHotspotLayoutPicker();
+    this.populatePropLayoutPicker();
     this.hotspotPicker?.addEventListener('change', () => {
       if (this.hotspotPicker?.value) this.selectHotspot(this.hotspotPicker.value);
     });
     this.hotspotLayoutPicker?.addEventListener('change', () => {
       if (this.hotspotLayoutPicker?.value) this.selectLayoutHotspot(this.hotspotLayoutPicker.value);
       else this.deselectHotspotLayout();
+    });
+    this.propLayoutPicker?.addEventListener('change', () => {
+      const value = this.propLayoutPicker?.value ?? '';
+      if (!value) {
+        this.deselectLayout();
+        return;
+      }
+      const option = this.propLayoutPicker?.selectedOptions[0];
+      if (option?.dataset.kind === 'item') {
+        const propId = this.propIdForItemHotspot(value);
+        if (propId) {
+          this.selectLayoutProp(propId);
+        } else {
+          if (this.propLayoutPicker) this.propLayoutPicker.value = '';
+          this.setEditMode('hotspots');
+          this.selectLayoutHotspot(value);
+        }
+        return;
+      }
+      this.selectLayoutProp(value);
     });
 
     this.wireNudge('dev-hs-x-dec', 'dev-hs-x-inc', 'x', 'hotspot-pos');
@@ -381,6 +404,7 @@ export class DevMover {
       this.deselectContent();
       this.deselectHotspotLayout();
       this.deselectLight();
+      this.populatePropLayoutPicker();
     } else if (mode === 'hotspots') {
       this.deselectLayout();
       this.deselectContent();
@@ -500,6 +524,7 @@ export class DevMover {
     this.updateHistoryButtons();
     this.populateContentPickers();
     this.populateHotspotLayoutPicker();
+    this.populatePropLayoutPicker();
     this.populateLightPicker();
     this.loadRoomContentFields();
   }
@@ -835,7 +860,17 @@ export class DevMover {
       this.boxHelpers.set(id, helper);
     }
 
+    this.syncPropLayoutPicker();
     this.updateUIFields();
+  }
+
+  private syncPropLayoutPicker(): void {
+    if (!this.propLayoutPicker) return;
+    if (this.selectedProps.size === 1) {
+      this.propLayoutPicker.value = this.selectedProps.keys().next().value!;
+    } else {
+      this.propLayoutPicker.value = '';
+    }
   }
 
   private deselectAll(): void {
@@ -851,6 +886,22 @@ export class DevMover {
       this.scene.remove(helper);
     }
     this.boxHelpers.clear();
+    if (this.propLayoutPicker) this.propLayoutPicker.value = '';
+    this.updateLayoutUIFields();
+  }
+
+  private selectLayoutProp(propId: string): void {
+    this.deselectLayout();
+    const mesh = this.findMeshForProp(propId);
+    if (!mesh) {
+      if (this.nameEl) this.nameEl.textContent = `${propId} (mesh not found)`;
+      return;
+    }
+    this.selectedProps.set(propId, mesh);
+    const helper = new THREE.BoxHelper(mesh, 0xffcc00);
+    this.scene.add(helper);
+    this.boxHelpers.set(propId, helper);
+    if (this.propLayoutPicker) this.propLayoutPicker.value = propId;
     this.updateLayoutUIFields();
   }
 
@@ -1606,6 +1657,55 @@ export class DevMover {
       this.hotspotLayoutPicker.appendChild(opt);
     }
     this.hotspotLayoutPicker.value = current;
+  }
+
+  private propIdForItemHotspot(hotspotId: string): string | null {
+    const normalized = hotspotId.toLowerCase().replace(/_/g, '');
+    const match = this.room.propsData.find(
+      (p) => p.id.toLowerCase().replace(/_/g, '') === normalized,
+    );
+    return match?.id ?? null;
+  }
+
+  private populatePropLayoutPicker(): void {
+    if (!this.propLayoutPicker) return;
+    const current =
+      this.selectedProps.size === 1 ? this.selectedProps.keys().next().value! : '';
+    this.propLayoutPicker.innerHTML = '';
+    const blank = document.createElement('option');
+    blank.value = '';
+    blank.textContent = '— select —';
+    this.propLayoutPicker.appendChild(blank);
+
+    const propsGroup = document.createElement('optgroup');
+    propsGroup.label = 'Objects';
+    for (const prop of this.room.propsData) {
+      const opt = document.createElement('option');
+      opt.value = prop.id;
+      const meshHint = prop.mesh && prop.mesh !== 'box' ? ` · ${prop.mesh}` : '';
+      opt.textContent = `${prop.id}${meshHint}`;
+      propsGroup.appendChild(opt);
+    }
+    this.propLayoutPicker.appendChild(propsGroup);
+
+    const itemHotspots = this.room.hotspotsData.filter((hs) => this.hotspotItemMap.has(hs.id));
+    if (itemHotspots.length > 0) {
+      const itemsGroup = document.createElement('optgroup');
+      itemsGroup.label = 'Items';
+      for (const hs of itemHotspots) {
+        const itemId = this.hotspotItemMap.get(hs.id)!;
+        const opt = document.createElement('option');
+        opt.value = hs.id;
+        opt.dataset.kind = 'item';
+        const propId = this.propIdForItemHotspot(hs.id);
+        const targetHint = propId ? ` → ${propId}` : ' → hotspot';
+        opt.textContent = `${itemId}${targetHint}`;
+        itemsGroup.appendChild(opt);
+      }
+      this.propLayoutPicker.appendChild(itemsGroup);
+    }
+
+    this.propLayoutPicker.value = current;
   }
 
   private populateContentPickers(): void {
