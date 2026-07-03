@@ -1,37 +1,37 @@
 {
-  "opening_thought": "Cold stone. Blue light that does not flicker. My breath sounds too loud.",
+  "opening_thought": "Cold stone. Blue light that doesn't flicker. REST — still point in darkness, end of searching. Or: the year I stopped answering and called exhaustion wisdom.",
   "thoughts": {
-    "lesson_3_cavern": "Rest. Even the crystal stops humming when you stop fighting the dark.",
-    "cavern_crystal_musings": "Light trapped in mineral. Patient. Unhurried.",
-    "cavern_clue_musings": "Scratched into the pillar: REST. The cavern agrees."
+    "lesson_3_cavern": "Rest. Even the crystal stops humming when I stop fighting the dark. I rested from people until rest became a cave.",
+    "cavern_crystal_musings": "Light trapped in mineral — patient, unhurried. Like messages on my phone I never opened.",
+    "cavern_clue_musings": "REST carved in the pillar. Delusion: sacred halt. Memory: unread texts, a friend still waiting, me asleep at noon for months."
   },
   "journal_entries": {
     "cavern_clue_found": {
       "title": "Etched Pillar",
-      "body": "Four letters carved in stone: REST.",
+      "body": "Four letters in stone: REST. Third chapter of the inner worlds. Or the word on the safe note — handle where you rest — finally pointing at a person, not a pillow.",
       "thought": "cavern_clue_musings"
     },
     "lesson_3_cavern": {
       "title": "Lesson — Rest",
-      "body": "The stone chest opened to REST. The wardrobe in the bedroom may yield now.",
+      "body": "Stone chest opened to REST. Wardrobe in the bedroom may yield now. You rested from guilt until guilt became geology.",
       "thought": "lesson_3_cavern"
     }
   },
   "examines": {
     "cavern_crystal": {
       "title": "Crystal Cluster",
-      "body": "Faceted blue shards catching light from nowhere. They pulse like slow breathing.",
+      "body": "Blue facets catching light from nowhere. Pulse like slow breathing — or notification vibrations you learned to ignore.",
       "thought": "cavern_crystal_musings"
     },
     "cavern_clue": {
       "title": "Etched Stone",
-      "body": "Four letters carved deep: REST.",
+      "body": "REST carved deep. The cavern agrees with the safe scrap, the bed, the collapse — same word, two tracks.",
       "thought": "cavern_clue_musings",
       "journal": "cavern_clue_found"
     },
     "cavern_chest": {
       "title": "Stone Chest",
-      "body": "Heavy lid, letter lock. The cavern is quiet until you solve it.",
+      "body": "Heavy lid, letter lock. Quiet until you solve it — same silence you offered everyone who knocked.",
       "thought": "cavern_clue_musings"
     }
   },
@@ -42,8 +42,8 @@
     }
   },
   "ending": {
-    "title": "Cavern",
-    "body": "The crystals keep their vigil.",
+    "title": "Rest",
+    "body": "The crystals dim. REST walks back to the bedroom with you — not surrender, or surrender to remembering.",
     "journal_id": "lesson_3_cavern"
   }
 }

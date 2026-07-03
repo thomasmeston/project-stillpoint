@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export function createOakTreePaintingTexture(): THREE.CanvasTexture {
+export function createBeachLandscapePaintingTexture(): THREE.CanvasTexture {
   const w = 512;
   const h = 384;
   const canvas = document.createElement('canvas');
@@ -8,104 +8,126 @@ export function createOakTreePaintingTexture(): THREE.CanvasTexture {
   canvas.height = h;
   const ctx = canvas.getContext('2d')!;
 
-  // Sky
-  const sky = ctx.createLinearGradient(0, 0, 0, h);
-  sky.addColorStop(0, '#9eb6c9');
-  sky.addColorStop(0.55, '#c8d4c0');
-  sky.addColorStop(1, '#8f9a72');
+  const sky = ctx.createLinearGradient(0, 0, 0, h * 0.62);
+  sky.addColorStop(0, '#7ec8e8');
+  sky.addColorStop(0.45, '#a8d8f0');
+  sky.addColorStop(1, '#f5d9a8');
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, w, h);
 
-  // Distant hills
-  ctx.fillStyle = 'rgba(95, 110, 82, 0.45)';
+  ctx.fillStyle = 'rgba(255, 248, 220, 0.35)';
   ctx.beginPath();
-  ctx.moveTo(0, h * 0.72);
-  ctx.quadraticCurveTo(w * 0.25, h * 0.62, w * 0.5, h * 0.7);
-  ctx.quadraticCurveTo(w * 0.78, h * 0.78, w, h * 0.66);
+  ctx.ellipse(w * 0.78, h * 0.14, 42, 28, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+  ctx.beginPath();
+  ctx.ellipse(w * 0.22, h * 0.18, 58, 22, -0.08, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(w * 0.55, h * 0.11, 48, 18, 0.05, 0, Math.PI * 2);
+  ctx.fill();
+
+  const horizonY = h * 0.52;
+  const sea = ctx.createLinearGradient(0, horizonY, 0, h * 0.82);
+  sea.addColorStop(0, '#2f9db8');
+  sea.addColorStop(0.35, '#38b4c8');
+  sea.addColorStop(0.7, '#4ec5d4');
+  sea.addColorStop(1, '#6fd4de');
+  ctx.fillStyle = sea;
+  ctx.fillRect(0, horizonY, w, h * 0.82 - horizonY);
+
+  ctx.fillStyle = 'rgba(20, 90, 110, 0.25)';
+  ctx.beginPath();
+  ctx.moveTo(0, horizonY + 8);
+  for (let x = 0; x <= w; x += 24) {
+    ctx.lineTo(x, horizonY + 8 + Math.sin(x * 0.04) * 4);
+  }
+  ctx.lineTo(w, horizonY + 28);
+  ctx.lineTo(0, horizonY + 28);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+  ctx.lineWidth = 3;
+  for (let i = 0; i < 4; i += 1) {
+    const y = h * 0.72 + i * 10;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    for (let x = 0; x <= w; x += 18) {
+      ctx.lineTo(x, y + Math.sin(x * 0.08 + i) * 3);
+    }
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = '#d4b483';
+  ctx.beginPath();
+  ctx.moveTo(0, h * 0.82);
+  ctx.quadraticCurveTo(w * 0.28, h * 0.76, w * 0.55, h * 0.8);
+  ctx.quadraticCurveTo(w * 0.82, h * 0.86, w, h * 0.79);
   ctx.lineTo(w, h);
   ctx.lineTo(0, h);
   ctx.closePath();
   ctx.fill();
 
-  // Ground
-  ctx.fillStyle = '#6f7758';
-  ctx.fillRect(0, h * 0.78, w, h * 0.22);
+  ctx.fillStyle = '#c9a56e';
+  ctx.fillRect(0, h * 0.88, w, h * 0.12);
 
-  const cx = w * 0.5;
-  const baseY = h * 0.78;
+  const drawPalm = (baseX: number, baseY: number, lean: number, scale: number): void => {
+    ctx.save();
+    ctx.translate(baseX, baseY);
+    ctx.scale(scale, scale);
 
-  // Trunk
-  ctx.fillStyle = '#4a3424';
-  ctx.beginPath();
-  ctx.moveTo(cx - 28, baseY);
-  ctx.quadraticCurveTo(cx - 34, baseY - 90, cx - 18, baseY - 150);
-  ctx.quadraticCurveTo(cx - 8, baseY - 210, cx - 4, baseY - 250);
-  ctx.lineTo(cx + 4, baseY - 250);
-  ctx.quadraticCurveTo(cx + 10, baseY - 210, cx + 20, baseY - 150);
-  ctx.quadraticCurveTo(cx + 36, baseY - 90, cx + 28, baseY);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.strokeStyle = '#3a2818';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(cx - 8, baseY - 40);
-  ctx.quadraticCurveTo(cx - 12, baseY - 120, cx - 6, baseY - 190);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(cx + 10, baseY - 60);
-  ctx.quadraticCurveTo(cx + 14, baseY - 140, cx + 8, baseY - 210);
-  ctx.stroke();
-
-  // Main branches
-  ctx.strokeStyle = '#4a3424';
-  ctx.lineWidth = 7;
-  ctx.lineCap = 'round';
-  const branches: Array<[number, number, number, number]> = [
-    [cx, baseY - 230, cx - 120, baseY - 280],
-    [cx, baseY - 220, cx + 130, baseY - 270],
-    [cx, baseY - 200, cx - 90, baseY - 240],
-    [cx, baseY - 195, cx + 95, baseY - 235],
-    [cx, baseY - 175, cx - 55, baseY - 205],
-    [cx, baseY - 170, cx + 60, baseY - 200],
-    [cx, baseY - 250, cx - 40, baseY - 310],
-    [cx, baseY - 245, cx + 45, baseY - 305],
-  ];
-  for (const [x1, y1, x2, y2] of branches) {
+    ctx.strokeStyle = '#5a3d22';
+    ctx.lineWidth = 10;
+    ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.quadraticCurveTo((x1 + x2) / 2, (y1 + y2) / 2 - 18, x2, y2);
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(lean * 18, -70, lean * 28, -130);
     ctx.stroke();
-  }
 
-  // Foliage clusters
-  const foliage: Array<[number, number, number, string]> = [
-    [cx, baseY - 295, 95, '#3f5c34'],
-    [cx - 115, baseY - 285, 72, '#4a6a3c'],
-    [cx + 120, baseY - 278, 78, '#456636'],
-    [cx - 75, baseY - 250, 58, '#567845'],
-    [cx + 82, baseY - 245, 62, '#527040'],
-    [cx - 35, baseY - 318, 48, '#628552'],
-    [cx + 38, baseY - 312, 52, '#5d7f4a'],
-    [cx, baseY - 265, 55, '#6a9158'],
-    [cx - 140, baseY - 255, 40, '#4d6d40'],
-    [cx + 145, baseY - 248, 42, '#4a6838'],
-  ];
-  for (const [fx, fy, fr, color] of foliage) {
-    const grad = ctx.createRadialGradient(fx, fy, fr * 0.15, fx, fy, fr);
-    grad.addColorStop(0, color);
-    grad.addColorStop(1, 'rgba(40, 60, 32, 0.05)');
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(fx, fy, fr, 0, Math.PI * 2);
-    ctx.fill();
-  }
+    const fronds: Array<[number, number, number]> = [
+      [-0.9, -125, -1.1],
+      [-0.45, -132, -0.55],
+      [0, -138, 0],
+      [0.45, -132, 0.55],
+      [0.9, -125, 1.1],
+      [-0.65, -118, -0.85],
+      [0.65, -118, 0.85],
+    ];
+    for (const [dx, dy, rot] of fronds) {
+      ctx.save();
+      ctx.translate(lean * 28 + dx * 8, dy);
+      ctx.rotate(rot * 0.35);
+      ctx.fillStyle = '#3f6b34';
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.quadraticCurveTo(-18, -28, -42, -8);
+      ctx.quadraticCurveTo(-8, 6, 0, 0);
+      ctx.fill();
+      ctx.fillStyle = '#4a7a3d';
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.quadraticCurveTo(18, -28, 42, -8);
+      ctx.quadraticCurveTo(8, 6, 0, 0);
+      ctx.fill();
+      ctx.restore();
+    }
 
-  // Subtle highlight on canopy
-  ctx.fillStyle = 'rgba(210, 220, 150, 0.18)';
+    ctx.restore();
+  };
+
+  drawPalm(w * 0.72, h * 0.84, -1, 1.05);
+  drawPalm(w * 0.86, h * 0.86, -1, 0.82);
+  drawPalm(w * 0.58, h * 0.85, 1, 0.68);
+
+  ctx.fillStyle = 'rgba(30, 70, 90, 0.35)';
   ctx.beginPath();
-  ctx.ellipse(cx - 20, baseY - 310, 70, 35, -0.2, 0, Math.PI * 2);
+  ctx.ellipse(w * 0.18, horizonY + 6, 36, 10, 0, 0, Math.PI * 2);
   ctx.fill();
+
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+  ctx.fillRect(0, 0, w, h);
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -135,7 +157,7 @@ export function buildPaintingWithFrame(
   const insetY = size.y * 0.84;
   const canvasGeo = new THREE.PlaneGeometry(insetX, insetY);
   const canvasMat = new THREE.MeshStandardMaterial({
-    map: createOakTreePaintingTexture(),
+    map: createBeachLandscapePaintingTexture(),
     roughness: 0.92,
     metalness: 0.0,
   });

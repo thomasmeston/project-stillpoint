@@ -1,38 +1,38 @@
 {
-  "opening_thought": "Stars through glass. Brass and silence. The word STILL is written everywhere up here.",
+  "opening_thought": "Stars through glass. Brass and silence. STILL is written everywhere — ultimate secret, name of the system. Or: the last still day before I disappeared inside.",
   "thoughts": {
-    "lesson_4_observatory": "Still. The last lesson. The door will know when you carry it home.",
-    "all_lessons_learned": "Four lessons. Four worlds. The bedroom door waits for all of them.",
-    "observatory_telescope_musings": "Every star is a pin in a map you forgot you made.",
-    "observatory_chart_musings": "The chart highlights one word among the constellations: STILL."
+    "lesson_4_observatory": "Still. The last lesson. The door will know when I carry it home. Stillpoint — instant life stopped moving, not just a padlock word.",
+    "all_lessons_learned": "Four lessons. Four worlds. Four places I hid from one person. The bedroom door waits for all of it.",
+    "observatory_telescope_musings": "Every star a pin in a map I forgot I made with her — shoulder against mine, no words, sky infinite.",
+    "observatory_chart_musings": "STILL circled on the chart. Delusion: final key. Memory: the last quiet night before the spiral."
   },
   "journal_entries": {
     "observatory_clue_found": {
       "title": "Star Chart Clue",
-      "body": "One word circled on the chart: STILL.",
+      "body": "Constellations in gold ink. STILL circled until the paper wore thin — prefix of STILLPOINT, name of the trial, name of the last good day.",
       "thought": "observatory_chart_musings"
     },
     "lesson_4_observatory": {
       "title": "Lesson — Still",
-      "body": "The brass chest opened to STILL. The bedroom door can hear you now.",
+      "body": "Brass chest opened to STILL. Bedroom door can hear you now. You mythologized a car roof until stars became locks.",
       "thought": "lesson_4_observatory"
     }
   },
   "examines": {
     "observatory_telescope": {
       "title": "Telescope",
-      "body": "Brass tube aimed at a sky that shouldn't exist indoors. The lens is clean as a held breath.",
+      "body": "Brass tube aimed at a sky that shouldn't exist indoors. Lens clean as a held breath — the kind you took with her when talking would have broken the still.",
       "thought": "observatory_telescope_musings"
     },
     "observatory_chart": {
       "title": "Star Chart",
-      "body": "Constellations traced in gold ink. One word circled again and again: STILL.",
+      "body": "STILL repeated, circled, underlined. Cosmology's last rung — or the word for the night you should have stayed present.",
       "thought": "observatory_chart_musings",
       "journal": "observatory_clue_found"
     },
     "observatory_chest": {
       "title": "Brass Chest",
-      "body": "The final lock in the four worlds. It wants the word the stars keep repeating.",
+      "body": "Final lock in the four worlds. Wants STILL — the word the stars keep repeating, the word before POINT, the word before you left.",
       "thought": "observatory_chart_musings"
     }
   },
@@ -43,8 +43,8 @@
     }
   },
   "ending": {
-    "title": "Observatory",
-    "body": "The dome turns. You have what you came for.",
+    "title": "Still",
+    "body": "The dome turns one last degree. STILL returns — lesson complete, memory named, door listening.",
     "journal_id": "lesson_4_observatory"
   }
 }

@@ -10,13 +10,16 @@ import type { ViewWallController } from './ViewWallController';
 import { publicUrl } from '../utils/publicUrl';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { WallNotesCluster } from './WallNotesCluster';
+import { CorkBoardCluster } from './CorkBoardCluster';
 import { PortalSwirlParticles } from './PortalSwirlParticles';
 import { PaintingRevealController } from './PaintingRevealController';
+import { NightstandDrawerController } from './NightstandDrawerController';
 import { buildDeskMug } from './DeskMugProp';
 import { buildBedsideLamp } from './BedsideLampProp';
 import { buildNightstandReadingLight } from './NightstandReadingLightProp';
 import { buildCalendarScrap } from './CalendarScrapProp';
 import { buildSketchbook } from './SketchbookProp';
+import { buildWindowFrame } from './WindowFrameProp';
 
 
 export type PortalDef = {
@@ -115,7 +118,9 @@ export class RoomBuilder {
   readonly wallMeshes = new Map<WallFace, THREE.Mesh>();
   readonly lights = new Map<string, THREE.PointLight>();
   readonly paintingReveal: PaintingRevealController;
+  readonly nightstandDrawer: NightstandDrawerController;
   readonly wallNotesCluster: WallNotesCluster;
+  readonly corkBoardCluster: CorkBoardCluster;
   wallSafeMesh: THREE.Object3D | null = null;
   phoneInSafeMesh: THREE.Object3D | null = null;
   readonly portalDefs: PortalDef[] = [];
@@ -123,6 +128,8 @@ export class RoomBuilder {
   readonly roomId: string;
 
   private palette: Record<string, string>;
+  private nightstandDrawerUnlocked = false;
+  private nightstandDrawerAnimate = false;
 
   constructor(private wallCtrl: ViewWallController, roomId = 'bedroom') {
     this.roomId = roomId;
@@ -137,7 +144,9 @@ export class RoomBuilder {
       new THREE.Vector3(0.9, 0.7, 0.05),
       this.color('wood_dark'),
     );
+    this.nightstandDrawer = new NightstandDrawerController();
     this.wallNotesCluster = new WallNotesCluster();
+    this.corkBoardCluster = new CorkBoardCluster();
     this.buildShell(data.shell);
 
     // Load custom layout from localStorage if it exists
@@ -198,6 +207,10 @@ export class RoomBuilder {
       const northWall = this.wallMeshes.get('north');
       if (northWall) {
         this.wallNotesCluster.attachToWall(northWall);
+      }
+      const southWall = this.wallMeshes.get('south');
+      if (southWall) {
+        this.corkBoardCluster.attachToWall(southWall);
       }
       this.portalDefs.push(...(data.portals ?? []));
       this.buildPortals(this.portalDefs);
@@ -370,6 +383,40 @@ export class RoomBuilder {
         continue;
       }
 
+      if (prop.id === 'WindowFrame') {
+        const group = buildWindowFrame(
+          new THREE.Vector3(prop.size[0], prop.size[1], prop.size[2]),
+          this.color(prop.color),
+          this.color('window_cool'),
+        );
+        group.position.set(prop.position[0], prop.position[1], prop.position[2]);
+        if (prop.rotation) {
+          group.rotation.set(
+            THREE.MathUtils.degToRad(prop.rotation[0]),
+            THREE.MathUtils.degToRad(prop.rotation[1]),
+            THREE.MathUtils.degToRad(prop.rotation[2]),
+          );
+        }
+        const face = prop.wall ?? inferWallFace(prop.position[0], prop.position[2]);
+        group.userData.wallFace = face;
+        if (face !== 'floor') {
+          const wallMesh = this.wallMeshes.get(face);
+          if (wallMesh) {
+            group.position.sub(wallMesh.position);
+            wallMesh.add(group);
+          } else {
+            this.propsRoot.add(group);
+          }
+        } else {
+          this.propsRoot.add(group);
+        }
+        continue;
+      }
+
+      if (prop.id === 'WindowGlass') {
+        continue;
+      }
+
       if (prop.mesh && (prop.mesh.endsWith('.glb') || prop.mesh.endsWith('.gltf'))) {
         loader.load(publicUrl(prop.mesh), (gltf) => {
           const model = gltf.scene;
@@ -430,6 +477,15 @@ export class RoomBuilder {
           }
           group.add(model);
 
+          if (prop.id === 'Nightstand') {
+            this.nightstandDrawer.attachToNightstand(
+              group,
+              model,
+              this.color(prop.color ?? 'wood'),
+            );
+            this.applyNightstandDrawerState();
+          }
+
           const face = prop.wall ?? (FLOOR_ONLY_PROPS.has(prop.id) ? 'floor' : inferWallFace(prop.position[0], prop.position[2]));
           group.userData.wallFace = face;
 
@@ -462,16 +518,6 @@ export class RoomBuilder {
           );
         } else {
           mesh = this.makeBox(size, color);
-        }
-
-        if (prop.id === 'WindowGlass') {
-          const loaderTexture = new THREE.TextureLoader();
-          const texture = loaderTexture.load(publicUrl('images/beach.png'));
-          mesh.material = new THREE.MeshStandardMaterial({
-            map: texture,
-            roughness: 0.1,
-            metalness: 0.1
-          });
         }
 
         if (prop.id === 'WallSafe') {
@@ -810,5 +856,22 @@ export class RoomBuilder {
       this.paintingReveal.resetClosed();
     }
     this.syncSafeContents(moved, safeUnlocked, phoneTaken);
+  }
+
+  syncNightstandDrawer(unlocked: boolean, animate = false): void {
+    this.nightstandDrawerUnlocked = unlocked;
+    if (animate) this.nightstandDrawerAnimate = true;
+    if (unlocked) {
+      this.nightstandDrawer.open(animate);
+    } else {
+      this.nightstandDrawerAnimate = false;
+      this.nightstandDrawer.close();
+    }
+  }
+
+  private applyNightstandDrawerState(): void {
+    if (!this.nightstandDrawerUnlocked) return;
+    this.nightstandDrawer.open(this.nightstandDrawerAnimate);
+    this.nightstandDrawerAnimate = false;
   }
 }

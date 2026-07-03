@@ -1,12 +1,14 @@
 # Handoff — Project Stillpoint (Room 1 + Ship Deck)
 
-> Last updated: 2026-06-27 (dev layout object picker, portal hotspot tweaks)
+> Last updated: 2026-07-02 (StoryPlan narrative pass, cork board + army man GLB)
 
 ## Context
 
 Room 1 rebuilt as a browser game (Vite + TypeScript + Three.js). Godot MVP archived to `legacy/godot/`. Repo lives at https://github.com/thomasmeston/project-stillpoint.
 
 **Game vision & level roadmap:** [`ProjectPlan.md`](ProjectPlan.md) — bedroom hub, meditation portals, ≥4 levels, lessons feed back to bedroom, final door win.
+
+**Narrative design:** [`StoryPlan.md`](StoryPlan.md) — dual-track story (crow delusion vs memory), prop dual-reads, portal levels as mythologized memories.
 
 **Package name:** `project-stillpoint` (npm). **Itch zip:** `stillpoint-itch.zip` via `npm run package:itch`.
 
@@ -83,21 +85,25 @@ The game now supports **multi-room loading** (`bedroom`, `pirate_ship`, `level_2
 
 ### Narrative voice
 
-- Inner voice / `thoughts` in `data/story/bedroom-script.json` rewritten to cryptic, memory-fogged tone (fragmented, uncertain, puzzle hints veiled)
+- **StoryPlan-aligned pass:** bedroom + all portal scripts rewritten for dual-track voice — delusion/crow cosmology vs memory fragments; first-person floating inner thoughts; memory journal entries on portal return (`memory_lesson_1`–`4`, `memory_painting`)
+- `data/items.json` item descriptions dual-read where relevant
 - `NarrativeManager` tracks `heardThoughtIds` in save data; `getHeardThoughtCount()` for portal gate; per-room story load via `loadRoom(roomId)`
-- Ship narrative in `data/story/pirate-ship-script.json` (arrival journal, crate clue, chest open)
+- Ship / garden / cavern / observatory scripts updated for amnesia + lesson framing
 
 ### Room art & interactables
 
-- Window view: muted tropical beach texture (`public/images/beach.png`) on `WindowGlass`
-- **Oak tree painting:** procedural canvas texture (`OakTreePaintingArt.ts`); **swing-open animation** on first examine (`PaintingRevealController.ts`) sets `painting_moved` and reveals wall safe
-- **Wall notes cluster:** ~30 procedural cryptic papers pinned on north wall (`WallNotesCluster.ts`, `CrypticPaperArt.ts`); examine hotspot walks player in and enters detail zoom
+- Window view: tropical beach landscape procedural texture on `WindowGlass` (`WindowFrameProp.ts` frame mesh)
+- **Oak tree painting:** procedural **tropical beach landscape** canvas (`OakTreePaintingArt.ts`); **swing-open animation** on first examine (`PaintingRevealController.ts`) sets `painting_moved` and reveals wall safe
+- **Wall notes cluster:** ~30 procedural cryptic papers pinned on north wall (`WallNotesCluster.ts`, `CrypticPaperArt.ts`); crow-ledger + “call her” memory crumbs in art; examine hotspot walks player in and enters detail zoom
+- **Cork board cluster:** large cork board on south wall (right of wardrobe) with five crow-gift props — straw, gum wrapper, black button, newspaper scrap, **green army man** (`CorkBoardCluster.ts`, `CorkBoardPinnedArt.ts`); paper strips under each item show the **five intro words** the player clicked during floating-word intro (`IntroWords.ts`, `GameState.introWordsChosen` persisted in save); per-item inspect zoom; hotspot `cork_board`
+- **Army man model:** `public/models/props/army-man.glb` — game-rip green plastic soldier (Disney's Extreme Skate Adventure / Toy Story style, CC attribution to Models Resource uploader); async GLTF load, scaled for cork-board pin size
 - **Desk sketch spread:** procedural papers + sketchbook on desk surface (`DeskSketchSpread.ts`); visible during desk detail zoom — toggle sketchbook open/close, inspect individual papers
 - **Sketchbook prop:** canvas-textured closed notebook on desk (`SketchbookProp.ts`) — cover, spine, page edges, elastic band, feather sketch
 - **Procedural props:** bedside lamp (`BedsideLampProp.ts`), desk mug with pens (`DeskMugProp.ts`), **calendar scrap on bed** (`CalendarScrapProp.ts`), **nightstand reading lamp** (`NightstandReadingLightProp.ts`)
 - **Chair GLB:** poly.pizza wooden chair at `public/models/chair.glb` (CC0)
 - **Desk GLB:** Quaternius desk at `public/models/desk-quaternius.glb` (CC0; alternate `desk-kenney.glb` in repo)
 - **Nightstand GLB:** Quaternius nightstand with drawer at `public/models/nightstand-quaternius.glb` (CC0; alternates `nightstand-kenney.glb`, `nightstand-quaternius-simple.glb` in repo for A/B)
+- **Nightstand drawer:** animated drawer open on clock puzzle solve (`NightstandDrawerController.ts`); synced from `Game.syncNightstandDrawer()` on load and puzzle events
 - **Crow figurine GLB:** Quaternius bird tinted `crow_art` at `public/models/crow-quaternius.glb` (CC0) on desk
 - Desk lamp detached from wall fold logic (`LampBase`, `LampShade` in `FLOOR_ONLY_PROPS`); `reading_lamp` in `bedroom.json` lighting for nightstand clip lamp
 - Individual desk/nightstand props in room data: `Phone`, `Sketchbook`, `CrowFigurine`, `CalendarScrap` with examine/pickup hotspots and narrative text; calendar scrap prop hides on pickup
@@ -186,8 +192,9 @@ Parent/child relationships for grouped prop nudging defined in `DevMover.ts` `RE
 3. **Desk detail layer** — in top-down zoom, make lamp, phone, drawer, and mug individually clickable (hover/tooltips); sketchbook/papers work today
 4. **Wall notes** — tie inspected papers to journal clues or a future puzzle beat (visual inspect only today)
 5. **Meditate polish** — tune face close-up framing for papercraft model; filter/tokenize floating fragments for readability at high journal count
-6. **Add OGG SFX** to `public/audio/` (click, door unlock, rotate). Synth fallback works; real audio will feel better
-7. **Replace remaining placeholder box/cylinder props** with GLB art (bed, bookshelf, wardrobe — chair, nightstand, desk done)
+6. **Cork board narrative** — tie each crow gift examine text to StoryPlan dual-read beats and puzzle gates (visual + inspect today)
+7. **Add OGG SFX** to `public/audio/` (click, door unlock, rotate). Synth fallback works; real audio will feel better
+8. **Replace remaining placeholder box/cylinder props** with GLB art (bed, bookshelf, wardrobe — chair, nightstand, desk, cork army man done)
 8. **Enable GitHub Pages** on repo Settings → Pages (workflow deploys from `main`)
 9. Expand Playwright coverage (full escape path with real 5 s meditate hold, all four portal round-trips)
 10. ~~**Dev Mode on portal levels**~~ — layout/text/hotspots editor now level-aware; polish UX on ship/garden levels
@@ -221,9 +228,14 @@ Parent/child relationships for grouped prop nudging defined in `DevMover.ts` `RE
 - [x] Dev Mode Layout tab: object/item dropdown picker (props + inventory pickups)
 - [x] Playwright desk-zoom, intro, meditation-portal smoke tests
 - [x] `npm run build && npm run preview` — no console errors
+- [x] StoryPlan.md narrative design doc + StoryPlan-aligned story JSON pass
+- [x] Cork board cluster (5 crow gifts, intro word strips, detail zoom)
+- [x] Army man GLB on cork board (`public/models/props/army-man.glb`)
+- [x] Tropical beach painting + window frame prop
+- [x] Nightstand drawer animation on clock solve
 - [ ] GitHub Pages live after first deploy
 - [ ] Desk zoom: lamp / phone / drawer clickable
-- [ ] Wall notes tied to puzzle/narrative beats
+- [ ] Wall notes / cork gifts tied to puzzle/narrative beats
 - [ ] All placeholder props replaced with real GLB models
 - [ ] Full ship/garden/cavern/observatory worlds with multi-puzzle chains and custom art
 
@@ -252,6 +264,12 @@ Parent/child relationships for grouped prop nudging defined in `DevMover.ts` `RE
 | `src/scene/ViewWallController.ts` | Wall rotation animation; `reset()` on room swap |
 | `src/scene/DeskSketchSpread.ts` | Desk papers + sketchbook in zoom view |
 | `src/scene/WallNotesCluster.ts` | Wall papers in zoom view |
+| `src/scene/CorkBoardCluster.ts` | Cork board gifts, intro word strips, inspect zoom |
+| `src/scene/CorkBoardPinnedArt.ts` | Cork board frame + pinned prop art; `loadArmyManFigure()` GLB |
+| `src/scene/WindowFrameProp.ts` | Window frame mesh |
+| `src/scene/NightstandDrawerController.ts` | Nightstand drawer slide animation |
+| `src/game/IntroWords.ts` | Intro word pool + cork-board strip defaults |
+| `StoryPlan.md` | Dual-track narrative design + content roadmap |
 | `src/scene/PaintingRevealController.ts` | Painting swing-open animation |
 | `src/scene/IsoCamera.ts` | Orthographic camera, zoom/rotate, snapshot restore |
 | `data/rooms/bedroom.json` | Bedroom layout, props, hotspots, spawn, `portals` array |
@@ -272,7 +290,9 @@ Parent/child relationships for grouped prop nudging defined in `DevMover.ts` `RE
 - **Chair model:** `public/models/chair.glb` (CC0, [poly.pizza](https://poly.pizza/m/13AL0KYItKD)).
 - **`FLOOR_ONLY_PROPS`** and **`FLOOR_ONLY_HOTSPOTS`** in `RoomBuilder.ts` control which objects stay grounded during wall animations. Add new floor/desk props and hotspots there.
 - **`OBSTACLE_IDS`** in `RoomBuilder.ts` lists props that block player movement (bedroom + ship props).
-- Detail zoom blocks input via `isDetailZoomed` (`isDeskZoomed || isWallNotesZoomed`) in `Game.ts`. Meditate, fall transition, ESC menu, and Dev Mode also block gameplay input.
+- Detail zoom blocks input via `isDetailZoomed` (desk, wall notes, or cork board) in `Game.ts`. Meditate, fall transition, ESC menu, and Dev Mode also block gameplay input.
+- **Army man GLB:** sourced from [Models Resource — Army Man](https://models.spriters-resource.com/xbox/disneysextremeskateadventure/asset/476439/) (game rip; same character as Sketchfab “Sarge”). Credit uploader if shipping publicly.
+- **Intro words on cork board:** `GameState.introWordsChosen` (max 5) saved/loaded; `syncCorkBoardIntroWords()` on bedroom load and after intro completes.
 - Dev **Save Layout / Save Text** only writes to disk when running `npm run dev` (Vite plugin). Production/preview builds fall back to JSON download. Dev mode follows **current room** (all five MVP levels).
 - **Return to Room** from any portal level is instant at blackout (no reverse fall animation). Portals stay open after return.
 - Agent OS registered; project context at `C:\Users\thoma\agent-os\context\projects\project-stillpoint.md`.

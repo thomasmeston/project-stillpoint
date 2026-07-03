@@ -70,7 +70,12 @@ const RELATIONSHIPS: Record<string, { props: string[]; hotspots: string[]; light
   },
   Wardrobe: {
     props: ['WardrobeDoor'],
-    hotspots: ['wardrobe', 'cipher_disk_pickup', 'stillpoint_letter'],
+    hotspots: ['wardrobe', 'cipher_disk_pickup', 'stillpoint_letter', 'cork_board'],
+    lights: []
+  },
+  CorkBoard: {
+    props: [],
+    hotspots: ['cork_board'],
     lights: []
   },
   Bookshelf: {
@@ -81,12 +86,7 @@ const RELATIONSHIPS: Record<string, { props: string[]; hotspots: string[]; light
   WindowFrame: {
     props: ['WindowGlass'],
     hotspots: ['window'],
-    lights: ['window']
-  },
-  WindowGlass: {
-    props: [],
-    hotspots: ['window'],
-    lights: ['window']
+    lights: ['window'],
   },
   Painting: {
     props: [],

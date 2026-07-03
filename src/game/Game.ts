@@ -17,6 +17,8 @@ import { PuzzleUI } from '../ui/PuzzleUI';
 import { DevMover } from './DevMover';
 import { DeskSketchSpread } from '../scene/DeskSketchSpread';
 import { getWallNotesFocusOnWall } from '../scene/WallNotesCluster';
+import { getCorkBoardFocusOnWall, type CorkBoardItemId } from '../scene/CorkBoardCluster';
+import { INTRO_WORD_POOL } from './IntroWords';
 import type { WallFace } from '../scene/WallFace';
 
 const INWARD_BY_WALL: Record<Exclude<WallFace, 'floor'>, THREE.Vector3> = {
@@ -93,6 +95,7 @@ export class Game {
   private escapeMenuOpen = false;
   private isDeskZoomed = false;
   private isWallNotesZoomed = false;
+  private isCorkBoardZoomed = false;
   private introActive = false;
   private thoughtActive = false;
   private meditateActive = false;
@@ -102,23 +105,10 @@ export class Game {
   private meditation = new MeditationOverlay();
   private fallTransition = new FallTransition();
   private wordsClickedCount = 0;
-  private readonly INTRO_WORDS = [
-    // Original 13 words
-    'fuzzy', 'tired', 'memory', 'gone', 'here', 'nowhere',
-    'fear', 'peace', 'sleep', 'wake', 'dream', 'calm', 'alone',
-    // 52 additional similar words (total 65)
-    'hazy', 'exhausted', 'mind', 'lost', 'away', 'everywhere',
-    'dread', 'quiet', 'rest', 'arise', 'vision', 'still', 'isolated',
-    'shadow', 'dark', 'light', 'illusion', 'forgotten', 'remember',
-    'hollow', 'numb', 'heavy', 'drift', 'float', 'daze', 'mist',
-    'flicker', 'weary', 'fading', 'vanished', 'empty', 'void', 'somewhere',
-    'panic', 'terror', 'serenity', 'tranquil', 'slumber', 'alert', 'awake',
-    'fantasy', 'nightmare', 'silent', 'peaceful', 'solitude', 'deserted',
-    'apart', 'detached', 'confused', 'blurred', 'dim', 'faint'
-  ];
+  private readonly INTRO_WORDS = INTRO_WORD_POOL;
 
   get isDetailZoomed(): boolean {
-    return this.isDeskZoomed || this.isWallNotesZoomed;
+    return this.isDeskZoomed || this.isWallNotesZoomed || this.isCorkBoardZoomed;
   }
 
   get isInputBlocked(): boolean {
@@ -174,6 +164,10 @@ export class Game {
     this.deskSketchSpread = new DeskSketchSpread(new THREE.Vector3(1.6, 0, -0.1));
     this.room.propsRoot.add(this.deskSketchSpread.group);
 
+    this.room.corkBoardCluster.setOnItemInspected((id) => {
+      this.showHotspotExamine(id);
+    });
+
     this.wireInput();
     this.wireViewRotation();
 
@@ -184,16 +178,25 @@ export class Game {
     });
 
     // Wire up autosave event listeners
-    this.gameState.events.on('flagChanged', ({ flag }) => {
+    this.gameState.events.on('flagChanged', ({ flag, value }) => {
       if (flag === 'painting_moved' || flag === 'safe_unlocked') {
         this.syncSafeVisuals();
+      }
+      if (flag === 'desk_drawer_unlocked' && value && this.currentRoomId === 'bedroom') {
+        this.syncNightstandDrawer(true);
+        this.audio.playSfx('click');
       }
       if (flag === 'meditation_portal_opened' || flag.startsWith('lesson_')) {
         this.syncPortals();
       }
       this.saveGame();
     });
-    this.gameState.events.on('puzzleSolved', () => this.saveGame());
+    this.gameState.events.on('puzzleSolved', (puzzleId) => {
+      if (puzzleId === 'clock' && this.currentRoomId === 'bedroom') {
+        this.syncNightstandDrawer(true);
+      }
+      this.saveGame();
+    });
     this.inventory.events.on('changed', () => {
       this.syncSafeVisuals();
       this.saveGame();
@@ -432,6 +435,8 @@ export class Game {
       approach = this.getDeskApproachPosition();
     } else if (hotspotId === 'wall_notes') {
       approach = this.getWallNotesApproachPosition();
+    } else if (hotspotId === 'cork_board') {
+      approach = this.getCorkBoardApproachPosition();
     } else {
       approach = this.getHotspotApproachPosition(hotspotId);
     }
@@ -508,6 +513,11 @@ export class Game {
               this.showHotspotExamine('wall_notes');
               this.zoomToWallNotes();
             }
+          } else if (hotspotId === 'cork_board') {
+            if (!this.isDetailZoomed) {
+              this.showHotspotExamine('cork_board');
+              this.zoomToCorkBoard();
+            }
           } else {
             this.handleExamine(hotspotId);
           }
@@ -583,6 +593,14 @@ export class Game {
     if (this.currentRoomId !== 'bedroom') return;
     const scrapTaken = this.puzzleManager.getHotspotDef('calendar_scrap').disabled;
     this.room.setPropVisible('CalendarScrap', !scrapTaken);
+  }
+
+  private syncNightstandDrawer(animate = false): void {
+    if (this.currentRoomId !== 'bedroom') return;
+    this.room.syncNightstandDrawer(
+      this.gameState.hasFlag('desk_drawer_unlocked'),
+      animate,
+    );
   }
 
   private handlePaintingExamine(): void {
@@ -662,7 +680,40 @@ export class Game {
         this.audio.playSfx('click');
         this.room.wallNotesCluster.inspectPaper(hit.index);
       }
+      return;
     }
+
+    if (this.isCorkBoardZoomed) {
+      const hit = this.room.corkBoardCluster.raycastHit(this.detailZoomRaycaster);
+      if (!hit) {
+        if (this.room.corkBoardCluster.isInspecting()) {
+          this.room.corkBoardCluster.dismissInspect();
+        }
+        return;
+      }
+      if (hit.type === 'item') {
+        this.audio.playSfx('click');
+        this.inspectCorkBoardItem(hit.id);
+      }
+    }
+  }
+
+  private inspectCorkBoardItem(id: CorkBoardItemId): void {
+    const index = [
+      'cork_straw',
+      'cork_gum_wrapper',
+      'cork_button',
+      'cork_newspaper',
+      'cork_army_man',
+    ].indexOf(id);
+    if (index >= 0) {
+      this.room.corkBoardCluster.inspectItem(index);
+    }
+  }
+
+  private syncCorkBoardIntroWords(): void {
+    if (this.currentRoomId !== 'bedroom') return;
+    this.room.corkBoardCluster.setIntroWordLabels(this.gameState.introWordsChosen);
   }
 
   /** Called from e2e tests and dev tooling. */
@@ -710,9 +761,53 @@ export class Game {
     this.hud.setCursorHintVisible(true);
   }
 
+  private getCorkBoardApproachPosition(): THREE.Vector3 {
+    const focus = getCorkBoardFocusOnWall();
+    const southWall = this.room.wallMeshes.get('south');
+    if (southWall) {
+      southWall.updateMatrixWorld(true);
+      const world = focus.clone().applyMatrix4(southWall.matrixWorld);
+      return new THREE.Vector3(world.x, 0, world.z - 1.3);
+    }
+    return new THREE.Vector3(focus.x, 0, 1.3);
+  }
+
+  private getCorkBoardTarget(): THREE.Vector3 {
+    const southWall = this.room.wallMeshes.get('south');
+    const localTarget = getCorkBoardFocusOnWall();
+    if (southWall) {
+      southWall.updateMatrixWorld(true);
+      return localTarget.applyMatrix4(southWall.matrixWorld);
+    }
+    return new THREE.Vector3(localTarget.x, 1.45, 2.92);
+  }
+
+  private zoomToCorkBoard(): void {
+    this.isCorkBoardZoomed = true;
+    this.player.root.visible = false;
+    this.isoCamera.zoomTo(this.getCorkBoardTarget(), 1.15, 0, Math.PI);
+    this.hud.showZoomControls(true);
+    this.hud.setCursorHintVisible(false);
+  }
+
+  private zoomOutFromCorkBoard(): void {
+    if (!this.isCorkBoardZoomed) return;
+    this.isCorkBoardZoomed = false;
+    this.player.root.visible = true;
+    this.room.corkBoardCluster.resetInspect();
+    this.hud.hideExamine();
+
+    const currentViewYaw = this.isoCamera.getYawForViewIndex(this.isoCamera.getViewIndex());
+    const ISO_PITCH = THREE.MathUtils.degToRad(-35);
+    this.isoCamera.zoomTo(new THREE.Vector3(0, 0.9, 0.0), 10, ISO_PITCH, currentViewYaw);
+    this.hud.showZoomControls(false);
+    this.hud.setCursorHintVisible(true);
+  }
+
   private zoomOutFromDetail(): void {
     if (this.isDeskZoomed) this.zoomOutFromDesk();
     else if (this.isWallNotesZoomed) this.zoomOutFromWallNotes();
+    else if (this.isCorkBoardZoomed) this.zoomOutFromCorkBoard();
   }
 
   /** First visit to the clock is examine-only; unlocks the first meditation portal afterward. */
@@ -832,6 +927,9 @@ export class Game {
 
     if (roomId === 'bedroom') {
       this.room.propsRoot.add(this.deskSketchSpread.group);
+      this.room.corkBoardCluster.setOnItemInspected((id) => {
+        this.showHotspotExamine(id);
+      });
     }
 
     this.puzzleManager.loadRoom(roomId);
@@ -850,12 +948,15 @@ export class Game {
     if (roomId === 'bedroom') {
       this.syncSafeVisuals();
       this.syncPickupProps();
+      this.syncNightstandDrawer(false);
       this.room.syncPaintingReveal(
         this.gameState.hasFlag('painting_moved'),
         this.gameState.hasFlag('safe_unlocked'),
         this.inventory.hasItem('phone'),
       );
       this.syncPortals();
+      this.syncBedroomMemoryJournals();
+      this.syncCorkBoardIntroWords();
     }
 
     this.isoCamera.setViewIndex(0);
@@ -910,6 +1011,24 @@ export class Game {
       }
     }
     return revealed;
+  }
+
+  private syncBedroomMemoryJournals(): void {
+    if (this.currentRoomId !== 'bedroom') return;
+    const flagToJournal: Record<string, string> = {
+      lesson_1: 'memory_lesson_1',
+      lesson_2: 'memory_lesson_2',
+      lesson_3: 'memory_lesson_3',
+      lesson_4: 'memory_lesson_4',
+    };
+    for (const [flag, journalId] of Object.entries(flagToJournal)) {
+      if (this.gameState.hasFlag(flag)) {
+        this.narrative.addJournalEntry(journalId);
+      }
+    }
+    if (this.gameState.hasFlag('painting_moved')) {
+      this.narrative.addJournalEntry('memory_painting');
+    }
   }
 
   private syncPortals(): void {
@@ -1093,11 +1212,13 @@ export class Game {
     this.escapeMenuOpen = false;
     this.isDeskZoomed = false;
     this.isWallNotesZoomed = false;
+    this.isCorkBoardZoomed = false;
     this.wordsClickedCount = 0;
 
     this.meditation.hide();
     this.deskSketchSpread.reset();
     this.room.wallNotesCluster.resetInspect();
+    this.room.corkBoardCluster.resetInspect();
     this.room.syncPaintingReveal(false, false, false);
     this.syncPortals();
     this.syncSafeVisuals();
@@ -1152,6 +1273,7 @@ export class Game {
 
     if (savedRoom === 'bedroom') {
       this.syncSafeVisuals();
+      this.syncNightstandDrawer(false);
       this.room.syncPaintingReveal(
         this.gameState.hasFlag('painting_moved'),
         this.gameState.hasFlag('safe_unlocked'),
@@ -1202,6 +1324,7 @@ export class Game {
 
   private startIntroSequence(): void {
     this.wordsClickedCount = 0;
+    this.gameState.introWordsChosen = [];
     const overlay = document.getElementById('intro-words-overlay');
     if (!overlay) return;
 
@@ -1289,6 +1412,11 @@ export class Game {
     wordEl.classList.add('clicked');
     this.audio.playSfx('click');
 
+    const word = wordEl.textContent?.trim();
+    if (word) {
+      this.gameState.introWordsChosen.push(word);
+    }
+
     this.wordsClickedCount++;
 
     if (this.wordsClickedCount >= 5) {
@@ -1312,8 +1440,9 @@ export class Game {
 
     this.introActive = false;
     this.gameState.setFlag('intro_words_cleared', true);
-    this.narrative.showThought('wake_beside_bed');
+    this.syncCorkBoardIntroWords();
     this.saveGame();
+    this.narrative.showThought('wake_beside_bed');
 
     const hudEl = document.getElementById('hud');
     if (hudEl) {
@@ -1350,7 +1479,9 @@ export class Game {
     this.wallCtrl.update(dt);
     this.deskSketchSpread.update(dt);
     this.room.paintingReveal.update(dt);
+    this.room.nightstandDrawer.update(dt);
     this.room.wallNotesCluster.update(dt);
+    this.room.corkBoardCluster.update(dt);
     this.room.updatePortals(dt);
     this.player.update(dt, this.room.obstacles, this.room.shellSize);
     this.updateExamineDismiss();

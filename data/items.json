@@ -2,39 +2,39 @@
   "items": {
     "calendar_scrap": {
       "label": "Calendar Scrap",
-      "description": "A torn piece of March calendar. Someone circled the 17th and wrote 3:17 in the margin."
+      "description": "Torn March calendar — 17 circled, 3:17 in the margin. Program stub glued on back: …recital …3:17 PM. Sacred minute or missed appointment. Your hand either way."
     },
     "photo_set": {
       "label": "Photo Backs",
-      "description": "Four wallet photos flipped over. Letters are scribbled on the cardboard backs."
+      "description": "Four wallet photos, faces turned away on the fronts. Letters scrambled on the cardboard backs. Family or cipher — you stopped telling the difference."
     },
     "receipt_stub": {
       "label": "Receipt Stub",
-      "description": "Stillpoint Sleep Lab — intake deposit. Date matches the circled calendar day."
+      "description": "Stillpoint Sleep Lab — intake deposit. Same date as the calendar. Real place, filed metaphor, or both. Track A scripture. Track B paperwork from the year you stopped going out."
     },
     "key_blade": {
       "label": "Key Blade",
-      "description": "A narrow brass key blade without a handle."
+      "description": "Narrow brass blade without a handle. Delusion: key to next truth. Memory: key to the closet where her gift was kept."
     },
     "key_handle": {
       "label": "Key Handle",
-      "description": "A worn wooden key grip. It looks like it snapped off something."
+      "description": "Worn wooden grip, snapped off something domestic. Rest — where the head falls — where this piece waited."
     },
     "assembled_key": {
       "label": "Assembled Key",
-      "description": "Blade and handle joined. It should fit the wardrobe lock."
+      "description": "Blade and handle joined. Fits the wardrobe latch. Opens doctrine and old coats in the same motion."
     },
     "cipher_disk": {
       "label": "Cipher Disk",
-      "description": "A cardboard wheel with cut-out windows. Align STILL with POINT."
+      "description": "Cardboard wheel with cut-out windows. Align STILL with POINT. Sacred diagram. Door wants the full name: STILLPOINT."
     },
     "stillpoint_letter": {
       "label": "Stillpoint Letter",
-      "description": "Folded consent letter for Project Stillpoint. Your signature is at the bottom."
+      "description": "Folded consent — Project Stillpoint, voluntary memory containment during lucid REM. Your signature. Reads like a trial. Feels like signing away the people who knocked."
     },
     "phone": {
       "label": "Phone",
-      "description": "No signal. One notification frozen on screen: 'You chose to forget.'"
+      "description": "No signal. Screen frozen on one notification: You chose to forget. Voicemail waiting — her voice, older: Dad, if you get this… Catalogued as Relic Seven. Never played."
     }
   },
   "combine_rules": [

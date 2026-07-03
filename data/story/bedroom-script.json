@@ -1,173 +1,253 @@
 {
-  "opening_thought": "Moving hurts. Why does it feel like i have to remember how to walk?",
+  "opening_thought": "Moving hurts. My legs know the motion but my mind doesn't — like someone else learned to walk in this body.",
   "thoughts": {
-    "wake_beside_bed": "Head...fuzzy. Was I awake this whole time? Or how long was I sleeping?",
-    "locked_hint": "Not yet. Some other part of me remembers before I do.",
-    "door_locked": "Layered shut. I stacked the locks myself — I just can't recall why.",
-    "drawer_unlocked": "Wood exhales. I was waiting for that sound. I think I was.",
-    "safe_found": "The wall has a second face. I hid something where I'd have to look twice.",
-    "key_ready": "Metal finds wood. The fit is older than this forgetting.",
-    "wardrobe_open": "Cold breath. Paper smell. Ink. A name I signed somewhere between sleep and waking.",
-    "door_opening": "Something unlatches that was never barred from the outside.",
-    "all_lessons_learned": "Four lessons. Four worlds. The bedroom door waits for all of them.",
-    "desk_drawer_loot": "Faces turned away. Dates that don't belong to me — except my hand wrote the receipt.",
-    "safe_opened": "Brass tongue. A blade without a handle. Rest — the word pulsing like a second heartbeat.",
-    "bed_musings": "Indentation in the sheets. Someone slept here. Was it me?",
-    "clock_musings": "Twelve frozen on the face. A minute buried somewhere. I circled it once — the ink remembers.",
-    "desk_musings": "Brown ring in the grain. Thoughts left half-finished. The chair still angled toward forgetting.",
-    "sketchbook_musings": "Black feathers. Lines I don't recall drawing. STILL — then an arrow I can't follow yet.",
-    "wall_notes_musings": "Scribbles everywhere. I recognize my writing, but I don't remember making these.",
-    "painting_musings": "Oak in oil. Roots in paint. Wind I felt somewhere that wasn't this room.",
-    "window_musings": "Blues are too blue. Sun looks fake. Real places are dimmer than this.",
-    "nightstand_musings": "",
-    "bookshelf_musings": "Dream Cartography. I was mapping exits on paper before I built one in wood.",
-    "wardrobe_musings": "Dark inside. Things I folded away when waking hurt too much to carry.",
-    "lamp_musings": "Gold pool on the desk. For one blink the room fits around me like skin.",
-    "chair_musings": "Sit. Wait. Think. The wood knows the shape my body makes when I'm almost remembering.",
-    "door_musings": "Chain. Code. Bolt. I layered every lock so only someone paying attention could leave."
+    "wake_beside_bed": "The room is wrong and familiar. I don't know how long I was out, or why the door feels like I locked it from both sides.",
+    "locked_hint": "Not yet. Something in me knows the order — I just can't read my own map.",
+    "door_locked": "Deadbolt, chain, letter lock. I stacked them. To keep the world out — or to keep myself in until the clues made sense.",
+    "drawer_unlocked": "Wood exhales. The sound was part of the system. I was waiting for it without knowing why.",
+    "safe_found": "The wall has a second face. I hid truth where only someone still searching would look twice.",
+    "key_ready": "Metal finds wood. The fit is older than this forgetting — like my hands remember what my name won't.",
+    "wardrobe_open": "Paper smell. Cold fabric. Ink on a signature I don't recall choosing — or refusing.",
+    "door_opening": "The last lock yields. Not because the world forgives me — because I finally remembered enough to leave.",
+    "all_lessons_learned": "Four worlds I named when the spiral peaked. Four places I hid from one person. The door waits for all of it.",
+    "desk_drawer_loot": "Faces turned away on cardboard backs. My hand wrote STILL on them. My chest knows those shoulders.",
+    "safe_opened": "Brass blade. A scrap: Handle where you rest. Rest — the word hits like a pillow I haven't seen in years.",
+    "bed_musings": "Indentation in the sheets. Someone slept here alone for a long time. Maybe that was the point.",
+    "clock_musings": "Midnight on the face, but my calendar screamed 3:17. A sacred minute — or a recital I missed. I don't know which hurts more.",
+    "desk_musings": "Coffee ring in the grain. A crow figurine watching the mug. I catalogued the universe from this chair until people stopped calling.",
+    "sketchbook_musings": "Black feathers in charcoal — doctrine and doodle at once. STILL → POINT. I drew with someone once. She loved birds.",
+    "wall_notes_musings": "My handwriting. Portals, spirals, ledgers. And one number crossed out so hard the paper tore — call her.",
+    "cork_board_musings": "Gift One through Five, pinned in order. The straw came first. Under each one — a word I picked when I woke, like I knew they'd matter before I knew why.",
+    "painting_musings": "Warm sand in oil. A place too bright for this room. Vacation, maybe — her laugh in the surf. Or a symbol the crow wanted me to see.",
+    "window_musings": "Bars outside. Moon and trees. Once a crow landed on the sill and left a straw — the first proof the outside still spoke to me.",
+    "nightstand_musings": "Drawer wood worn smooth. The handle snapped off a key I hid before I forgot why hiding mattered.",
+    "bookshelf_musings": "Dream Cartography — maps of exits on paper. I read to leave without moving. Then I stopped leaving altogether.",
+    "wardrobe_musings": "Dark inside. Coats that smell like an older season. Something legal folded in the back — or a permission slip for silence.",
+    "lamp_musings": "Warm pool on the desk. For a second the room feels like a study, not a cell. Then the shadow returns.",
+    "chair_musings": "The seat is molded to me. Years of sitting, waiting for the next sign. The crow. The straw. The pattern.",
+    "door_musings": "I shut the world out in layers. Now the layers are the only grammar I still speak.",
+    "memory_safe_found": "Laughter through plaster — high, brief. A child's voice? No. She's grown. The sound is a memory without a name.",
+    "memory_ship_return": "Salt air ghost on my tongue. Friends on water, someone saying we're not drifting. She held the rail with one hand.",
+    "memory_garden_return": "Cut grass and sprinkler. A backyard fence. She was small enough to hide behind once. I wasn't there the year it mattered.",
+    "memory_cavern_return": "A phone buzzing unanswered until it stopped. A friend's message: I'm still here. I never opened it.",
+    "memory_observatory_return": "Stars through a car roof. Her shoulder against mine. Still — the last day anything felt still before I disappeared inside.",
+    "crow_gift_straw": "Axis One. The universe spoke through plastic. I wrote that. I don't remember the day, only that it mattered more than people.",
+    "phone_voicemail": "One unheard message. Her voice — older, tired: Dad, if you get this… I chose to forget. The screen says so."
   },
   "journal_entries": {
     "calendar_clue": {
       "title": "Calendar Scrap",
-      "body": "March 17 circled in my own handwriting. Margin note: 3:17. Why would I mark a minute?",
-      "thought": "March holds a minute. Time wears the first mask."
+      "body": "March 17 circled in your handwriting. Margin: 3:17. A minute you made holy — or her recital time, crossed out on the fridge calendar you never hung.",
+      "thought": "Time wears the first mask. Sacred or shame — same minute."
     },
     "clock_solved": {
       "title": "Clock Set to 3:17",
-      "body": "The bedroom clock ticks again when set to 3:17. The desk drawer pops open.",
-      "thought": "Three and seventeen. The hands tremble like they're ashamed to move."
+      "body": "The bedroom clock ticks when set to 3:17. The desk drawer pops open. The system still works even if you don't remember building it.",
+      "thought": "Three and seventeen. The hands move like they're ashamed — or apologizing."
     },
     "photo_cipher_solved": {
       "title": "Photo Backs — STILL",
-      "body": "Rearranging the photo backs spells STILL. Receipt says Stillpoint Sleep Lab intake.",
-      "thought": "STILL. The letters arrange themselves. My mouth wants to say what comes after."
+      "body": "Rearranged photo backs spell STILL. Receipt stub: Stillpoint Sleep Lab intake — same date as the calendar. Faces on the fronts turned away from you.",
+      "thought": "STILL. Prefix of a passphrase. Prefix of a life I paused."
     },
     "safe_opened": {
       "title": "Wall Safe",
-      "body": "Inside the safe: a brass key blade and a note — 'Handle where you rest.'",
-      "thought": "Rest. Where the head falls. Where the missing piece waits."
+      "body": "Brass key blade. Note: Handle where you rest. A phone you catalogued as Relic Seven — one voicemail frozen on the screen.",
+      "thought": "Rest. Where the head falls. Where the missing piece waited."
+    },
+    "memory_painting": {
+      "title": "Behind the Painting",
+      "body": "The safe was hidden well. For a moment you heard laughter — bright, familiar — and lost it before a name arrived.",
+      "thought": "memory_safe_found"
     },
     "key_assembled": {
       "title": "Key Assembled",
-      "body": "Blade and wooden handle fit together. Wardrobe lock.",
+      "body": "Blade from the safe, handle from the nightstand. Wardrobe lock. Delusion: key to the next truth. Memory: key to where her gift was kept.",
       "thought": "Whole again. The cold wood already knows what I'm bringing."
     },
     "wardrobe_open": {
       "title": "Wardrobe Contents",
-      "body": "Cipher disk and a folded consent letter for Project Stillpoint. My signature.",
-      "thought": "Signature dried. I agreed to forget — on purpose, with open eyes."
+      "body": "Cipher disk and a folded consent letter — Project Stillpoint, voluntary memory containment during lucid REM. Your signature. Also: you signed something else when you stopped answering the door.",
+      "thought": "I agreed to forget — on purpose, with open eyes — or I agreed to stop feeling people."
     },
     "disk_hint": {
       "title": "Cipher Disk",
-      "body": "Align STILL with POINT on the disk. The door padlock wants the full passphrase.",
-      "thought": "STILL meets POINT. A name for the place between sleeping and waking."
+      "body": "Cardboard wheel. Align STILL with POINT for the door padlock. Cosmology on cardboard. The name of the place between sleeping and waking.",
+      "thought": "STILL meets POINT. Stillpoint — last still day, or the lab that named my breakdown."
     },
     "door_code": {
       "title": "Door Unlocked",
-      "body": "Padlock code accepted. Chain slack. Deadbolt finally catches.",
-      "thought": "The last layer yields. The hallway is real — or real enough to leave through."
+      "body": "STILLPOINT accepted. Chain slack. Deadbolt catches. The hallway is real — or real enough to choose.",
+      "thought": "The last layer yields. Leaving is remembering, not only escaping."
+    },
+    "memory_lesson_1": {
+      "title": "Memory — Anchor",
+      "body": "The ship wasn't fantasy — it was a trip you took with friends. Someone shouted anchor as a joke. She held the rail. You weren't drifting then.",
+      "thought": "memory_ship_return"
+    },
+    "memory_lesson_2": {
+      "title": "Memory — Growth",
+      "body": "The garden is her backyard in summer — height marked on the fence, dates you missed penciled small. Growth happened whether you watched or not.",
+      "thought": "memory_garden_return"
+    },
+    "memory_lesson_3": {
+      "title": "Memory — Rest",
+      "body": "The cavern is the year you stopped answering. Exhaustion before the fall. A friend's text unread until it didn't matter.",
+      "thought": "memory_cavern_return"
+    },
+    "memory_lesson_4": {
+      "title": "Memory — Still",
+      "body": "The observatory is a night in the car — stars through the sunroof, her shoulder, no words needed. Stillpoint: the last still day before you walled yourself in.",
+      "thought": "memory_observatory_return"
     },
     "ending_journal": {
-      "title": "Project Stillpoint",
-      "body": "I volunteered for a lucid-dream containment trial. The bedroom is a reconstructed memory space — not quite real. I hid the exit passphrase from myself until I was ready to remember why I came here. The door opens. The trial ends when I choose to leave."
+      "title": "What Stillpoint Named",
+      "body": "You isolated for years after a life full of people. A crow at the window began a religion of scraps — straw, then whatever it brought. A brain injury took the memory but left the map.\n\nProject Stillpoint might be a trial, a metaphor, or both — paperwork for how the mind labels a collapse. What matters: you remember her voice on the phone, friends at the door, the still night before the spiral.\n\nThe crow was madness and the only companion. Leaving the room means choosing people over patterns — not only solving the cosmology."
     }
   },
   "examines": {
     "bed": {
       "title": "Bed",
-      "body": "A nice comfy, inviting bed. Blue sheets, one pillow.",
+      "body": "Blue sheets, one pillow, an indentation that says you slept alone here a long time. A calendar scrap wedged between mattress and frame — March 17 circled.",
       "thought": "bed_musings",
       "journal": "calendar_clue"
     },
     "calendar_scrap": {
       "title": "Calendar Scrap",
-      "body": "March 17 circled. 3:17 written in the margin in my handwriting."
+      "body": "March 17 circled. 3:17 in the margin — your handwriting. Program stub glued on the back, mostly torn away. All you read is …recital …3:17 PM."
     },
     "wall_clock": {
       "title": "Wall Clock",
-      "body": "Stopped at midnight. The second hand trembles when you touch it, like it wants a time.",
+      "body": "Stopped at midnight. When you touch it, the second hand trembles — like it wants 3:17, the minute everything in this room pivots on.",
       "thought": "clock_musings"
     },
     "desk": {
       "title": "Desk",
-      "body": "Sketchbook, lamp, mug of pens, locked drawer. Coffee ring dried into the wood.",
+      "body": "Sketchbook, lamp, mug of pens, locked drawer. A small crow figurine beside the mug — idol or gift, you can't tell yet. Coffee ring dried into the wood.",
       "thought": "desk_musings"
     },
     "desk_drawer": {
       "title": "Desk Drawer",
-      "body": "Photo backs and a Stillpoint receipt stub. The word STILL is scrambled across them.",
+      "body": "Photo backs scrambled with letters. Stillpoint Sleep Lab receipt. Faces on the photos turned away — family, friends — people you catalogued as cipher fodder or people you couldn't face.",
       "thought": "desk_drawer_loot"
     },
     "sketchbook": {
       "title": "Sketchbook",
-      "body": "A crow study on the last page — detailed, recent. I don't remember drawing it. Margin reads: STILL → POINT.",
+      "body": "Crow studies fill the last pages — messenger, doctrine, obsession. Margin in your hand: STILL → POINT. An earlier page shows two stick figures drawing together. You don't remember when.",
       "thought": "sketchbook_musings"
     },
     "bookshelf": {
       "title": "Bookshelf",
-      "body": "Paperbacks and a spine labeled 'Dream Cartography.' Flavor of someone who reads to escape.",
+      "body": "Paperbacks and a spine labeled Dream Cartography. Books on pattern, myth, and silence — someone read to escape before they built a religion from scraps.",
       "thought": "bookshelf_musings"
     },
     "nightstand": {
       "title": "Nightstand",
-      "body": "A wooden key handle in the drawer. It snapped off something.",
+      "body": "A wooden key handle in the drawer — snapped off something you meant to reassemble. The wood is worn where your fingers worried it.",
       "thought": "nightstand_musings"
     },
     "key_handle": {
       "title": "Key Handle",
-      "body": "Worn grip. It belongs with the blade from the safe."
+      "body": "Worn grip, warm from your pocket. It belongs with the brass blade from the safe — domestic metal, not sacred. Unless you made it sacred too."
     },
     "painting": {
       "title": "Framed Painting",
-      "body": "An old oil painting of a massive oak tree — branches spread wide against a pale sky. The place doesn't match anywhere you've been, but the tree feels familiar.",
+      "body": "Tropical beach in oil — turquoise water, palms, gold sand. Too bright for this room. A vacation you almost remember, or a symbol you hung because the crow demanded a threshold.",
       "thought": "painting_musings"
     },
     "wall_notes": {
       "title": "Pinned Notes",
-      "body": "Cryptic sketches and half-sentences pinned across the wall — portals, spirals, diagrams.",
+      "body": "Cryptic ledgers — portals, spirals, crow sigils, STILL before POINT. Between them: a phone number crossed out, call her in shaky ink, a name you can't read.",
       "thought": "wall_notes_musings"
+    },
+    "cork_board": {
+      "title": "Cork Board",
+      "body": "Large cork board beside the wardrobe — your crow gift ledger. Five pins, five objects, numbered 1–5. Under each item: a paper strip with a word you chose when you woke.",
+      "thought": "cork_board_musings"
+    },
+    "cork_straw": {
+      "title": "Gift One — Straw",
+      "body": "Bent plastic straw, red stripe. Label in your handwriting: AXIS / FIRST SPEECH. The crow left it on the windowsill. You pinned it like scripture.",
+      "thought": "crow_gift_straw"
+    },
+    "cork_gum_wrapper": {
+      "title": "Gift Two — Gum Wrapper",
+      "body": "Crinkled foil, mint label half gone. Ledger note: MESSENGER'S SECOND TOKEN / CHEW AND LISTEN. Trivial — unless the day she gave you gum was the last easy one."
+    },
+    "cork_button": {
+      "title": "Gift Three — Button",
+      "body": "Black four-hole coat button. Thread snagged. Your note: HOLD FAST / CLOSURE. Could be cosmology. Could be the coat you wore the day you stopped going out."
+    },
+    "cork_newspaper": {
+      "title": "Gift Four — Newspaper Scrap",
+      "body": "Local section torn out. Headline fragment: …memory trial… Stillpoint… Your margin: PROOF THE OUTSIDE KNOWS MY NAME."
+    },
+    "cork_army_man": {
+      "title": "Gift Five — Army Man",
+      "body": "Small green plastic soldier, rifle raised. Ledger note: FIFTH ENVOY / STAND GUARD. Childhood toy — or proof the messenger recruits from the toy box.",
+      "thought": "cork_board_musings"
     },
     "wall_safe": {
       "title": "Wall Safe",
-      "body": "Small brass safe. Inside: a key blade and a scrap — 'Handle where you rest.'",
+      "body": "Small brass safe behind the painting. Inside: key blade, phone, scrap — Handle where you rest.",
       "journal": "safe_opened"
+    },
+    "wall_safe_locked": {
+      "title": "Wall Safe",
+      "body": "Brass safe set into the wall. Letter lock. You sense the combo is spelled somewhere in the room — photos, receipts, the word STILL."
     },
     "wardrobe": {
       "title": "Wardrobe",
-      "body": "Locked. The assembled key should fit the old brass latch.",
+      "body": "Locked wardrobe. Assembled key fits the brass latch. Inside: cipher disk, folded letter, coats that smell like autumn you didn't live this year.",
       "thought": "wardrobe_musings"
     },
     "cipher_disk_pickup": {
       "title": "Cipher Disk",
-      "body": "Cardboard wheel. Windows align STILL with POINT."
+      "body": "Cardboard wheel with cut-out windows. Align STILL with POINT. Sacred toy. Door wants the full name."
     },
     "stillpoint_letter": {
       "title": "Stillpoint Letter",
-      "body": "Consent for Project Stillpoint — voluntary memory containment during lucid REM. My signature at the bottom."
+      "body": "Consent for Project Stillpoint — voluntary memory containment during lucid REM. Your signature at the bottom. Reads like a trial. Feels like permission to stop calling back."
     },
     "door": {
       "title": "Bedroom Door",
-      "body": "Deadbolt spins freely until now. Chain and letter padlock block the way out.",
+      "body": "Deadbolt, chain, letter padlock. You layered every lock — to protect the clue map, or to punish yourself with one more stillpoint before the world.",
       "thought": "door_musings"
     },
     "window": {
       "title": "Window",
-      "body": "Beautiful view of a tropical paradise. Sunny and peaceful.",
+      "body": "Four panes, linen curtains, iron bars outside. Moonlit night, distant trees. The sill has a faint scratch — claw marks? — and a ring stain where a cup sat with the first straw.",
       "thought": "window_musings"
     },
     "combine_station": {
       "title": "Desk Surface",
-      "body": "Enough space to fit two small objects together."
+      "body": "Clear space to fit two small objects together — blade and handle, mundane parts waiting to become a key."
     },
     "lamp": {
       "title": "Lamp",
-      "body": "A heavy metal desk lamp. It casts a warm pool of light over the desk. The bulb is hot to the touch.",
+      "body": "Heavy desk lamp, warm pool of light. Bulb hot to the touch. You wrote half the wall notes in this circle.",
       "thought": "lamp_musings"
     },
     "chair": {
       "title": "Chair",
-      "body": "A simple wooden desk chair. It looks comfortable enough.",
+      "body": "Wooden desk chair, molded to your weight. Angled toward the desk like you were always waiting for the next sign.",
       "thought": "chair_musings"
+    },
+    "portal_ship": {
+      "title": "Dark Opening",
+      "body": "A tear in the air above the floor — salt smell, rope creak, water. First inner world you named: proof the outside sends messages. Or memory of friends on a boat."
+    },
+    "portal_garden": {
+      "title": "Dark Opening",
+      "body": "Green light and pollen drift from the rift. Growth — every object connects in your ledger. Or her backyard, years you weren't there to measure."
+    },
+    "portal_cavern": {
+      "title": "Dark Opening",
+      "body": "Cold blue exhales from the crack. Rest — still point in darkness. Or the year you stopped answering and slept through everything that mattered."
+    },
+    "portal_observatory": {
+      "title": "Dark Opening",
+      "body": "Starlight spills through a hole in nothing. STILL — ultimate secret. Or the last quiet night with her before you walled the world out."
     }
   },
   "on_flag": {
@@ -175,18 +255,35 @@
       "thought": "drawer_unlocked"
     },
     "painting_moved": {
-      "thought": "safe_found"
+      "thought": "safe_found",
+      "journal": "memory_painting"
     },
     "wardrobe_unlocked": {
       "thought": "wardrobe_open"
     },
     "door_unlocked": {
       "thought": "door_opening"
+    },
+    "lesson_1": {
+      "journal": "memory_lesson_1",
+      "thought": "memory_ship_return"
+    },
+    "lesson_2": {
+      "journal": "memory_lesson_2",
+      "thought": "memory_garden_return"
+    },
+    "lesson_3": {
+      "journal": "memory_lesson_3",
+      "thought": "memory_cavern_return"
+    },
+    "lesson_4": {
+      "journal": "memory_lesson_4",
+      "thought": "memory_observatory_return"
     }
   },
   "ending": {
-    "title": "You Remember",
-    "body": "You step into the hallway. Fluorescent hum. A voice on a speaker: 'Session complete.'\n\nProject Stillpoint was never a prison — it was a chamber you built to recover a memory too sharp to carry awake. The bedroom dissolves behind you like a page turning.\n\nYou chose to forget. You chose to return.",
+    "title": "You Remember Enough",
+    "body": "You step into the hallway. Fluorescent hum — or sunlight through a door you finally opened. A voice on a speaker, or her message still waiting: Session complete.\n\nThe bedroom dissolves like a page turning. Project Stillpoint might be a chamber, a trial, a name for the last day you stood still on purpose.\n\nYou built a religion from a crow's straw. You forgot a daughter, friends, warmth. You chose to forget — and you chose to return.\n\nLeaving is not only escape. It is willingness to remember people, not just patterns.",
     "journal_id": "ending_journal"
   }
 }

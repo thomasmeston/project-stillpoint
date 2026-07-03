@@ -1,62 +1,67 @@
 {
-  "opening_thought": "Salt. Light. The deck is warm under me and the horizon won't hold still. I fell through the floor and the sea caught me.",
+  "opening_thought": "Salt. Rope. The deck rolls under me — I fell through the floor and the sea caught me. First chapter of a religion I wrote when the spiral peaked.",
   "thoughts": {
-    "ship_arrival": "No walls here. Only rope and wind and a blue that doesn't lie like the window did.",
-    "ship_wheel_musings": "The wheel turns and nothing answers. We are anchored to something I can't see.",
-    "mast_musings": "Tall as the bedroom was wide. The sail breathes. Somewhere up there, a course was set without me.",
-    "crate_clue_musings": "A word is branded into the green crate: ANCHOR. Burned deep, like it mattered to remember.",
-    "sea_musings": "It goes all the way out. No edges. The first honest distance I've seen since I woke.",
-    "ship_chest_opened": "The lock gives. Inside, the smell of old metal and a quiet that feels like the next door."
+    "ship_arrival": "No walls. Only horizon. The window lied with its fake moon — this blue doesn't lie the same way.",
+    "ship_wheel_musings": "Hands wore these spokes smooth — mine and others'. The wheel turns; the ship stays. ANCHOR wasn't a command. It was a joke someone shouted until it became true.",
+    "mast_musings": "Tall as the bedroom was wide. Sail breathing. Course set without me at the helm — same as the year I let others steer my life away.",
+    "crate_clue_musings": "ANCHOR burned into wood. Delusion: first proof the outside sends messages. Memory: a friend's shout on water — we're not drifting — her small hand on the rail.",
+    "sea_musings": "No edges. First honest distance since I woke. Or the day I realized I could drift from people without leaving town.",
+    "ship_chest_opened": "Lock gives. Old metal smell. Quiet like the next door in my mind — the one I hid behind STILL."
   },
   "journal_entries": {
     "ship_arrival": {
       "title": "On the Deck",
-      "body": "I came through the dark and landed on a ship at sea. The bedroom is gone — or it was never the whole map.",
+      "body": "You came through the dark and landed on a ship at sea. Delusion chapter: messages from beyond the bedroom. Memory peek: trip with friends — water, laughter, her hand on the rail.",
       "thought": "Down was the only way out, so down I went."
     },
     "crate_clue_found": {
       "title": "Branded Crate",
-      "body": "A green crate on the deck has a word burned into the wood: ANCHOR.",
-      "thought": "ANCHOR. The chest wants a word, and the deck is whispering one."
+      "body": "Green crate on deck: ANCHOR burned deep. The chest wants a word. Your ledger said the messenger ships truths in plain sight.",
+      "thought": "ANCHOR. Hold fast — or remember when I wasn't drifting."
     },
     "ship_chest_opened": {
-      "title": "Chest Unlocked",
-      "body": "The padlock read ANCHOR. The treasure chest is open. Something waits inside, and a passage beyond it.",
-      "thought": "One lock down. The sea keeps its secrets in layers, same as I did."
+      "title": "Chest Unlocked — Lesson One",
+      "body": "Padlock read ANCHOR. Chest open. Lesson one earned: the outside world can still reach you — or you once believed you weren't lost at sea.",
+      "thought": "One lock down. The sea keeps secrets in layers, same as I did."
+    },
+    "lesson_1_ship": {
+      "title": "Lesson — Anchor",
+      "body": "First inner world complete. The bedroom clock will listen now. You mythologized a boat trip until it became scripture.",
+      "thought": "ship_chest_opened"
     }
   },
   "examines": {
     "ship_wheel": {
       "title": "Ship's Wheel",
-      "body": "Polished spokes, worn smooth by hands that weren't mine. It spins freely but the ship doesn't turn.",
+      "body": "Polished spokes worn by hands that laughed in weather. It spins freely; the ship doesn't turn — frozen moment, like a memory you pinned.",
       "thought": "ship_wheel_musings"
     },
     "treasure_chest": {
       "title": "Treasure Chest",
-      "body": "Banded in gold, sealed with a lettered padlock. It wants a word, not a number.",
+      "body": "Gold bands, letter padlock. Wants a word, not a number. Your system always spoke in words.",
       "thought": "sea_musings"
     },
     "crate_clue": {
       "title": "Stacked Crates",
-      "body": "Cargo lashed to the rail. The bottom crate has a single word branded into it: ANCHOR.",
+      "body": "Cargo lashed to the rail. Bottom crate branded: ANCHOR. Delusion: messenger's mark. Memory: someone's joke that became the only stable word on water.",
       "thought": "crate_clue_musings",
       "journal": "crate_clue_found"
     },
     "mast": {
       "title": "Mast",
-      "body": "A single great mast carries a striped sail. Rope coils at its foot like a sleeping animal.",
+      "body": "Striped sail, coiled rope at the foot. You wrote this place when the bedroom couldn't hold the pattern anymore.",
       "thought": "mast_musings"
     }
   },
   "on_flag": {
     "ship_chest_opened": {
       "thought": "ship_chest_opened",
-      "journal": "ship_chest_opened"
+      "journal": "lesson_1_ship"
     }
   },
   "ending": {
-    "title": "Adrift",
-    "body": "The ship holds more than one lock. For now, the deck is yours.",
-    "journal_id": "ship_arrival"
+    "title": "Anchor Set",
+    "body": "The deck fades. You carry ANCHOR back to the bedroom — a lesson, a memory, a word that once meant you weren't alone on the water.",
+    "journal_id": "lesson_1_ship"
   }
 }

@@ -72,7 +72,7 @@ function drawPortal(ctx: CanvasRenderingContext2D, w: number, h: number, rand: (
   ctx.stroke();
   ctx.font = '10px serif';
   ctx.fillStyle = '#2a2a38';
-  ctx.fillText('THRESHOLD?', w * 0.12, h * 0.82);
+  ctx.fillText('CROW THRESHOLD', w * 0.12, h * 0.82);
 }
 
 function drawSacredGeometry(ctx: CanvasRenderingContext2D, w: number, h: number, rand: () => number): void {
@@ -98,6 +98,8 @@ function drawSacredGeometry(ctx: CanvasRenderingContext2D, w: number, h: number,
   ctx.font = '9px serif';
   ctx.fillStyle = '#333344';
   ctx.fillText('stillpoint node', w * 0.1, h * 0.78);
+  ctx.fillStyle = '#884444';
+  ctx.fillText('call her —', w * 0.1, h * 0.88);
 }
 
 function drawTimeSpiral(ctx: CanvasRenderingContext2D, w: number, h: number): void {
@@ -118,7 +120,9 @@ function drawTimeSpiral(ctx: CanvasRenderingContext2D, w: number, h: number): vo
   ctx.fillStyle = '#2a2030';
   ctx.fillText('3:17', cx - 14, cy + 4);
   ctx.font = '9px serif';
-  ctx.fillText('when time folds', w * 0.1, h * 0.8);
+  ctx.fillText('sacred minute', w * 0.1, h * 0.8);
+  ctx.fillStyle = '#664444';
+  ctx.fillText('3:17 recital?', w * 0.1, h * 0.9);
 }
 
 function drawOrbit(ctx: CanvasRenderingContext2D, w: number, h: number, rand: () => number): void {
@@ -156,7 +160,7 @@ function drawWarpGrid(ctx: CanvasRenderingContext2D, w: number, h: number): void
   }
   ctx.font = '9px serif';
   ctx.fillStyle = '#333340';
-  ctx.fillText('event horizon sketch', w * 0.08, h * 0.85);
+  ctx.fillText('gift ledger p.3', w * 0.08, h * 0.85);
 }
 
 function drawSigil(ctx: CanvasRenderingContext2D, w: number, h: number, rand: () => number): void {
@@ -199,19 +203,28 @@ function drawDiagram(ctx: CanvasRenderingContext2D, w: number, h: number): void 
 
 function drawNotes(ctx: CanvasRenderingContext2D, w: number, h: number, rand: () => number): void {
   const phrases = [
-    'the door remembers',
+    'the crow watches',
     'still before point',
-    'wake inside wake',
-    'crow watches threshold',
-    'memory chamber',
+    'axis one: straw',
+    'gift four pending',
     'do not look back',
+    'call her —',
+    'she stopped knocking',
+    'memory chamber',
+    'portal when STILL',
+    'universe speaks small',
   ];
   ctx.font = '9px serif';
   ctx.fillStyle = '#2a2838';
   const phrase = phrases[Math.floor(rand() * phrases.length)];
   ctx.fillText(phrase, w * 0.1, h * 0.35);
-  ctx.fillText('...portal opens when', w * 0.1, h * 0.48);
+  ctx.fillText('...messenger leaves', w * 0.1, h * 0.48);
   ctx.fillText('mind is STILL', w * 0.1, h * 0.58);
+  if (rand() > 0.45) {
+    ctx.fillStyle = '#664444';
+    ctx.font = '8px serif';
+    ctx.fillText('(crossed out number)', w * 0.1, h * 0.72);
+  }
   if (rand() > 0.5) {
     ctx.strokeStyle = '#444';
     ctx.beginPath();

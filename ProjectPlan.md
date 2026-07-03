@@ -8,7 +8,7 @@
 
 A browser-based isometric escape room. You wake trapped in a bedroom with fogged memory. The room holds secrets; meditation opens portals to other worlds. Each world teaches something you need to remember before you can finish what the bedroom has been hiding all along — and finally open the door.
 
-**Tone:** cryptic inner voice, memory gaps, Project Stillpoint lore woven through examine text and journal clues.
+**Tone:** cryptic inner voice, memory gaps, Project Stillpoint lore woven through examine text and journal clues. Full two-layer narrative (crow delusion + returning past life): see [`StoryPlan.md`](StoryPlan.md).
 
 ## End Goal (player-facing)
 
@@ -148,6 +148,7 @@ Data-driven content lives in:
 
 | Doc | Purpose |
 |-----|---------|
+| [`StoryPlan.md`](StoryPlan.md) | Two-layer story bible + phased narrative implementation plan |
 | [`Handoff.md`](Handoff.md) | What's done, what's next, key files, checklist |
 | [`README.md`](README.md) | Setup, controls, deploy |
 | [`AGENTS.md`](AGENTS.md) | Agent/coding conventions |

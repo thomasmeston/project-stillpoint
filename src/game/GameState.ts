@@ -12,6 +12,7 @@ export class GameState {
   flags: Record<string, boolean> = {};
   solvedPuzzles = new Set<string>();
   hasWon = false;
+  introWordsChosen: string[] = [];
 
   setFlag(flag: string, value = true): void {
     if (this.flags[flag] === value) return;
@@ -47,6 +48,7 @@ export class GameState {
       flags: { ...this.flags },
       solvedPuzzles: [...this.solvedPuzzles],
       hasWon: this.hasWon,
+      introWordsChosen: [...this.introWordsChosen],
     };
   }
 
@@ -54,11 +56,13 @@ export class GameState {
     this.flags = { ...data.flags };
     this.solvedPuzzles = new Set(data.solvedPuzzles);
     this.hasWon = data.hasWon;
+    this.introWordsChosen = [...(data.introWordsChosen ?? [])];
   }
 
   resetForNewGame(): void {
     this.flags = {};
     this.solvedPuzzles = new Set();
     this.hasWon = false;
+    this.introWordsChosen = [];
   }
 }

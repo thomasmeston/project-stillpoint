@@ -82,6 +82,7 @@
     { "id": "key_handle", "action": "pickup", "item": "key_handle" },
     { "id": "painting", "action": "examine" },
     { "id": "wall_notes", "action": "examine" },
+    { "id": "cork_board", "action": "examine" },
     { "id": "wall_safe", "action": "examine" },
     { "id": "wardrobe", "action": "examine" },
     { "id": "cipher_disk_pickup", "action": "pickup", "item": "cipher_disk" },
