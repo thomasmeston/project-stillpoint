@@ -7,7 +7,7 @@ export class AudioManager {
   private bgm: Howl | null = null;
 
   private bgmVolume = 0.2;
-  private bgmMuted = false;
+  private bgmMuted = true;
 
   private initCtx(): AudioContext {
     if (!this.ctx) {
@@ -89,9 +89,9 @@ export class AudioManager {
   private playSynthesizedSfx(name: string): void {
     try {
       const ctx = this.initCtx();
-      if (name === 'click') {
+      if (name === 'click' || name === 'paper') {
         this.playClickSfx(ctx);
-      } else if (name === 'door_unlock') {
+      } else if (name === 'door_unlock' || name === 'drawer_open') {
         this.playUnlockSfx(ctx);
       } else if (name === 'rotate') {
         this.playRotateSfx(ctx);

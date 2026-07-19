@@ -94,6 +94,19 @@ export class ViewWallController {
     return this.entries.some((e) => Math.abs(e.dropT - e.targetDropT) > 0.02);
   }
 
+  /** Rest pose of a wall mesh (ignores fold animation). Used for world↔local prop edits. */
+  getRestPosition(object: THREE.Object3D): THREE.Vector3 | null {
+    const entry = this.entries.find((e) => e.object === object);
+    if (!entry) return null;
+    return new THREE.Vector3(entry.restX, entry.restY, entry.restZ);
+  }
+
+  getRestPositionForFace(face: WallFace): THREE.Vector3 | null {
+    const entry = this.entries.find((e) => e.face === face && !e.isHotspot);
+    if (!entry) return null;
+    return new THREE.Vector3(entry.restX, entry.restY, entry.restZ);
+  }
+
   update(dt: number): void {
     for (const entry of this.entries) {
       entry.dropT = THREE.MathUtils.damp(entry.dropT, entry.targetDropT, DAMP, dt);

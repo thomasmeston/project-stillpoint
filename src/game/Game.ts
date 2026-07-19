@@ -7,7 +7,8 @@ import { NarrativeManager } from './NarrativeManager';
 import { PlayerMover } from './PlayerMover';
 import { PuzzleManager } from './PuzzleManager';
 import { SaveLoad } from './SaveLoad';
-import { IsoCamera, type CameraSnapshot } from '../scene/IsoCamera';
+import { IsoCamera, ISO_PITCH, type CameraSnapshot } from '../scene/IsoCamera';
+import { applyCameraShot } from '../scene/CameraShots';
 import { RoomBuilder } from '../scene/RoomBuilder';
 import { FallTransition } from '../scene/FallTransition';
 import { ViewWallController } from '../scene/ViewWallController';
@@ -57,7 +58,7 @@ const ROOM_TITLES: Record<string, string> = {
 
 const ROOM_BACKGROUNDS: Record<string, number> = {
   bedroom: 0x141820,
-  pirate_ship: 0x8fc1e3,
+  pirate_ship: 0x7eb8e0,
   level_2: 0x87ceeb,
   level_3: 0x0a0812,
   level_4: 0x0c0e18,
@@ -98,6 +99,8 @@ export class Game {
   private isCorkBoardZoomed = false;
   private introActive = false;
   private thoughtActive = false;
+  /** After first clock examine/thought, next thought dismiss opens the clock puzzle. */
+  private pendingClockPuzzleOpen = false;
   private meditateActive = false;
   private fallActive = false;
   private examineAnchorHotspotId: string | null = null;
@@ -133,7 +136,6 @@ export class Game {
     this.scene.add(this.player.root);
     this.scene.add(this.isoCamera.rig);
 
-    this.inventory.bindPuzzleManager(this.puzzleManager);
     this.narrative.bindGameState(this.gameState);
     this.puzzleManager.bind(this.gameState, this.inventory, this.narrative);
 
@@ -158,7 +160,8 @@ export class Game {
         if (active && this.escapeMenuOpen) {
           this.toggleEscapeMenu();
         }
-      }
+      },
+      this.isoCamera,
     );
 
     this.deskSketchSpread = new DeskSketchSpread(new THREE.Vector3(1.6, 0, -0.1));
@@ -184,7 +187,7 @@ export class Game {
       }
       if (flag === 'desk_drawer_unlocked' && value && this.currentRoomId === 'bedroom') {
         this.syncNightstandDrawer(true);
-        this.audio.playSfx('click');
+        this.audio.playSfx('drawer_open');
       }
       if (flag === 'meditation_portal_opened' || flag.startsWith('lesson_')) {
         this.syncPortals();
@@ -214,8 +217,6 @@ export class Game {
   }
 
   private wirePuzzleUI(): void {
-    this.puzzleUI.getInventoryItems = () => this.inventory.items;
-    this.puzzleUI.getItemLabel = (id) => this.inventory.getLabel(id);
     this.puzzleUI.onClockSubmit = (id, hour, minute) => {
       if (this.puzzleManager.submitPuzzle(id, { hour, minute })) this.puzzleUI.closeClock();
     };
@@ -225,7 +226,6 @@ export class Game {
     this.puzzleUI.onPadlockSubmit = (id, answer) => {
       if (this.puzzleManager.submitPuzzle(id, answer)) this.puzzleUI.closePadlock();
     };
-    this.puzzleUI.onCombine = (a, b) => this.inventory.tryCombine(a, b);
   }
 
   private wireEvents(): void {
@@ -251,6 +251,12 @@ export class Game {
     this.hud.onThoughtBlockingChange = (active) => {
       this.thoughtActive = active;
     };
+    this.hud.onThoughtDismissStart = () => {
+      if (!this.pendingClockPuzzleOpen) return;
+      this.pendingClockPuzzleOpen = false;
+      this.hud.hideExamine();
+      this.openPuzzle('wall_clock');
+    };
     this.hud.onExamineDismiss = () => {
       this.examineAnchorHotspotId = null;
     };
@@ -261,7 +267,7 @@ export class Game {
     };
     this.input.onMove = (point) => {
       if (this.isDetailZoomed) return;
-      this.player.moveTo(point);
+      this.movePlayerToFloorPoint(point);
     };
     this.input.onHotspot = (id) => this.handleHotspot(id);
 
@@ -280,7 +286,14 @@ export class Game {
         middleDragStartX = e.clientX;
         middleDragStartY = e.clientY;
         hasMiddleDragged = false;
+        if (this.isDetailZoomed) {
+          this.canvas.style.cursor = 'grabbing';
+        }
       }
+    });
+
+    this.canvas.addEventListener('auxclick', (e) => {
+      if (e.button === 1) e.preventDefault();
     });
 
     this.canvas.addEventListener('click', (e) => {
@@ -296,6 +309,22 @@ export class Game {
 
     this.canvas.addEventListener('mousemove', (e) => {
       if (this.isInputBlocked) return;
+
+      if (isMiddleDragging && this.isDetailZoomed) {
+        const deltaX = e.clientX - middleDragStartX;
+        const deltaY = e.clientY - middleDragStartY;
+        if (Math.abs(deltaX) > CLICK_TOLERANCE || Math.abs(deltaY) > CLICK_TOLERANCE) {
+          hasMiddleDragged = true;
+        }
+        if (deltaX !== 0 || deltaY !== 0) {
+          this.isoCamera.panFocus(deltaX, deltaY);
+          middleDragStartX = e.clientX;
+          middleDragStartY = e.clientY;
+        }
+        this.hud.setCursorHintVisible(false);
+        return;
+      }
+
       if (this.isDetailZoomed) {
         this.hud.setCursorHintVisible(false);
         return;
@@ -325,20 +354,28 @@ export class Game {
     window.addEventListener('mouseup', (e) => {
       if (this.isInputBlocked) return;
       if (e.button === 1) {
-        if (isMiddleDragging && !hasMiddleDragged) {
+        if (isMiddleDragging && !hasMiddleDragged && !this.isDetailZoomed) {
           this.rotateView('left'); // Click -> Rotate counter-clockwise once
         }
         isMiddleDragging = false;
+        if (this.isDetailZoomed) {
+          this.canvas.style.cursor = '';
+        }
       }
     });
 
     this.canvas.addEventListener('wheel', (e) => {
       if (this.isInputBlocked) return;
-      if (this.isDeskZoomed) return;
       e.preventDefault();
       if (e.shiftKey) {
+        if (this.isDetailZoomed) return;
         if (e.deltaY > 0) this.rotateView('right');
         else if (e.deltaY < 0) this.rotateView('left');
+      } else if (this.isDetailZoomed) {
+        // Closer range + finer steps while inspecting desk / wall notes / cork board.
+        this.isoCamera.onWheel(e.deltaY, 0.35, 2.8, 0.0025);
+      } else if (this.currentRoomId === 'pirate_ship') {
+        this.isoCamera.onWheel(e.deltaY, 10, 48, 0.025);
       } else {
         this.isoCamera.onWheel(e.deltaY);
       }
@@ -440,7 +477,29 @@ export class Game {
     } else {
       approach = this.getHotspotApproachPosition(hotspotId);
     }
-    this.player.moveTo(approach, onArrived);
+    this.movePlayerToFloorPoint(approach, onArrived);
+  }
+
+  /** Walk (and climb between ship decks when needed). point.y = logical deck height. */
+  private movePlayerToFloorPoint(point: THREE.Vector3, onArrived?: () => void): void {
+    const to = point.clone();
+    if (this.currentRoomId !== 'pirate_ship') {
+      to.y = 0;
+      this.player.moveTo(to, onArrived);
+      return;
+    }
+
+    const from = new THREE.Vector3(
+      this.player.position.x,
+      this.player.deckHeight,
+      this.player.position.z,
+    );
+    if (Math.abs(from.y - to.y) > 0.2) {
+      this.player.moveAlongPath(this.room.buildDeckMovePath(from, to), onArrived);
+    } else {
+      to.y = from.y;
+      this.player.moveTo(to, onArrived);
+    }
   }
 
   private getHotspotApproachPosition(hotspotId: string): THREE.Vector3 {
@@ -501,9 +560,6 @@ export class Game {
             break;
           }
           this.openPuzzle(hotspotId);
-          break;
-        case 'combine':
-          this.puzzleUI.openCombine();
           break;
         case 'examine':
           if (hotspotId === 'desk') {
@@ -647,6 +703,7 @@ export class Game {
       -(clientY / window.innerHeight) * 2 + 1,
     );
     this.detailZoomRaycaster.setFromCamera(mouse, this.isoCamera.camera);
+    const viewCenter = this.isoCamera.getFocusWorld();
 
     if (this.isDeskZoomed) {
       const hit = this.deskSketchSpread.raycastHit(this.detailZoomRaycaster);
@@ -662,8 +719,8 @@ export class Game {
         return;
       }
       if (hit.type === 'paper') {
-        this.audio.playSfx('click');
-        this.deskSketchSpread.inspectPaper(hit.index);
+        this.audio.playSfx('paper');
+        this.deskSketchSpread.inspectPaper(hit.index, viewCenter);
       }
       return;
     }
@@ -677,8 +734,8 @@ export class Game {
         return;
       }
       if (hit.type === 'paper') {
-        this.audio.playSfx('click');
-        this.room.wallNotesCluster.inspectPaper(hit.index);
+        this.audio.playSfx('paper');
+        this.room.wallNotesCluster.inspectPaper(hit.index, viewCenter);
       }
       return;
     }
@@ -692,13 +749,13 @@ export class Game {
         return;
       }
       if (hit.type === 'item') {
-        this.audio.playSfx('click');
-        this.inspectCorkBoardItem(hit.id);
+        this.audio.playSfx('paper');
+        this.inspectCorkBoardItem(hit.id, viewCenter);
       }
     }
   }
 
-  private inspectCorkBoardItem(id: CorkBoardItemId): void {
+  private inspectCorkBoardItem(id: CorkBoardItemId, viewCenterWorld?: THREE.Vector3): void {
     const index = [
       'cork_straw',
       'cork_gum_wrapper',
@@ -707,7 +764,7 @@ export class Game {
       'cork_army_man',
     ].indexOf(id);
     if (index >= 0) {
-      this.room.corkBoardCluster.inspectItem(index);
+      this.room.corkBoardCluster.inspectItem(index, viewCenterWorld);
     }
   }
 
@@ -742,7 +799,12 @@ export class Game {
   private zoomToWallNotes(): void {
     this.isWallNotesZoomed = true;
     this.player.root.visible = false;
-    this.isoCamera.zoomTo(this.getWallNotesTarget(), 1.15, 0, 0);
+    const shot = this.room.getCameraShot('wall_notes_in');
+    if (shot) {
+      applyCameraShot(this.isoCamera, shot);
+    } else {
+      this.isoCamera.zoomTo(this.getWallNotesTarget(), 1.15, 0, 0);
+    }
     this.hud.showZoomControls(true);
     this.hud.setCursorHintVisible(false);
   }
@@ -755,8 +817,14 @@ export class Game {
     this.hud.hideExamine();
 
     const currentViewYaw = this.isoCamera.getYawForViewIndex(this.isoCamera.getViewIndex());
-    const ISO_PITCH = THREE.MathUtils.degToRad(-35);
-    this.isoCamera.zoomTo(new THREE.Vector3(0, 0.9, 0.0), 10, ISO_PITCH, currentViewYaw);
+    const shot = this.room.getCameraShot('room_overview');
+    if (shot) {
+      applyCameraShot(this.isoCamera, shot, {
+        yawOverride: shot.yaw_deg === null ? currentViewYaw : undefined,
+      });
+    } else {
+      this.isoCamera.zoomTo(new THREE.Vector3(0, 0.9, 0.0), 10, ISO_PITCH, currentViewYaw);
+    }
     this.hud.showZoomControls(false);
     this.hud.setCursorHintVisible(true);
   }
@@ -785,7 +853,12 @@ export class Game {
   private zoomToCorkBoard(): void {
     this.isCorkBoardZoomed = true;
     this.player.root.visible = false;
-    this.isoCamera.zoomTo(this.getCorkBoardTarget(), 1.15, 0, Math.PI);
+    const shot = this.room.getCameraShot('cork_board_in');
+    if (shot) {
+      applyCameraShot(this.isoCamera, shot);
+    } else {
+      this.isoCamera.zoomTo(this.getCorkBoardTarget(), 1.15, 0, Math.PI);
+    }
     this.hud.showZoomControls(true);
     this.hud.setCursorHintVisible(false);
   }
@@ -798,8 +871,14 @@ export class Game {
     this.hud.hideExamine();
 
     const currentViewYaw = this.isoCamera.getYawForViewIndex(this.isoCamera.getViewIndex());
-    const ISO_PITCH = THREE.MathUtils.degToRad(-35);
-    this.isoCamera.zoomTo(new THREE.Vector3(0, 0.9, 0.0), 10, ISO_PITCH, currentViewYaw);
+    const shot = this.room.getCameraShot('room_overview');
+    if (shot) {
+      applyCameraShot(this.isoCamera, shot, {
+        yawOverride: shot.yaw_deg === null ? currentViewYaw : undefined,
+      });
+    } else {
+      this.isoCamera.zoomTo(new THREE.Vector3(0, 0.9, 0.0), 10, ISO_PITCH, currentViewYaw);
+    }
     this.hud.showZoomControls(false);
     this.hud.setCursorHintVisible(true);
   }
@@ -810,11 +889,18 @@ export class Game {
     else if (this.isCorkBoardZoomed) this.zoomOutFromCorkBoard();
   }
 
-  /** First visit to the clock is examine-only; unlocks the first meditation portal afterward. */
+  /** First clock click: examine + thought. Next dismiss click opens the time dialog. */
   private inspectClockIfNeeded(): boolean {
     if (this.gameState.hasFlag('clock_inspected')) return false;
     this.gameState.setFlag('clock_inspected');
+    this.pendingClockPuzzleOpen = true;
     this.showHotspotExamine('wall_clock');
+    // Thought may already have been heard (no overlay) — open on the next clock click instead.
+    queueMicrotask(() => {
+      if (this.pendingClockPuzzleOpen && !this.thoughtActive) {
+        this.pendingClockPuzzleOpen = false;
+      }
+    });
     return true;
   }
 
@@ -839,12 +925,20 @@ export class Game {
 
     const head = this.player.getHeadWorldPosition();
     const faceYaw = this.player.getFacingYaw();
-    this.isoCamera.zoomTo(
-      head,
-      0.88,
-      THREE.MathUtils.degToRad(-6),
-      faceYaw,
-    );
+    const meditateShot = this.room.getCameraShot('meditate');
+    if (meditateShot) {
+      applyCameraShot(this.isoCamera, meditateShot, {
+        targetOverride: meditateShot.lock_to === 'player_head' ? head : undefined,
+        yawOverride: meditateShot.yaw_deg === null ? faceYaw : undefined,
+      });
+    } else {
+      this.isoCamera.zoomTo(
+        head,
+        0.88,
+        THREE.MathUtils.degToRad(-6),
+        faceYaw,
+      );
+    }
 
     const canOpenPortal = this.currentRoomId === 'bedroom'
       && this.gameState.hasFlag('clock_inspected')
@@ -924,6 +1018,10 @@ export class Game {
     this.room = new RoomBuilder(this.wallCtrl, roomId);
     this.currentRoomId = roomId;
     this.scene.add(this.room.root);
+    this.room.onTargetsChanged = () => {
+      this.input.setTargets(this.room.floorMeshes, this.room.hotspots.map((h) => h.mesh));
+      this.devMover.onRoomTargetsChanged();
+    };
 
     if (roomId === 'bedroom') {
       this.room.propsRoot.add(this.deskSketchSpread.group);
@@ -943,6 +1041,13 @@ export class Game {
     this.updateMeditateAvailability();
     this.hud.setReturnToRoomVisible(PORTAL_LEVEL_ROOMS.has(roomId));
 
+    if (roomId !== 'pirate_ship') {
+      this.player.deckHeight = 0;
+      this.player.root.position.y = 0;
+    } else {
+      this.player.deckHeight = 0;
+    }
+
     this.refreshHotspotVisibility();
 
     if (roomId === 'bedroom') {
@@ -961,6 +1066,12 @@ export class Game {
 
     this.isoCamera.setViewIndex(0);
     this.wallCtrl.setViewIndex(0);
+
+    if (roomId === 'pirate_ship') {
+      this.isoCamera.zoomTo(new THREE.Vector3(0, 1.2, 0), 30, undefined, undefined, 12);
+    } else {
+      this.isoCamera.zoomTo(new THREE.Vector3(0, 0.9, 0), 10, undefined, undefined, 12);
+    }
   }
 
   private returnToBedroom(): void {
@@ -1089,7 +1200,12 @@ export class Game {
 
   private zoomToDesk(): void {
     this.isDeskZoomed = true;
-    this.isoCamera.zoomTo(this.getDeskSurfaceTarget(), 1.4, -Math.PI / 2, 0);
+    const shot = this.room.getCameraShot('desk_in');
+    if (shot) {
+      applyCameraShot(this.isoCamera, shot);
+    } else {
+      this.isoCamera.zoomTo(this.getDeskSurfaceTarget(), 1.4, -Math.PI / 2, 0);
+    }
     this.hud.showZoomControls(true);
     this.hud.setCursorHintVisible(false);
   }
@@ -1099,11 +1215,17 @@ export class Game {
     this.isDeskZoomed = false;
     this.deskSketchSpread.reset();
 
-    const deskTarget = this.getDeskSurfaceTarget();
-    deskTarget.y += 0.1;
     const currentViewYaw = this.isoCamera.getYawForViewIndex(this.isoCamera.getViewIndex());
-    const ISO_PITCH = THREE.MathUtils.degToRad(-35);
-    this.isoCamera.zoomTo(deskTarget, 3.5, ISO_PITCH, currentViewYaw);
+    const shot = this.room.getCameraShot('desk_out');
+    if (shot) {
+      applyCameraShot(this.isoCamera, shot, {
+        yawOverride: shot.yaw_deg === null ? currentViewYaw : undefined,
+      });
+    } else {
+      const deskTarget = this.getDeskSurfaceTarget();
+      deskTarget.y += 0.1;
+      this.isoCamera.zoomTo(deskTarget, 3.5, ISO_PITCH, currentViewYaw);
+    }
     this.hud.showZoomControls(false);
     this.hud.setCursorHintVisible(true);
   }
@@ -1210,6 +1332,7 @@ export class Game {
     this.meditateActive = false;
     this.fallActive = false;
     this.escapeMenuOpen = false;
+    this.pendingClockPuzzleOpen = false;
     this.isDeskZoomed = false;
     this.isWallNotesZoomed = false;
     this.isCorkBoardZoomed = false;
@@ -1483,7 +1606,20 @@ export class Game {
     this.room.wallNotesCluster.update(dt);
     this.room.corkBoardCluster.update(dt);
     this.room.updatePortals(dt);
-    this.player.update(dt, this.room.obstacles, this.room.shellSize);
+    this.room.updateShipWorld(dt);
+    this.player.update(
+      dt,
+      this.room.obstacles,
+      this.room.shellSize,
+      this.currentRoomId === 'pirate_ship'
+        ? this.room.getWalkBoundsForDeck(this.player.deckHeight)
+        : null,
+    );
+    if (this.currentRoomId === 'pirate_ship') {
+      this.player.root.position.y = this.room.getShipFloatY() + this.player.deckHeight;
+    } else {
+      this.player.root.position.y = this.player.deckHeight;
+    }
     this.updateExamineDismiss();
 
     if (wasMoving && !this.player.isMoving) {

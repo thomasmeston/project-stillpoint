@@ -87,16 +87,6 @@
       </div>
     </div>
 
-    <div id="combine-modal" class="modal hidden">
-      <div class="modal-content panel">
-        <h2>Combine Items</h2>
-        <select id="combine-a"></select>
-        <select id="combine-b"></select>
-        <button id="combine-submit" type="button">Combine</button>
-        <button id="combine-close" type="button">Cancel</button>
-      </div>
-    </div>
-
     <div id="padlock-modal" class="modal hidden">
       <div class="modal-content panel">
         <h2>Door Padlock</h2>
@@ -163,7 +153,7 @@
         <div class="settings-group">
           <div class="setting-row">
             <label for="mute-music">Mute Music</label>
-            <input type="checkbox" id="mute-music" class="menu-checkbox" />
+            <input type="checkbox" id="mute-music" class="menu-checkbox" checked />
           </div>
           
           <div class="setting-row">
@@ -210,11 +200,12 @@
         <button type="button" id="dev-mode-layout" class="dev-mode-tab active" role="tab" aria-selected="true">Layout</button>
         <button type="button" id="dev-mode-hotspots" class="dev-mode-tab" role="tab" aria-selected="false">Hotspots</button>
         <button type="button" id="dev-mode-lighting" class="dev-mode-tab" role="tab" aria-selected="false">Lighting</button>
+        <button type="button" id="dev-mode-camera" class="dev-mode-tab" role="tab" aria-selected="false">Camera</button>
         <button type="button" id="dev-mode-text" class="dev-mode-tab" role="tab" aria-selected="false">Text</button>
       </div>
 
       <div id="dev-layout-section">
-        <p class="dev-mode-hint">Click a prop in the scene or pick from the list. Shift/Ctrl+click to multi-select.</p>
+        <p class="dev-mode-hint">Click a prop or floor plane, or pick from the list. Shift/Ctrl+click to multi-select props.</p>
         <div class="dev-selection-status">
           Selected: <span id="dev-selected-name">None</span>
         </div>
@@ -254,13 +245,72 @@
           </div>
         </div>
 
-        <!-- Rotation Y -->
-        <div class="dev-row">
-          <label for="dev-rot-y">Rot Y°</label>
-          <div class="nudge-container">
-            <button type="button" class="nudge-btn" id="dev-ry-dec">-</button>
-            <input type="text" id="dev-rot-y" class="dev-input" value="0" />
-            <button type="button" class="nudge-btn" id="dev-ry-inc">+</button>
+        <div id="dev-prop-orient-group">
+          <!-- Rotation X -->
+          <div class="dev-row">
+            <label for="dev-rot-x">Rot X°</label>
+            <div class="nudge-container">
+              <button type="button" class="nudge-btn" id="dev-rx-dec">-</button>
+              <input type="text" id="dev-rot-x" class="dev-input" value="0" />
+              <button type="button" class="nudge-btn" id="dev-rx-inc">+</button>
+            </div>
+          </div>
+
+          <!-- Rotation Y -->
+          <div class="dev-row">
+            <label for="dev-rot-y">Rot Y°</label>
+            <div class="nudge-container">
+              <button type="button" class="nudge-btn" id="dev-ry-dec">-</button>
+              <input type="text" id="dev-rot-y" class="dev-input" value="0" />
+              <button type="button" class="nudge-btn" id="dev-ry-inc">+</button>
+            </div>
+          </div>
+
+          <!-- Rotation Z -->
+          <div class="dev-row">
+            <label for="dev-rot-z">Rot Z°</label>
+            <div class="nudge-container">
+              <button type="button" class="nudge-btn" id="dev-rz-dec">-</button>
+              <input type="text" id="dev-rot-z" class="dev-input" value="0" />
+              <button type="button" class="nudge-btn" id="dev-rz-inc">+</button>
+            </div>
+          </div>
+
+          <!-- Scale -->
+          <div class="dev-row">
+            <label for="dev-scale">Scale</label>
+            <div class="nudge-container">
+              <button type="button" class="nudge-btn" id="dev-scale-dec">-</button>
+              <input type="text" id="dev-scale" class="dev-input" value="1.00" />
+              <button type="button" class="nudge-btn" id="dev-scale-inc">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="dev-floor-size-group" class="hidden">
+          <div class="dev-row">
+            <label for="dev-floor-size-x">Size X</label>
+            <div class="nudge-container">
+              <button type="button" class="nudge-btn" id="dev-floor-sx-dec">-</button>
+              <input type="text" id="dev-floor-size-x" class="dev-input" value="6.00" />
+              <button type="button" class="nudge-btn" id="dev-floor-sx-inc">+</button>
+            </div>
+          </div>
+          <div class="dev-row">
+            <label for="dev-floor-size-y">Size Y</label>
+            <div class="nudge-container">
+              <button type="button" class="nudge-btn" id="dev-floor-sy-dec">-</button>
+              <input type="text" id="dev-floor-size-y" class="dev-input" value="0.10" />
+              <button type="button" class="nudge-btn" id="dev-floor-sy-inc">+</button>
+            </div>
+          </div>
+          <div class="dev-row">
+            <label for="dev-floor-size-z">Size Z</label>
+            <div class="nudge-container">
+              <button type="button" class="nudge-btn" id="dev-floor-sz-dec">-</button>
+              <input type="text" id="dev-floor-size-z" class="dev-input" value="6.00" />
+              <button type="button" class="nudge-btn" id="dev-floor-sz-inc">+</button>
+            </div>
           </div>
         </div>
       </div>
@@ -391,6 +441,100 @@
           <button id="dev-light-save-layout" class="dev-btn dev-btn-primary" type="button">Save Layout</button>
           <button id="dev-light-copy-json" class="dev-btn" type="button">Copy Layout JSON</button>
           <button id="dev-light-reset-layout" class="dev-btn dev-btn-danger" type="button">Reset Layout</button>
+        </div>
+      </div>
+
+      <div id="dev-camera-section" class="hidden">
+        <p class="dev-mode-hint">Edit Target / Size / Pitch / Yaw / Damp, then Save Layout. Values write to <code>camera_shots</code> in the room JSON. Use Preview to test; Capture Current only if you want to bake the live view instead of the fields.</p>
+        <div class="dev-row dev-row-select">
+          <label for="dev-camera-shot-picker">Shot</label>
+          <select id="dev-camera-shot-picker" class="dev-select"></select>
+        </div>
+        <p id="dev-camera-lock-hint" class="dev-mode-hint"></p>
+
+        <div class="dev-controls-group">
+          <div class="dev-row">
+            <label for="dev-cam-target-x">Target X</label>
+            <div class="nudge-container">
+              <button type="button" class="nudge-btn" id="dev-cam-tx-dec">-</button>
+              <input type="text" id="dev-cam-target-x" class="dev-input" value="0.00" />
+              <button type="button" class="nudge-btn" id="dev-cam-tx-inc">+</button>
+            </div>
+          </div>
+          <div class="dev-row">
+            <label for="dev-cam-target-y">Target Y</label>
+            <div class="nudge-container">
+              <button type="button" class="nudge-btn" id="dev-cam-ty-dec">-</button>
+              <input type="text" id="dev-cam-target-y" class="dev-input" value="0.00" />
+              <button type="button" class="nudge-btn" id="dev-cam-ty-inc">+</button>
+            </div>
+          </div>
+          <div class="dev-row">
+            <label for="dev-cam-target-z">Target Z</label>
+            <div class="nudge-container">
+              <button type="button" class="nudge-btn" id="dev-cam-tz-dec">-</button>
+              <input type="text" id="dev-cam-target-z" class="dev-input" value="0.00" />
+              <button type="button" class="nudge-btn" id="dev-cam-tz-inc">+</button>
+            </div>
+          </div>
+          <div class="dev-row">
+            <label for="dev-cam-size">Size</label>
+            <div class="nudge-container">
+              <button type="button" class="nudge-btn" id="dev-cam-size-dec">-</button>
+              <input type="text" id="dev-cam-size" class="dev-input" value="10" />
+              <button type="button" class="nudge-btn" id="dev-cam-size-inc">+</button>
+            </div>
+          </div>
+          <div class="dev-row">
+            <label for="dev-cam-pitch">Pitch°</label>
+            <div class="nudge-container">
+              <button type="button" class="nudge-btn" id="dev-cam-pitch-dec">-</button>
+              <input type="text" id="dev-cam-pitch" class="dev-input" value="-30" />
+              <button type="button" class="nudge-btn" id="dev-cam-pitch-inc">+</button>
+            </div>
+          </div>
+          <div class="dev-row">
+            <label for="dev-cam-yaw">Yaw°</label>
+            <div class="nudge-container">
+              <button type="button" class="nudge-btn" id="dev-cam-yaw-dec">-</button>
+              <input type="text" id="dev-cam-yaw" class="dev-input" value="0" />
+              <button type="button" class="nudge-btn" id="dev-cam-yaw-inc">+</button>
+            </div>
+          </div>
+          <div class="dev-row">
+            <label for="dev-cam-follow-yaw">Follow view yaw</label>
+            <input type="checkbox" id="dev-cam-follow-yaw" />
+          </div>
+          <div class="dev-row">
+            <label for="dev-cam-damp">Damp</label>
+            <div class="nudge-container">
+              <button type="button" class="nudge-btn" id="dev-cam-damp-dec">-</button>
+              <input type="text" id="dev-cam-damp" class="dev-input" value="9" />
+              <button type="button" class="nudge-btn" id="dev-cam-damp-inc">+</button>
+            </div>
+          </div>
+          <div class="dev-row">
+            <label for="dev-cam-lock">Lock target</label>
+            <select id="dev-cam-lock" class="dev-select">
+              <option value="">Absolute (stored target)</option>
+              <option value="desk_surface">Desk surface</option>
+              <option value="wall_notes">Wall notes</option>
+              <option value="cork_board">Cork board</option>
+              <option value="player_head">Player head</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="dev-row-buttons" style="margin-bottom: 8px;">
+          <button id="dev-camera-preview" class="dev-btn" type="button">Preview</button>
+          <button id="dev-camera-capture" class="dev-btn" type="button">Capture Current</button>
+        </div>
+
+        <div class="dev-layout-actions">
+          <button id="dev-camera-save-layout" class="dev-btn dev-btn-primary" type="button">Save Layout</button>
+          <button id="dev-camera-copy-json" class="dev-btn" type="button">Copy Layout JSON</button>
+          <button id="dev-camera-reset-layout" class="dev-btn dev-btn-danger" type="button">Reset Layout</button>
+          <p class="dev-mode-hint">Camera shots save into <code>data/rooms/*.json</code> under <code>camera_shots</code>.</p>
         </div>
       </div>
 

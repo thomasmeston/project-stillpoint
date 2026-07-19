@@ -89,7 +89,6 @@
     { "id": "stillpoint_letter", "action": "pickup", "item": "stillpoint_letter" },
     { "id": "door", "action": "open_puzzle", "puzzle": "padlock" },
     { "id": "window", "action": "examine" },
-    { "id": "combine_station", "action": "combine" },
     { "id": "lamp", "action": "examine" },
     { "id": "chair", "action": "examine" },
     { "id": "portal_ship", "action": "examine", "disabled": true },
@@ -99,9 +98,9 @@
   ],
   "item_uses": [
     {
-      "item": "assembled_key",
+      "item": "key_blade",
       "hotspot": "wardrobe",
-      "requires": ["item:assembled_key", "flag:lesson_3"],
+      "requires": ["item:key_blade", "flag:lesson_3"],
       "on_success": [
         "set_flag:wardrobe_unlocked",
         "journal:wardrobe_open",

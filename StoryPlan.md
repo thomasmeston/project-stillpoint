@@ -308,7 +308,8 @@ Story work **layers on** flags and hotspots; do not remove puzzle dependencies w
 
 | Path | Role |
 |------|------|
-| `StoryPlan.md` | This document |
+| `StoryPlan.md` | Two-layer story bible + phased narrative implementation plan |
+| `docs/CrowManifesto.md` | Ghostwritten pre-amnesia crow doctrine (Track A voice reference) |
 | `ProjectPlan.md` | Mechanics, hub loop, architecture |
 | `Handoff.md` | Build status, checklist |
 | `data/story/bedroom-script.json` | Primary narrative data |

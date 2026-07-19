@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { VIEW_FACING, type WallFace } from './WallFace';
 
-const ISO_PITCH = THREE.MathUtils.degToRad(-35);
-const ROTATE_DAMP = 9;
+export const ISO_PITCH = THREE.MathUtils.degToRad(-30);
+const DEFAULT_DAMP = 9;
 
 export type CameraSnapshot = {
   pos: THREE.Vector3;
@@ -26,6 +26,7 @@ export class IsoCamera {
   private currentPitch = ISO_PITCH;
   private targetPitch = ISO_PITCH;
   private rotating = false;
+  private damp = DEFAULT_DAMP;
 
   constructor(aspect: number) {
     this.rig = new THREE.Object3D();
@@ -36,7 +37,7 @@ export class IsoCamera {
       this.currentSize / 2,
       -this.currentSize / 2,
       0.1,
-      100,
+      250,
     );
     this.camera.position.set(0, 0, 20); // Offset along local Z axis
     this.rig.add(this.camera);
@@ -89,8 +90,12 @@ export class IsoCamera {
     this.camera.updateProjectionMatrix();
   }
 
-  onWheel(deltaY: number): void {
-    this.targetSize = THREE.MathUtils.clamp(this.targetSize + deltaY * 0.01, 4, 15);
+  onWheel(deltaY: number, minSize = 4, maxSize = 15, sensitivity = 0.01): void {
+    this.targetSize = THREE.MathUtils.clamp(
+      this.targetSize + deltaY * sensitivity,
+      minSize,
+      maxSize,
+    );
   }
 
   update(dt: number): void {
@@ -100,10 +105,10 @@ export class IsoCamera {
     const pitchDone = Math.abs(this.currentPitch - this.targetPitch) < 0.002;
     if (!this.rotating && posDone && yawDone && sizeDone && pitchDone) return;
 
-    this.currentPos.lerp(this.targetPos, 1 - Math.exp(-ROTATE_DAMP * dt));
-    this.currentYaw = THREE.MathUtils.lerp(this.currentYaw, this.targetYaw, 1 - Math.exp(-ROTATE_DAMP * dt));
-    this.currentSize = THREE.MathUtils.lerp(this.currentSize, this.targetSize, 1 - Math.exp(-ROTATE_DAMP * dt));
-    this.currentPitch = THREE.MathUtils.lerp(this.currentPitch, this.targetPitch, 1 - Math.exp(-ROTATE_DAMP * dt));
+    this.currentPos.lerp(this.targetPos, 1 - Math.exp(-this.damp * dt));
+    this.currentYaw = THREE.MathUtils.lerp(this.currentYaw, this.targetYaw, 1 - Math.exp(-this.damp * dt));
+    this.currentSize = THREE.MathUtils.lerp(this.currentSize, this.targetSize, 1 - Math.exp(-this.damp * dt));
+    this.currentPitch = THREE.MathUtils.lerp(this.currentPitch, this.targetPitch, 1 - Math.exp(-this.damp * dt));
     
     this.applyRigPose(this.currentPos, this.currentYaw);
     this.resize(window.innerWidth, window.innerHeight);
@@ -122,7 +127,7 @@ export class IsoCamera {
     }
   }
 
-  zoomTo(target: THREE.Vector3, size: number, pitch?: number, yaw?: number): void {
+  zoomTo(target: THREE.Vector3, size: number, pitch?: number, yaw?: number, damp?: number): void {
     this.targetPos.copy(target);
     this.targetSize = size;
     if (pitch !== undefined) {
@@ -131,6 +136,40 @@ export class IsoCamera {
     if (yaw !== undefined) {
       this.targetYaw = yaw;
     }
+    if (damp !== undefined) {
+      this.damp = damp;
+    } else {
+      this.damp = DEFAULT_DAMP;
+    }
+  }
+
+  /** Current / target focus point the orthographic rig orbits around. */
+  getFocusWorld(out = new THREE.Vector3()): THREE.Vector3 {
+    return out.copy(this.targetPos);
+  }
+
+  /**
+   * Pan the focus in the camera's view plane (screen pixels).
+   * Drag right/down moves the view that way (grab-the-world feel).
+   */
+  panFocus(deltaX: number, deltaY: number, sensitivity = 0.0018): void {
+    const scale = this.targetSize * sensitivity;
+    const right = new THREE.Vector3(1, 0, 0).applyQuaternion(this.rig.quaternion);
+    const up = new THREE.Vector3(0, 1, 0).applyQuaternion(this.rig.quaternion);
+    this.targetPos.addScaledVector(right, -deltaX * scale);
+    this.targetPos.addScaledVector(up, deltaY * scale);
+    this.currentPos.copy(this.targetPos);
+    this.applyRigPose(this.currentPos, this.currentYaw);
+  }
+
+  /** Current animated pose (for Dev Mode capture). */
+  getLivePose(): { pos: THREE.Vector3; size: number; pitch: number; yaw: number } {
+    return {
+      pos: this.currentPos.clone(),
+      size: this.currentSize,
+      pitch: this.currentPitch,
+      yaw: this.currentYaw,
+    };
   }
 
   resetZoom(): void {

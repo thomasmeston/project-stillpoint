@@ -77,6 +77,14 @@ export class InputController {
     this.raycaster.layers.set(0);
     const hits = this.raycaster.intersectObjects(this.floorTargets, false);
     if (hits.length === 0) return null;
-    return hits[0].point.clone();
+    const hit = hits[0];
+    const point = hit.point.clone();
+    // Encode logical deck height in y for multi-level floors (ship upper deck).
+    if (typeof hit.object.userData.deckHeight === 'number') {
+      point.y = hit.object.userData.deckHeight;
+    } else {
+      point.y = 0;
+    }
+    return point;
   }
 }

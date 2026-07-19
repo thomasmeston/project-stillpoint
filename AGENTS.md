@@ -37,7 +37,7 @@ Browser-based isometric escape room: you wake trapped in a bedroom and must solv
 |------|---------|
 | `src/game/` | GameState, PuzzleManager, Inventory, Narrative, PlayerMover, Audio, SaveLoad |
 | `src/scene/` | RoomBuilder, IsoCamera, ViewWallController, Hotspot, WallFace |
-| `src/ui/` | DOM HUD, puzzle modals (clock, photo cipher, padlock, combine) |
+| `src/ui/` | DOM HUD, puzzle modals (clock, photo cipher, padlock) |
 | `data/` | Puzzles, story, room layout, items (JSON) |
 | `public/models/characters/` | Player GLB + future props |
 | `public/audio/` | SFX/music drop-in (optional) |
@@ -83,7 +83,7 @@ npm run package:itch # build + stillpoint-itch.zip
 
 1. Find time clue → set wall clock to **3:17** → open desk drawer
 2. Rearrange photo backs → spell **STILL** → reveal wall safe → get key blade
-3. Combine key blade + handle → unlock wardrobe
+3. Use key blade on wardrobe → unlock wardrobe
 4. Use cipher disk + letter → door padlock **STILLPOINT** → escape
 
 ## Architecture notes

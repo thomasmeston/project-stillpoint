@@ -9,17 +9,33 @@ import { inferWallFace, type WallFace } from './WallFace';
 import type { ViewWallController } from './ViewWallController';
 import { publicUrl } from '../utils/publicUrl';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { WallNotesCluster } from './WallNotesCluster';
-import { CorkBoardCluster } from './CorkBoardCluster';
+import { WallNotesCluster, WALL_NOTES_CLUSTER_OFFSET_X } from './WallNotesCluster';
+import { CorkBoardCluster, CORK_BOARD_CLUSTER_OFFSET } from './CorkBoardCluster';
 import { PortalSwirlParticles } from './PortalSwirlParticles';
 import { PaintingRevealController } from './PaintingRevealController';
 import { NightstandDrawerController } from './NightstandDrawerController';
 import { buildDeskMug } from './DeskMugProp';
 import { buildBedsideLamp } from './BedsideLampProp';
+import { buildVintageTableLamp } from './VintageTableLampProp';
 import { buildNightstandReadingLight } from './NightstandReadingLightProp';
 import { buildCalendarScrap } from './CalendarScrapProp';
 import { buildSketchbook } from './SketchbookProp';
 import { buildWindowFrame } from './WindowFrameProp';
+import { buildWallOutlet } from './WallOutletProp';
+import { loadTypewriter, loadWastebin } from './WastebinProp';
+import { loadModernBookshelf } from './ModernBookshelfProp';
+import { buildCorkBoardClutterPile, buildRedYarnBall } from './CorkBoardFloorClutter';
+import {
+  buildOceanPlane,
+  loadSailShip,
+  ShipFloatMotion,
+  updateOceanDrift,
+} from './PirateShipWorld';
+import {
+  DEFAULT_CAMERA_SHOTS,
+  mergeCameraShots,
+  type CameraShotDef,
+} from './CameraShots';
 
 
 export type PortalDef = {
@@ -38,6 +54,16 @@ type RoomFile = {
     floor_color: string;
     wall_color: string;
   };
+  /** Editable walkable floor plane (defaults from shell / ship deck). */
+  floor?: {
+    position: [number, number, number];
+    size: [number, number, number];
+  };
+  /** Optional second walkable plane (e.g. ship upper deck). */
+  floor_upper?: {
+    position: [number, number, number];
+    size: [number, number, number];
+  };
   props: Array<{
     id: string;
     mesh?: string;
@@ -45,12 +71,20 @@ type RoomFile = {
     size: [number, number, number];
     position: [number, number, number];
     rotation?: [number, number, number];
+    /** Uniform scale multiplier (default 1). */
+    scale?: number;
     wall?: WallFace;
   }>;
   hotspots: Array<HotspotData & { wall?: WallFace }>;
   portals?: PortalDef[];
   lighting?: Record<string, { position: number[]; color: string; energy: number }>;
   spawn?: { player: [number, number, number] };
+  camera_shots?: Record<string, CameraShotDef>;
+};
+
+export type FloorPlaneData = {
+  position: [number, number, number];
+  size: [number, number, number];
 };
 
 type PortalEntry = {
@@ -58,6 +92,14 @@ type PortalEntry = {
   target: string;
   disc: THREE.Mesh;
   swirl: PortalSwirlParticles;
+};
+
+const LIGHT_PARENTS: Record<string, string> = {
+  lamp: 'LampBase',
+  window: 'WindowFrame',
+  reading_lamp: 'NightstandReadingLight',
+  cabinet_lamp_left: 'CabinetLampLeft',
+  cabinet_lamp_right: 'CabinetLampRight',
 };
 
 const FLOOR_ONLY_PROPS = new Set([
@@ -74,6 +116,12 @@ const FLOOR_ONLY_PROPS = new Set([
   'Sketchbook',
   'CrowFigurine',
   'CalendarScrap',
+  'Wastebin',
+  'WardrobeTypewriter',
+  'CabinetLampLeft',
+  'CabinetLampRight',
+  'RedYarnBall',
+  'CorkBoardClutter',
 ]);
 
 const FLOOR_ONLY_HOTSPOTS = new Set([
@@ -84,13 +132,12 @@ const FLOOR_ONLY_HOTSPOTS = new Set([
   'sketchbook',
   'nightstand',
   'key_handle',
-  'combine_station',
   'chair',
   'portal_ship',
 ]);
 
 const OBSTACLE_IDS = new Set([
-  'BedFrame', 'Desk', 'Chair', 'Bookshelf', 'Nightstand', 'Wardrobe',
+  'BedFrame', 'Desk', 'Chair', 'WallBookcase', 'Nightstand', 'Wardrobe',
   'Mast', 'TreasureChest', 'WheelStand', 'Barrel1', 'Barrel2', 'Cannon',
   'Arbor', 'CrystalCluster', 'Telescope', 'StonePillar',
 ]);
@@ -115,6 +162,14 @@ export class RoomBuilder {
   readonly propsData: RoomFile['props'] = [];
   readonly hotspotsData: RoomFile['hotspots'] = [];
   readonly lightingData: RoomFile['lighting'] = {};
+  /** Walkable floor plane (editable in Dev Mode Layout). */
+  floorPlaneData: FloorPlaneData = {
+    position: [0, -0.05, 0],
+    size: [6, 0.1, 6],
+  };
+  /** Upper / secondary walkable plane (ship aft deck). Null if room has none. */
+  upperFloorPlaneData: FloorPlaneData | null = null;
+  cameraShotsData: Record<string, CameraShotDef> = {};
   readonly wallMeshes = new Map<WallFace, THREE.Mesh>();
   readonly lights = new Map<string, THREE.PointLight>();
   readonly paintingReveal: PaintingRevealController;
@@ -126,10 +181,23 @@ export class RoomBuilder {
   readonly portalDefs: PortalDef[] = [];
   readonly portals = new Map<string, PortalEntry>();
   readonly roomId: string;
+  /** Fired when async props change floor/hotspot raycast targets (e.g. ship deck). */
+  onTargetsChanged?: () => void;
 
   private palette: Record<string, string>;
   private nightstandDrawerUnlocked = false;
   private nightstandDrawerAnimate = false;
+  private oceanMesh: THREE.Mesh | null = null;
+  private shipFloatRoot: THREE.Group | null = null;
+  private shipFloat: ShipFloatMotion | null = null;
+  private floorEditHelper: THREE.Mesh | null = null;
+  private floorPlaneFromFile = false;
+  private upperFloorFromFile = false;
+  private shipFloorLocal = false;
+  private shipLadderBottom = new THREE.Object3D();
+  private shipLadderTop = new THREE.Object3D();
+  private upperDeckFloorMesh: THREE.Mesh | null = null;
+  private shipUpperDeckHeight = 0;
 
   constructor(private wallCtrl: ViewWallController, roomId = 'bedroom') {
     this.roomId = roomId;
@@ -138,6 +206,25 @@ export class RoomBuilder {
     this.shellSize.set(data.shell.size.x, data.shell.size.z);
     const spawn = data.spawn?.player ?? [0, 0, 2];
     this.playerSpawn.set(spawn[0], spawn[1], spawn[2]);
+    this.floorPlaneData = data.floor
+      ? {
+          position: [...data.floor.position] as [number, number, number],
+          size: [...data.floor.size] as [number, number, number],
+        }
+      : {
+          position: [0, -0.05, 0],
+          size: [data.shell.size.x, 0.1, data.shell.size.z],
+        };
+    this.floorPlaneFromFile = Boolean(data.floor);
+    if (data.floor_upper) {
+      this.upperFloorPlaneData = {
+        position: [...data.floor_upper.position] as [number, number, number],
+        size: [...data.floor_upper.size] as [number, number, number],
+      };
+      this.upperFloorFromFile = true;
+      this.shipUpperDeckHeight =
+        data.floor_upper.position[1] + data.floor_upper.size[1] / 2;
+    }
     this.root.add(this.propsRoot);
     this.root.add(this.hotspotsRoot);
     this.paintingReveal = new PaintingRevealController(
@@ -153,18 +240,26 @@ export class RoomBuilder {
     this.propsData = data.props;
     this.hotspotsData = data.hotspots;
     this.lightingData = data.lighting ?? {};
+    this.cameraShotsData = mergeCameraShots(
+      DEFAULT_CAMERA_SHOTS,
+      data.camera_shots ?? undefined,
+    );
     const savedLayout = localStorage.getItem(`dev_room_layout_${roomId}`);
     if (savedLayout) {
       try {
         const parsed = JSON.parse(savedLayout);
         if (Array.isArray(parsed.props)) {
+          // Drop retired prop ids so a stale draft can't resurrect them.
+          const retiredPropIds = new Set(['Typewriter', 'Bookshelf', 'Bookcase', 'ModernBookshelf']);
+          parsed.props = parsed.props.filter((p: { id?: string }) => !retiredPropIds.has(p.id ?? ''));
           this.propsData = data.props.map((original) => {
             const saved = parsed.props.find((p: any) => p.id === original.id);
             if (saved) {
               return {
                 ...original,
                 position: saved.position,
-                rotation: saved.rotation ?? original.rotation
+                rotation: saved.rotation ?? original.rotation,
+                scale: saved.scale ?? original.scale,
               };
             }
             return original;
@@ -194,6 +289,25 @@ export class RoomBuilder {
             }
           }
         }
+        if (parsed.camera_shots) {
+          this.cameraShotsData = mergeCameraShots(this.cameraShotsData, parsed.camera_shots);
+        }
+        if (parsed.floor?.position && parsed.floor?.size) {
+          this.floorPlaneData = {
+            position: [...parsed.floor.position] as [number, number, number],
+            size: [...parsed.floor.size] as [number, number, number],
+          };
+          this.floorPlaneFromFile = true;
+        }
+        if (parsed.floor_upper?.position && parsed.floor_upper?.size) {
+          this.upperFloorPlaneData = {
+            position: [...parsed.floor_upper.position] as [number, number, number],
+            size: [...parsed.floor_upper.size] as [number, number, number],
+          };
+          this.upperFloorFromFile = true;
+          this.shipUpperDeckHeight =
+            this.upperFloorPlaneData.position[1] + this.upperFloorPlaneData.size[1] / 2;
+        }
       } catch (e) {
         console.error('Failed to load custom dev layout', e);
       }
@@ -204,13 +318,23 @@ export class RoomBuilder {
     this.buildLighting(this.lightingData);
 
     if (roomId === 'bedroom') {
-      const northWall = this.wallMeshes.get('north');
-      if (northWall) {
-        this.wallNotesCluster.attachToWall(northWall);
+      // CorkBoard / WallNotes attach via prop entries when present; fall back if missing.
+      if (!this.propsData.some((p) => p.id === 'WallNotes')) {
+        const northWall = this.wallMeshes.get('north');
+        if (northWall) {
+          this.wallNotesCluster.group.position.set(WALL_NOTES_CLUSTER_OFFSET_X, 0, 0);
+          this.wallNotesCluster.group.userData.wallFace = 'north';
+          this.wallNotesCluster.attachToWall(northWall);
+        }
       }
-      const southWall = this.wallMeshes.get('south');
-      if (southWall) {
-        this.corkBoardCluster.attachToWall(southWall);
+      if (!this.propsData.some((p) => p.id === 'CorkBoard')) {
+        const southWall = this.wallMeshes.get('south');
+        if (southWall) {
+          this.corkBoardCluster.group.position.copy(CORK_BOARD_CLUSTER_OFFSET);
+          this.corkBoardCluster.group.rotation.y = Math.PI;
+          this.corkBoardCluster.group.userData.wallFace = 'south';
+          this.corkBoardCluster.attachToWall(southWall);
+        }
       }
       this.portalDefs.push(...(data.portals ?? []));
       this.buildPortals(this.portalDefs);
@@ -219,6 +343,234 @@ export class RoomBuilder {
     // Register walls with wallCtrl AFTER everything is parented and in rest position!
     for (const [face, wall] of this.wallMeshes) {
       this.wallCtrl.register(wall, face);
+    }
+
+    if (roomId === 'pirate_ship') {
+      this.finalizePirateShipWorld();
+    }
+  }
+
+  /** Ocean plane + float group so the deck rides on the water. */
+  private finalizePirateShipWorld(): void {
+    const floatRoot = new THREE.Group();
+    floatRoot.name = 'ShipFloatRoot';
+
+    const children = [...this.root.children];
+    for (const child of children) {
+      floatRoot.attach(child);
+    }
+    this.root.add(floatRoot);
+    this.shipFloatRoot = floatRoot;
+    this.shipFloat = new ShipFloatMotion(floatRoot, 0);
+
+    this.oceanMesh = buildOceanPlane();
+    this.root.add(this.oceanMesh);
+  }
+
+  getShipFloatY(): number {
+    return this.shipFloatRoot?.position.y ?? 0;
+  }
+
+  /** World XZ + logical deck height (y) waypoints for climbing between decks. */
+  buildDeckMovePath(from: THREE.Vector3, to: THREE.Vector3): THREE.Vector3[] {
+    const fromDeck = from.y;
+    const toDeck = to.y;
+    if (Math.abs(fromDeck - toDeck) < 0.2) {
+      return [to.clone()];
+    }
+
+    const bottom = new THREE.Vector3();
+    const top = new THREE.Vector3();
+    this.shipLadderBottom.getWorldPosition(bottom);
+    this.shipLadderTop.getWorldPosition(top);
+
+    const upperH = this.shipUpperDeckHeight || toDeck || fromDeck;
+    const bottomWp = new THREE.Vector3(bottom.x, 0, bottom.z);
+    const topWp = new THREE.Vector3(top.x, upperH, top.z);
+    const goingUp = toDeck > fromDeck;
+
+    const path: THREE.Vector3[] = [];
+    if (goingUp) {
+      path.push(bottomWp);
+      path.push(topWp);
+    } else {
+      path.push(topWp);
+      path.push(bottomWp);
+    }
+    path.push(to.clone());
+    return path;
+  }
+
+  /** XZ walk clamp for the player's current deck. */
+  getWalkBoundsForDeck(deckHeight: number): { minX: number; maxX: number; minZ: number; maxZ: number } | null {
+    const pad = 0.2;
+    const halfX = this.shellSize.x / 2 - 0.15;
+    const halfZ = this.shellSize.y / 2 - 0.15;
+    const main = {
+      minX: -halfX + pad,
+      maxX: halfX - pad,
+      minZ: -halfZ + pad,
+      maxZ: halfZ - pad,
+    };
+
+    const upperH = this.shipUpperDeckHeight;
+    if (upperH <= 0) return main;
+
+    // While climbing, keep the larger main-deck bounds so the step isn't blocked.
+    if (deckHeight > 0.15 && deckHeight < upperH - 0.15) {
+      return main;
+    }
+
+    if (deckHeight > upperH * 0.5 && this.upperDeckFloorMesh) {
+      const box = new THREE.Box3().setFromObject(this.upperDeckFloorMesh);
+      return {
+        minX: box.min.x + pad,
+        maxX: box.max.x - pad,
+        minZ: box.min.z + pad,
+        maxZ: box.max.z - pad,
+      };
+    }
+    return main;
+  }
+
+  updateShipWorld(dt: number): void {
+    this.shipFloat?.update(dt);
+    if (this.oceanMesh) updateOceanDrift(this.oceanMesh, dt);
+  }
+
+  getPrimaryFloorMesh(): THREE.Mesh | null {
+    const mesh = this.floorMeshes[0];
+    return mesh && (mesh as THREE.Mesh).isMesh ? (mesh as THREE.Mesh) : null;
+  }
+
+  getUpperFloorMesh(): THREE.Mesh | null {
+    return this.upperDeckFloorMesh;
+  }
+
+  hasUpperFloor(): boolean {
+    return Boolean(this.upperDeckFloorMesh && this.upperFloorPlaneData);
+  }
+
+  /** Apply floorPlaneData to the walkable mesh + player bounds. */
+  applyFloorPlane(): void {
+    const mesh = this.getPrimaryFloorMesh();
+    if (!mesh) return;
+
+    const { position, size } = this.floorPlaneData;
+    mesh.geometry.dispose();
+    mesh.geometry = new THREE.BoxGeometry(size[0], size[1], size[2]);
+    mesh.position.set(position[0], position[1], position[2]);
+    mesh.name = mesh.name || 'FloorPlane';
+    mesh.userData.deckHeight = 0;
+
+    if (this.shipFloorLocal) {
+      const ship = this.propsRoot.getObjectByName('PirateShip');
+      const yawDeg = ship
+        ? THREE.MathUtils.radToDeg(ship.rotation.y)
+        : 0;
+      const swapped = Math.abs(Math.abs(yawDeg) % 180 - 90) < 1;
+      const worldX = swapped ? size[2] : size[0];
+      const worldZ = swapped ? size[0] : size[2];
+      this.shellSize.set(worldX, worldZ);
+      this.fitShipRailsToDeck(worldX, worldZ);
+    } else {
+      this.shellSize.set(size[0], size[2]);
+    }
+
+    // Keep upper deck registered for clicks after main-deck edits.
+    if (this.upperDeckFloorMesh && !this.floorMeshes.includes(this.upperDeckFloorMesh)) {
+      this.floorMeshes.push(this.upperDeckFloorMesh);
+    }
+  }
+
+  /** Apply upperFloorPlaneData to the secondary walk mesh + climb markers. */
+  applyUpperFloorPlane(): void {
+    const mesh = this.upperDeckFloorMesh;
+    const data = this.upperFloorPlaneData;
+    if (!mesh || !data) return;
+
+    const { position, size } = data;
+    mesh.geometry.dispose();
+    mesh.geometry = new THREE.BoxGeometry(size[0], size[1], size[2]);
+    mesh.position.set(position[0], position[1], position[2]);
+    mesh.name = 'UpperDeckFloor';
+    const topY = position[1] + size[1] / 2;
+    mesh.userData.deckHeight = topY;
+    this.shipUpperDeckHeight = topY;
+    this.syncClimbMarkersFromUpperFloor();
+
+    if (!this.floorMeshes.includes(mesh)) {
+      this.floorMeshes.push(mesh);
+    }
+  }
+
+  private syncClimbMarkersFromUpperFloor(): void {
+    const data = this.upperFloorPlaneData;
+    if (!data) return;
+    const { position, size } = data;
+    const topY = position[1] + size[1] / 2;
+    // Forward lip toward midships (+Z from the aft deck center in ship-local space).
+    const lipZ = position[2] + size[2] / 2;
+    this.shipLadderBottom.position.set(position[0], 0, lipZ + 0.85);
+    this.shipLadderTop.position.set(position[0], topY, lipZ - 0.45);
+  }
+
+  /**
+   * Show/hide a translucent helper on the selected walkable floor (Layout editing).
+   * target: 'main' | 'upper'
+   */
+  updateFloorEditHelper(visible: boolean, target: 'main' | 'upper' = 'main'): void {
+    if (this.floorEditHelper) {
+      this.floorEditHelper.parent?.remove(this.floorEditHelper);
+      this.floorEditHelper.geometry.dispose();
+      (this.floorEditHelper.material as THREE.Material).dispose();
+      this.floorEditHelper = null;
+    }
+    if (!visible) return;
+
+    const mesh =
+      target === 'upper' ? this.getUpperFloorMesh() : this.getPrimaryFloorMesh();
+    const data =
+      target === 'upper' ? this.upperFloorPlaneData : this.floorPlaneData;
+    if (!mesh || !data) return;
+
+    const { size } = data;
+    const sx = size[0];
+    const sy = Math.max(size[1], 0.04);
+    const sz = size[2];
+    this.floorEditHelper = new THREE.Mesh(
+      new THREE.BoxGeometry(sx, sy, sz),
+      new THREE.MeshBasicMaterial({
+        color: target === 'upper' ? 0xf4a261 : 0x4ecdc4,
+        transparent: true,
+        opacity: 0.28,
+        depthWrite: false,
+      }),
+    );
+    this.floorEditHelper.name = 'FloorEditHelper';
+    this.floorEditHelper.raycast = () => {};
+    this.floorEditHelper.position.set(0, 0, 0);
+    mesh.add(this.floorEditHelper);
+  }
+
+  /** Resize invisible rail walls to match the walkable deck footprint. */
+  private fitShipRailsToDeck(deckX: number, deckZ: number): void {
+    if (this.roomId !== 'pirate_ship') return;
+    const wallH = 0.35;
+    const halfX = deckX / 2;
+    const halfZ = deckZ / 2;
+    const specs: Array<{ face: WallFace; pos: [number, number, number]; size: [number, number, number] }> = [
+      { face: 'north', pos: [0, wallH / 2, -halfZ], size: [deckX, wallH, 0.12] },
+      { face: 'south', pos: [0, wallH / 2, halfZ], size: [deckX, wallH, 0.12] },
+      { face: 'west', pos: [-halfX, wallH / 2, 0], size: [0.12, wallH, deckZ] },
+      { face: 'east', pos: [halfX, wallH / 2, 0], size: [0.12, wallH, deckZ] },
+    ];
+    for (const spec of specs) {
+      const wall = this.wallMeshes.get(spec.face);
+      if (!wall) continue;
+      wall.geometry.dispose();
+      wall.geometry = new THREE.BoxGeometry(spec.size[0], spec.size[1], spec.size[2]);
+      wall.position.set(spec.pos[0], spec.pos[1], spec.pos[2]);
     }
   }
 
@@ -238,6 +590,7 @@ export class RoomBuilder {
     );
     if (collision) {
       mesh.userData.isFloor = true;
+      mesh.userData.deckHeight = 0;
       mesh.layers.set(0);
       this.floorMeshes.push(mesh);
     }
@@ -246,23 +599,32 @@ export class RoomBuilder {
 
   private buildShell(shell: RoomFile['shell']): void {
     const centerZ = 0;
-    const floor = this.makeBox(
-      new THREE.Vector3(shell.size.x, 0.1, shell.size.z),
-      this.color(shell.floor_color),
-      true,
-    );
-    floor.position.set(0, -0.05, centerZ);
-    this.root.add(floor);
+    const isShip = this.roomId === 'pirate_ship';
+
+    if (!isShip) {
+      const size = this.floorPlaneData.size;
+      const pos = this.floorPlaneData.position;
+      const floor = this.makeBox(
+        new THREE.Vector3(size[0], size[1], size[2]),
+        this.color(shell.floor_color),
+        true,
+      );
+      floor.name = 'FloorPlane';
+      floor.position.set(pos[0], pos[1], pos[2] !== 0 ? pos[2] : centerZ);
+      this.root.add(floor);
+      this.shellSize.set(size[0], size[2]);
+    }
+    // Pirate ship: walkable ground comes from the ship deck (registered when GLB loads).
 
     const wallH = shell.wall_height;
-    const halfX = shell.size.x / 2;
-    const halfZ = shell.size.z / 2;
+    const halfX = this.shellSize.x / 2;
+    const halfZ = this.shellSize.y / 2;
 
     const walls: Array<{ id: string; face: WallFace; pos: [number, number, number]; size: [number, number, number] }> = [
-      { id: 'wall_north', face: 'north', pos: [0, wallH / 2, centerZ - halfZ], size: [shell.size.x, wallH, 0.15] },
-      { id: 'wall_south', face: 'south', pos: [0, wallH / 2, centerZ + halfZ], size: [shell.size.x, wallH, 0.15] },
-      { id: 'wall_west', face: 'west', pos: [-halfX, wallH / 2, centerZ], size: [0.15, wallH, shell.size.z] },
-      { id: 'wall_east', face: 'east', pos: [halfX, wallH / 2, centerZ], size: [0.15, wallH, shell.size.z] },
+      { id: 'wall_north', face: 'north', pos: [0, wallH / 2, centerZ - halfZ], size: [this.shellSize.x, wallH, 0.15] },
+      { id: 'wall_south', face: 'south', pos: [0, wallH / 2, centerZ + halfZ], size: [this.shellSize.x, wallH, 0.15] },
+      { id: 'wall_west', face: 'west', pos: [-halfX, wallH / 2, centerZ], size: [0.15, wallH, this.shellSize.y] },
+      { id: 'wall_east', face: 'east', pos: [halfX, wallH / 2, centerZ], size: [0.15, wallH, this.shellSize.y] },
     ];
 
     for (const w of walls) {
@@ -273,6 +635,11 @@ export class RoomBuilder {
       wall.position.set(w.pos[0], w.pos[1], w.pos[2]);
       wall.name = w.id;
       wall.userData.wallFace = w.face;
+      if (isShip) {
+        // Keep wall meshes for view/controller bookkeeping, but hide the old translucent bounds.
+        wall.visible = false;
+        wall.raycast = () => {};
+      }
       this.root.add(wall);
       this.wallMeshes.set(w.face, wall);
     }
@@ -282,6 +649,10 @@ export class RoomBuilder {
     const loader = new GLTFLoader();
 
     for (const prop of props) {
+      const applyScale = (obj: THREE.Object3D) => {
+        obj.scale.setScalar(prop.scale ?? 1);
+      };
+
       if (prop.id === 'Painting') {
         const group = this.paintingReveal.group;
         group.position.set(prop.position[0], prop.position[1], prop.position[2]);
@@ -298,11 +669,47 @@ export class RoomBuilder {
           const wallMesh = this.wallMeshes.get(face);
           if (wallMesh) {
             group.position.sub(wallMesh.position);
+            applyScale(group);
             wallMesh.add(group);
           } else {
+            applyScale(group);
             this.propsRoot.add(group);
           }
         } else {
+          applyScale(group);
+          this.propsRoot.add(group);
+        }
+        continue;
+      }
+
+      if (prop.id === 'CorkBoard' || prop.id === 'WallNotes') {
+        const group =
+          prop.id === 'CorkBoard' ? this.corkBoardCluster.group : this.wallNotesCluster.group;
+        group.position.set(prop.position[0], prop.position[1], prop.position[2]);
+        if (prop.rotation) {
+          group.rotation.set(
+            THREE.MathUtils.degToRad(prop.rotation[0]),
+            THREE.MathUtils.degToRad(prop.rotation[1]),
+            THREE.MathUtils.degToRad(prop.rotation[2]),
+          );
+        } else if (prop.id === 'CorkBoard') {
+          group.rotation.y = Math.PI;
+        }
+        const face = prop.wall ?? inferWallFace(prop.position[0], prop.position[2]);
+        group.userData.wallFace = face;
+        group.userData.devEditable = true;
+        if (face !== 'floor') {
+          const wallMesh = this.wallMeshes.get(face);
+          if (wallMesh) {
+            group.position.sub(wallMesh.position);
+            applyScale(group);
+            wallMesh.add(group);
+          } else {
+            applyScale(group);
+            this.propsRoot.add(group);
+          }
+        } else {
+          applyScale(group);
           this.propsRoot.add(group);
         }
         continue;
@@ -319,6 +726,7 @@ export class RoomBuilder {
           );
         }
         group.userData.wallFace = 'floor';
+        applyScale(group);
         this.propsRoot.add(group);
         continue;
       }
@@ -334,7 +742,231 @@ export class RoomBuilder {
           );
         }
         group.userData.wallFace = 'floor';
+        applyScale(group);
         this.propsRoot.add(group);
+        continue;
+      }
+
+      if (prop.id === 'CabinetLampLeft' || prop.id === 'CabinetLampRight') {
+        const group = buildVintageTableLamp(prop.id);
+        group.position.set(prop.position[0], prop.position[1], prop.position[2]);
+        if (prop.rotation) {
+          group.rotation.set(
+            THREE.MathUtils.degToRad(prop.rotation[0]),
+            THREE.MathUtils.degToRad(prop.rotation[1]),
+            THREE.MathUtils.degToRad(prop.rotation[2]),
+          );
+        }
+        group.userData.wallFace = 'floor';
+        group.userData.devEditable = true;
+        applyScale(group);
+        this.propsRoot.add(group);
+        this.attachLightsForProp(prop.id);
+        continue;
+      }
+
+      if (prop.id.startsWith('WallOutlet')) {
+        const group = buildWallOutlet();
+        group.name = prop.id;
+        group.position.set(prop.position[0], prop.position[1], prop.position[2]);
+        if (prop.rotation) {
+          group.rotation.set(
+            THREE.MathUtils.degToRad(prop.rotation[0]),
+            THREE.MathUtils.degToRad(prop.rotation[1]),
+            THREE.MathUtils.degToRad(prop.rotation[2]),
+          );
+        }
+        const face = prop.wall ?? inferWallFace(prop.position[0], prop.position[2]);
+        group.userData.wallFace = face;
+        group.userData.devEditable = true;
+        if (face !== 'floor') {
+          const wallMesh = this.wallMeshes.get(face);
+          if (wallMesh) {
+            group.position.sub(wallMesh.position);
+            applyScale(group);
+            wallMesh.add(group);
+          } else {
+            applyScale(group);
+            this.propsRoot.add(group);
+          }
+        } else {
+          applyScale(group);
+          this.propsRoot.add(group);
+        }
+        continue;
+      }
+
+      if (prop.id === 'Wastebin') {
+        loadWastebin((group) => {
+          group.position.set(prop.position[0], prop.position[1], prop.position[2]);
+          if (prop.rotation) {
+            group.rotation.set(
+              THREE.MathUtils.degToRad(prop.rotation[0]),
+              THREE.MathUtils.degToRad(prop.rotation[1]),
+              THREE.MathUtils.degToRad(prop.rotation[2]),
+            );
+          }
+          group.userData.wallFace = 'floor';
+          group.userData.devEditable = true;
+          applyScale(group);
+          this.propsRoot.add(group);
+          this.attachLightsForProp(prop.id);
+        });
+        continue;
+      }
+
+      if (prop.id === 'WardrobeTypewriter') {
+        loadTypewriter((group) => {
+          group.position.set(prop.position[0], prop.position[1], prop.position[2]);
+          if (prop.rotation) {
+            group.rotation.set(
+              THREE.MathUtils.degToRad(prop.rotation[0]),
+              THREE.MathUtils.degToRad(prop.rotation[1]),
+              THREE.MathUtils.degToRad(prop.rotation[2]),
+            );
+          }
+          group.userData.wallFace = 'floor';
+          group.userData.devEditable = true;
+          applyScale(group);
+          this.propsRoot.add(group);
+          this.attachLightsForProp(prop.id);
+        }, 'WardrobeTypewriter');
+        continue;
+      }
+
+      if (prop.id === 'WallBookcase') {
+        loadModernBookshelf((group) => {
+          group.name = 'WallBookcase';
+          const model = group.children[0] ?? group;
+          const box = new THREE.Box3().setFromObject(model);
+          const size = new THREE.Vector3();
+          box.getSize(size);
+          const target = new THREE.Vector3(prop.size[0], prop.size[1], prop.size[2]);
+          const fit = Math.min(
+            target.x / (size.x || 1),
+            target.y / (size.y || 1),
+            target.z / (size.z || 1),
+          );
+          model.scale.setScalar(fit);
+          const scaled = new THREE.Box3().setFromObject(model);
+          const center = new THREE.Vector3();
+          scaled.getCenter(center);
+          model.position.set(-center.x, -scaled.min.y, -center.z);
+
+          group.position.set(prop.position[0], prop.position[1], prop.position[2]);
+          if (prop.rotation) {
+            group.rotation.set(
+              THREE.MathUtils.degToRad(prop.rotation[0]),
+              THREE.MathUtils.degToRad(prop.rotation[1]),
+              THREE.MathUtils.degToRad(prop.rotation[2]),
+            );
+          }
+          const face = prop.wall ?? 'east';
+          group.userData.wallFace = face;
+          group.userData.devEditable = true;
+          if (face !== 'floor') {
+            const wallMesh = this.wallMeshes.get(face);
+            if (wallMesh) {
+              // Async load may finish after walls start folding — always use rest pose.
+              const rest = this.getWallRestPosition(face) ?? wallMesh.position;
+              group.position.sub(rest);
+              applyScale(group);
+              wallMesh.add(group);
+            } else {
+              applyScale(group);
+              this.propsRoot.add(group);
+            }
+          } else {
+            applyScale(group);
+            this.propsRoot.add(group);
+          }
+          this.attachLightsForProp(prop.id);
+        });
+        continue;
+      }
+
+      if (prop.id === 'RedYarnBall') {
+        const group = buildRedYarnBall();
+        group.position.set(prop.position[0], prop.position[1], prop.position[2]);
+        if (prop.rotation) {
+          group.rotation.set(
+            THREE.MathUtils.degToRad(prop.rotation[0]),
+            THREE.MathUtils.degToRad(prop.rotation[1]),
+            THREE.MathUtils.degToRad(prop.rotation[2]),
+          );
+        }
+        group.userData.wallFace = 'floor';
+        group.userData.devEditable = true;
+        applyScale(group);
+        this.propsRoot.add(group);
+        continue;
+      }
+
+      if (prop.id === 'CorkBoardClutter') {
+        const group = buildCorkBoardClutterPile();
+        group.position.set(prop.position[0], prop.position[1], prop.position[2]);
+        if (prop.rotation) {
+          group.rotation.set(
+            THREE.MathUtils.degToRad(prop.rotation[0]),
+            THREE.MathUtils.degToRad(prop.rotation[1]),
+            THREE.MathUtils.degToRad(prop.rotation[2]),
+          );
+        }
+        group.userData.wallFace = 'floor';
+        group.userData.devEditable = true;
+        applyScale(group);
+        this.propsRoot.add(group);
+        continue;
+      }
+
+      if (prop.id === 'PirateShip') {
+        loadSailShip(({ group, deckFloor, deckSize, upperDeck }) => {
+          group.position.set(prop.position[0], prop.position[1], prop.position[2]);
+          if (prop.rotation) {
+            group.rotation.set(
+              THREE.MathUtils.degToRad(prop.rotation[0]),
+              THREE.MathUtils.degToRad(prop.rotation[1]),
+              THREE.MathUtils.degToRad(prop.rotation[2]),
+            );
+          }
+          group.userData.wallFace = 'floor';
+          group.userData.devEditable = true;
+          applyScale(group);
+          this.propsRoot.add(group);
+
+          this.shipFloorLocal = true;
+          if (!this.floorPlaneFromFile) {
+            this.floorPlaneData = {
+              position: [deckFloor.position.x, deckFloor.position.y, deckFloor.position.z],
+              size: [deckSize.x, 0.06, deckSize.z],
+            };
+          }
+
+          this.floorMeshes.length = 0;
+          this.floorMeshes.push(deckFloor);
+          this.applyFloorPlane();
+
+          if (upperDeck) {
+            this.upperDeckFloorMesh = upperDeck.floor;
+            if (!this.upperFloorFromFile || !this.upperFloorPlaneData) {
+              const geo = upperDeck.floor.geometry as THREE.BoxGeometry;
+              const p = geo.parameters;
+              this.upperFloorPlaneData = {
+                position: [
+                  upperDeck.floor.position.x,
+                  upperDeck.floor.position.y,
+                  upperDeck.floor.position.z,
+                ],
+                size: [p.width, p.height, p.depth],
+              };
+            }
+            this.applyUpperFloorPlane();
+            group.add(this.shipLadderBottom);
+            group.add(this.shipLadderTop);
+          }
+
+          this.onTargetsChanged?.();
+        });
         continue;
       }
 
@@ -349,6 +981,7 @@ export class RoomBuilder {
           );
         }
         group.userData.wallFace = 'floor';
+        applyScale(group);
         this.propsRoot.add(group);
         continue;
       }
@@ -364,6 +997,7 @@ export class RoomBuilder {
           );
         }
         group.userData.wallFace = 'floor';
+        applyScale(group);
         this.propsRoot.add(group);
         continue;
       }
@@ -379,6 +1013,7 @@ export class RoomBuilder {
           );
         }
         group.userData.wallFace = 'floor';
+        applyScale(group);
         this.propsRoot.add(group);
         continue;
       }
@@ -403,11 +1038,14 @@ export class RoomBuilder {
           const wallMesh = this.wallMeshes.get(face);
           if (wallMesh) {
             group.position.sub(wallMesh.position);
+            applyScale(group);
             wallMesh.add(group);
           } else {
+            applyScale(group);
             this.propsRoot.add(group);
           }
         } else {
+          applyScale(group);
           this.propsRoot.add(group);
         }
         continue;
@@ -493,13 +1131,17 @@ export class RoomBuilder {
             const wallMesh = this.wallMeshes.get(face);
             if (wallMesh) {
               group.position.sub(wallMesh.position);
+              applyScale(group);
               wallMesh.add(group);
             } else {
+              applyScale(group);
               this.propsRoot.add(group);
             }
           } else {
+            applyScale(group);
             this.propsRoot.add(group);
           }
+          this.attachLightsForProp(prop.id);
         });
       } else {
         // Fallback to procedural shape generation
@@ -545,11 +1187,14 @@ export class RoomBuilder {
           const wallMesh = this.wallMeshes.get(face);
           if (wallMesh) {
             mesh.position.sub(wallMesh.position);
+            applyScale(mesh);
             wallMesh.add(mesh);
           } else {
+            applyScale(mesh);
             this.propsRoot.add(mesh);
           }
         } else {
+          applyScale(mesh);
           this.propsRoot.add(mesh);
         }
       }
@@ -606,12 +1251,6 @@ export class RoomBuilder {
       this.root.add(sun);
     }
 
-    const LIGHT_PARENTS: Record<string, string> = {
-      lamp: 'LampBase',
-      window: 'WindowFrame',
-      reading_lamp: 'NightstandReadingLight',
-    };
-
     for (const [key, spec] of Object.entries(lighting ?? {})) {
       const light = new THREE.PointLight(
         new THREE.Color(spec.color),
@@ -619,35 +1258,62 @@ export class RoomBuilder {
         6,
       );
       light.name = `light_${key}`;
+      light.position.set(spec.position[0], spec.position[1], spec.position[2]);
+      this.root.add(light);
+      this.lights.set(key, light);
 
       const parentId = LIGHT_PARENTS[key];
-      let parentMesh: THREE.Object3D | undefined;
       if (parentId) {
-        parentMesh = this.propsRoot.getObjectByName(parentId) || this.root.getObjectByName(parentId);
+        this.attachLightToProp(key, parentId);
       }
+    }
+  }
 
-      if (parentMesh) {
-        parentMesh.updateMatrixWorld(true);
-        const parentWorldPos = new THREE.Vector3();
-        parentMesh.getWorldPosition(parentWorldPos);
+  /** Parent a room light to a prop so it moves/rotates/scales with that object. */
+  attachLightToProp(lightKey: string, parentId: string): boolean {
+    const light = this.lights.get(lightKey);
+    const spec = this.lightingData?.[lightKey];
+    if (!light || !spec) return false;
 
-        const localPos = new THREE.Vector3(
-          spec.position[0] - parentWorldPos.x,
-          spec.position[1] - parentWorldPos.y,
-          spec.position[2] - parentWorldPos.z
-        );
+    const parentMesh =
+      this.propsRoot.getObjectByName(parentId) || this.root.getObjectByName(parentId);
+    if (!parentMesh) return false;
 
-        light.position.copy(localPos);
-        parentMesh.add(light);
+    parentMesh.updateMatrixWorld(true);
+    const worldPos = new THREE.Vector3(spec.position[0], spec.position[1], spec.position[2]);
+    const localPos = parentMesh.worldToLocal(worldPos.clone());
 
-        light.userData.parentPropId = parentId;
-        light.userData.localOffset = localPos.clone();
-      } else {
-        light.position.set(spec.position[0], spec.position[1], spec.position[2]);
-        this.root.add(light);
+    parentMesh.add(light);
+    light.position.copy(localPos);
+    light.userData.parentPropId = parentId;
+    light.userData.localOffset = localPos.clone();
+    return true;
+  }
+
+  /** Re-attach any lights that belong to this prop (e.g. after async GLB load). */
+  attachLightsForProp(propId: string): void {
+    for (const [lightKey, parentId] of Object.entries(LIGHT_PARENTS)) {
+      if (parentId === propId) {
+        this.attachLightToProp(lightKey, parentId);
       }
+    }
+  }
 
-      this.lights.set(key, light);
+  /** Write each light's current world position back into lightingData (for save). */
+  syncLightWorldPositions(lightKeys?: Iterable<string>): void {
+    const keys = lightKeys
+      ? [...lightKeys]
+      : [...this.lights.keys()];
+    for (const key of keys) {
+      const light = this.lights.get(key);
+      const spec = this.lightingData?.[key];
+      if (!light || !spec) continue;
+      light.updateMatrixWorld(true);
+      const world = new THREE.Vector3();
+      light.getWorldPosition(world);
+      spec.position[0] = world.x;
+      spec.position[1] = world.y;
+      spec.position[2] = world.z;
     }
   }
 
@@ -668,8 +1334,16 @@ export class RoomBuilder {
   }
 
   setPropVisible(id: string, visible: boolean): void {
-    const mesh = this.propsRoot.getObjectByName(id);
+    const mesh = this.propsRoot.getObjectByName(id) || this.root.getObjectByName(id);
     if (mesh) mesh.visible = visible;
+  }
+
+  /** Wall rest pose for parenting math — never the folded/animated wall position. */
+  getWallRestPosition(face: WallFace): THREE.Vector3 | null {
+    const fromCtrl = this.wallCtrl.getRestPositionForFace(face);
+    if (fromCtrl) return fromCtrl;
+    const wall = this.wallMeshes.get(face);
+    return wall ? wall.position.clone() : null;
   }
 
   getHotspotWorldPosition(id: string): THREE.Vector3 | null {
@@ -712,6 +1386,17 @@ export class RoomBuilder {
 
   getPortalTarget(portalId: string): string | null {
     return this.portals.get(portalId)?.target ?? null;
+  }
+
+  getCameraShot(id: string): CameraShotDef | null {
+    return this.cameraShotsData[id] ?? DEFAULT_CAMERA_SHOTS[id] ?? null;
+  }
+
+  setCameraShot(id: string, shot: CameraShotDef): void {
+    this.cameraShotsData[id] = {
+      ...shot,
+      target: [...shot.target] as [number, number, number],
+    };
   }
 
   private buildPortals(defs: PortalDef[]): void {

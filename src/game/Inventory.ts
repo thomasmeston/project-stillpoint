@@ -1,12 +1,9 @@
-import itemsData from '../../data/items.json';
 import { EventBus } from '../utils/EventBus';
 import { getEffectiveItemDescription, getEffectiveItemLabel } from './DevContentOverrides';
-import type { PuzzleManager } from './PuzzleManager';
 
 export type InventoryEvents = {
   changed: void;
   itemSelected: string;
-  combineFailed: { a: string; b: string };
 };
 
 export class Inventory {
@@ -14,12 +11,6 @@ export class Inventory {
 
   items: string[] = [];
   selectedItem = '';
-  private combineRules = itemsData.combine_rules;
-  private puzzleManager: PuzzleManager | null = null;
-
-  bindPuzzleManager(pm: PuzzleManager): void {
-    this.puzzleManager = pm;
-  }
 
   getLabel(itemId: string): string {
     return getEffectiveItemLabel(itemId);
@@ -59,33 +50,19 @@ export class Inventory {
     this.events.emit('itemSelected', this.selectedItem);
   }
 
-  tryCombine(itemA: string, itemB: string): string {
-    if (itemA === itemB) return '';
-    for (const rule of this.combineRules) {
-      const [a, b] = rule.inputs;
-      const match =
-        (itemA === a && itemB === b) || (itemA === b && itemB === a);
-      if (match && this.hasItem(a) && this.hasItem(b)) {
-        this.removeItem(a);
-        this.removeItem(b);
-        this.addItem(rule.result);
-        for (const consequence of rule.on_success ?? []) {
-          this.puzzleManager?.applyConsequence(consequence);
-        }
-        return rule.result;
-      }
-    }
-    this.events.emit('combineFailed', { a: itemA, b: itemB });
-    return '';
-  }
-
   getSaveData() {
     return { items: [...this.items], selectedItem: this.selectedItem };
   }
 
   loadSaveData(data: ReturnType<Inventory['getSaveData']>): void {
     this.items = [...data.items];
-    this.selectedItem = data.selectedItem;
+    // Migrate old saves that had the removed combine result.
+    if (this.items.includes('assembled_key')) {
+      this.items = this.items.filter((id) => id !== 'assembled_key');
+      if (!this.items.includes('key_blade')) this.items.push('key_blade');
+      if (data.selectedItem === 'assembled_key') data.selectedItem = 'key_blade';
+    }
+    this.selectedItem = this.items.includes(data.selectedItem) ? data.selectedItem : '';
     this.events.emit('changed', undefined);
   }
 

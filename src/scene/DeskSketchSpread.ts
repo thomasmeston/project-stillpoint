@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createPaperMesh, type PaperTheme } from './CrypticPaperArt';
+import { createPaperMesh, DESK_PAPER_THEMES, type PaperTheme } from './CrypticPaperArt';
 
 const DESK_SURFACE_Y = 0.802;
 const INSPECT_CENTER = new THREE.Vector3(1.78, DESK_SURFACE_Y + 0.14, -0.02);
@@ -14,16 +14,16 @@ const SPREAD_LAYOUT: Array<{
   theme: PaperTheme;
   seed: number;
 }> = [
-  { x: 1.45, z: -0.22, rot: 18, w: 0.18, h: 0.24, theme: 'portal', seed: 101 },
-  { x: 1.72, z: -0.08, rot: -12, w: 0.16, h: 0.22, theme: 'sacred_geometry', seed: 102 },
-  { x: 2.05, z: -0.18, rot: 34, w: 0.17, h: 0.23, theme: 'time_spiral', seed: 103 },
-  { x: 2.18, z: 0.05, rot: -28, w: 0.15, h: 0.21, theme: 'orbit', seed: 104 },
-  { x: 1.55, z: 0.12, rot: 8, w: 0.19, h: 0.25, theme: 'warp_grid', seed: 105 },
-  { x: 1.88, z: 0.18, rot: -22, w: 0.16, h: 0.22, theme: 'sigil', seed: 106 },
-  { x: 2.12, z: 0.22, rot: 41, w: 0.14, h: 0.2, theme: 'diagram', seed: 107 },
-  { x: 1.38, z: 0.02, rot: -35, w: 0.17, h: 0.23, theme: 'notes', seed: 108 },
-  { x: 1.98, z: -0.02, rot: 15, w: 0.18, h: 0.24, theme: 'portal', seed: 109 },
-  { x: 1.62, z: 0.2, rot: -8, w: 0.15, h: 0.21, theme: 'sacred_geometry', seed: 110 },
+  { x: 1.45, z: -0.22, rot: 18, w: 0.18, h: 0.24, theme: DESK_PAPER_THEMES[0], seed: 301 },
+  { x: 1.72, z: -0.08, rot: -12, w: 0.16, h: 0.22, theme: DESK_PAPER_THEMES[1], seed: 302 },
+  { x: 2.05, z: -0.18, rot: 34, w: 0.17, h: 0.23, theme: DESK_PAPER_THEMES[2], seed: 303 },
+  { x: 2.18, z: 0.05, rot: -28, w: 0.15, h: 0.21, theme: DESK_PAPER_THEMES[3], seed: 304 },
+  { x: 1.55, z: 0.12, rot: 8, w: 0.19, h: 0.25, theme: DESK_PAPER_THEMES[4], seed: 305 },
+  { x: 1.88, z: 0.18, rot: -22, w: 0.16, h: 0.22, theme: DESK_PAPER_THEMES[5], seed: 306 },
+  { x: 2.12, z: 0.22, rot: 41, w: 0.14, h: 0.2, theme: DESK_PAPER_THEMES[6], seed: 307 },
+  { x: 1.38, z: 0.02, rot: -35, w: 0.17, h: 0.23, theme: DESK_PAPER_THEMES[7], seed: 308 },
+  { x: 1.98, z: -0.02, rot: 15, w: 0.18, h: 0.24, theme: DESK_PAPER_THEMES[8], seed: 309 },
+  { x: 1.62, z: 0.2, rot: -8, w: 0.15, h: 0.21, theme: DESK_PAPER_THEMES[9], seed: 310 },
 ];
 
 type AnimMode = 'none' | 'open' | 'close';
@@ -142,7 +142,7 @@ export class DeskSketchSpread {
     }
   }
 
-  inspectPaper(index: number): void {
+  inspectPaper(index: number, viewCenterWorld?: THREE.Vector3): void {
     if (!this.spread || this.animMode !== 'none') return;
     if (index < 0 || index >= this.papers.length) return;
 
@@ -160,7 +160,7 @@ export class DeskSketchSpread {
     this.captureRestPose(index);
     this.inspectedIndex = index;
     this.inspectFrom = this.poseFromMesh(this.papers[index].mesh);
-    this.inspectTo = this.inspectPose();
+    this.inspectTo = this.inspectPose(viewCenterWorld);
     this.inspectMode = 'to_inspect';
     this.inspectTime = 0;
     this.applyInspectDimming(index);
@@ -377,9 +377,16 @@ export class DeskSketchSpread {
     };
   }
 
-  private inspectPose(): PaperRestPose {
+  private inspectPose(viewCenterWorld?: THREE.Vector3): PaperRestPose {
+    const position = INSPECT_CENTER.clone();
+    if (viewCenterWorld) {
+      this.group.updateMatrixWorld(true);
+      const local = this.group.worldToLocal(viewCenterWorld.clone());
+      // Keep paper slightly above the desk surface, centered on the camera focus.
+      position.set(local.x, DESK_SURFACE_Y + 0.14, local.z);
+    }
     return {
-      position: INSPECT_CENTER.clone(),
+      position,
       rotationZ: 0,
       scale: INSPECT_SCALE,
     };

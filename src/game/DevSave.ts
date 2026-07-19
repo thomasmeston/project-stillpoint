@@ -49,6 +49,10 @@ export function buildRoomJson(room: RoomBuilder): Record<string, unknown> {
       ];
     }
 
+    if (p.scale != null && p.scale !== 1) {
+      formatted.scale = round3(p.scale);
+    }
+
     if (p.wall) {
       formatted.wall = p.wall;
     }
@@ -89,17 +93,76 @@ export function buildRoomJson(room: RoomBuilder): Record<string, unknown> {
     };
   }
 
-  const spawn = room.playerSpawn;
+  const cleanCameraShots: Record<string, unknown> = {};
+  for (const [id, shot] of Object.entries(room.cameraShotsData || {})) {
+    cleanCameraShots[id] = {
+      label: shot.label,
+      target: [
+        round3(shot.target[0]),
+        round3(shot.target[1]),
+        round3(shot.target[2]),
+      ],
+      size: round3(shot.size),
+      pitch_deg: round3(shot.pitch_deg),
+      yaw_deg: shot.yaw_deg === null || shot.yaw_deg === undefined
+        ? null
+        : round3(shot.yaw_deg),
+      damp: round3(shot.damp ?? 9),
+      ...(shot.lock_to ? { lock_to: shot.lock_to } : {}),
+    };
+  }
 
-  return {
+  const spawn = room.playerSpawn;
+  const floor = room.floorPlaneData;
+  const upperFloor = room.upperFloorPlaneData;
+  const baseShell = (baseRoom as { shell?: Record<string, unknown> }).shell ?? {};
+
+  const result: Record<string, unknown> = {
     ...baseRoom,
+    shell: {
+      ...baseShell,
+      size: {
+        x: round3(room.shellSize.x),
+        z: round3(room.shellSize.y),
+      },
+    },
+    floor: {
+      position: [
+        round3(floor.position[0]),
+        round3(floor.position[1]),
+        round3(floor.position[2]),
+      ],
+      size: [
+        round3(floor.size[0]),
+        round3(floor.size[1]),
+        round3(floor.size[2]),
+      ],
+    },
     props: cleanProps,
     hotspots: cleanHotspots,
     lighting: cleanLighting,
+    camera_shots: cleanCameraShots,
     spawn: {
       player: [round3(spawn.x), round3(spawn.y), round3(spawn.z)],
     },
   };
+
+  if (upperFloor) {
+    result.floor_upper = {
+      position: [
+        round3(upperFloor.position[0]),
+        round3(upperFloor.position[1]),
+        round3(upperFloor.position[2]),
+      ],
+      size: [
+        round3(upperFloor.size[0]),
+        round3(upperFloor.size[1]),
+        round3(upperFloor.size[2]),
+      ],
+    };
+  }
+
+  return result;
 }
 
 function downloadJson(data: unknown, filename: string): void {

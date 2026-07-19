@@ -10,8 +10,11 @@ const ARRIVAL_EPSILON = 0.08;
 export class PlayerMover {
   readonly root = new THREE.Group();
   private target: THREE.Vector3 | null = null;
+  private pathQueue: THREE.Vector3[] = [];
   private speed = 4;
   private moving = false;
+  /** Height above the room float/base floor (0 = main deck). */
+  deckHeight = 0;
 
   // Reference to the loaded model group and its rest Y position
   private characterModel: THREE.Object3D | null = null;
@@ -104,14 +107,16 @@ export class PlayerMover {
   }
 
   moveTo(point: THREE.Vector3, onArrived?: () => void): void {
+    this.pathQueue = [];
     this.target = point.clone();
-    this.target.y = this.root.position.y;
+    // point.y is treated as logical deck height when multi-deck is in use.
     this.onArrival = onArrived || null;
 
-    // Check if we are already close enough to target
     const dir = this.target.clone().sub(this.root.position);
     dir.y = 0;
-    if (dir.length() < ARRIVAL_EPSILON) {
+    const heightDelta = Math.abs(this.target.y - this.deckHeight);
+    if (dir.length() < ARRIVAL_EPSILON && heightDelta < 0.08) {
+      this.deckHeight = this.target.y;
       this.target = null;
       this.setMoving(false);
       this.onArrival = null;
@@ -119,7 +124,28 @@ export class PlayerMover {
     }
   }
 
-  update(dt: number, obstacles?: THREE.Box3[], shellSize?: THREE.Vector2): void {
+  /** Follow waypoints where each point.y is logical deck height. */
+  moveAlongPath(points: THREE.Vector3[], onArrived?: () => void): void {
+    if (points.length === 0) {
+      onArrived?.();
+      return;
+    }
+    this.pathQueue = points.map((p) => p.clone());
+    this.onArrival = onArrived || null;
+    this.target = this.pathQueue.shift() ?? null;
+    if (!this.target) {
+      this.setMoving(false);
+      this.onArrival = null;
+      onArrived?.();
+    }
+  }
+
+  update(
+    dt: number,
+    obstacles?: THREE.Box3[],
+    shellSize?: THREE.Vector2,
+    walkBounds?: { minX: number; maxX: number; minZ: number; maxZ: number } | null,
+  ): void {
     const clampedDt = Math.min(dt, 0.1);
     this.time += clampedDt;
 
@@ -148,41 +174,52 @@ export class PlayerMover {
       return;
     }
 
+    const climbing = Math.abs(this.target.y - this.deckHeight) > 0.05;
     const dir = this.target.clone().sub(this.root.position);
     dir.y = 0;
     const dist = dir.length();
-    if (dist < ARRIVAL_EPSILON) {
-      this.target = null;
-      this.setMoving(false);
-      if (this.onArrival) {
-        const cb = this.onArrival;
-        this.onArrival = null;
-        cb();
-      }
+    if (dist < ARRIVAL_EPSILON && !climbing) {
+      this.deckHeight = this.target.y;
+      this.advancePathOrFinish();
       return;
     }
 
     this.setMoving(true);
-    dir.normalize();
-    const step = Math.min(dist, this.speed * dt);
+    if (dist > 0.0001) dir.normalize();
+
+    const moveSpeed = climbing ? this.speed * 0.42 : this.speed;
+    const step = Math.min(dist, moveSpeed * dt);
 
     // Save starting position to detect block state
     const startPos = this.root.position.clone();
 
-    // Propose step position
-    const proposedPos = this.root.position.clone().addScaledVector(dir, step);
+    // Propose step position (XZ only)
+    const proposedPos = this.root.position.clone();
+    if (dist > 0.0001) {
+      proposedPos.addScaledVector(dir, step);
+    }
 
     // Resolve collision if room data is available
     if (obstacles && shellSize) {
-      const resolvedPos = this.resolveCollisions(proposedPos, obstacles, shellSize);
-      this.root.position.copy(resolvedPos);
+      const resolvedPos = this.resolveCollisions(proposedPos, obstacles, shellSize, walkBounds);
+      this.root.position.x = resolvedPos.x;
+      this.root.position.z = resolvedPos.z;
 
       // Blocked check: if we barely moved, cancel target unless close enough to finish
-      const actualMove = this.root.position.distanceTo(startPos);
-      if (step > 0.001 && actualMove < 0.01) {
-        const remaining = this.target ? this.root.position.distanceTo(this.target) : Infinity;
+      const actualMove = Math.hypot(
+        this.root.position.x - startPos.x,
+        this.root.position.z - startPos.z,
+      );
+      if (!climbing && step > 0.001 && actualMove < 0.01) {
+        const remaining = this.target
+          ? Math.hypot(
+              this.root.position.x - this.target.x,
+              this.root.position.z - this.target.z,
+            )
+          : Infinity;
         const cb = this.onArrival;
         this.target = null;
+        this.pathQueue = [];
         this.setMoving(false);
         this.onArrival = null;
         if (cb && remaining < 1.0) {
@@ -191,7 +228,20 @@ export class PlayerMover {
         return;
       }
     } else {
-      this.root.position.copy(proposedPos);
+      this.root.position.x = proposedPos.x;
+      this.root.position.z = proposedPos.z;
+    }
+
+    if (climbing) {
+      const climbSpeed = 1.6;
+      const dy = this.target.y - this.deckHeight;
+      const stepY = Math.sign(dy) * Math.min(Math.abs(dy), climbSpeed * dt);
+      this.deckHeight += stepY;
+      if (Math.abs(this.target.y - this.deckHeight) < 0.04 && dist < ARRIVAL_EPSILON) {
+        this.deckHeight = this.target.y;
+        this.advancePathOrFinish();
+        return;
+      }
     }
 
     // Orient character model to actual moving direction or target direction
@@ -213,23 +263,42 @@ export class PlayerMover {
     }
   }
 
+  private advancePathOrFinish(): void {
+    if (this.pathQueue.length > 0) {
+      this.target = this.pathQueue.shift() ?? null;
+      return;
+    }
+    this.target = null;
+    this.setMoving(false);
+    if (this.onArrival) {
+      const cb = this.onArrival;
+      this.onArrival = null;
+      cb();
+    }
+  }
+
   private resolveCollisions(
     pos: THREE.Vector3,
     obstacles: THREE.Box3[],
     shellSize: THREE.Vector2,
+    walkBounds?: { minX: number; maxX: number; minZ: number; maxZ: number } | null,
   ): THREE.Vector3 {
     const resolved = pos.clone();
     const radius = 0.25;
     const wallThickness = 0.15;
 
-    // 1. Clamp to wall boundaries
-    const halfX = shellSize.x / 2 - wallThickness / 2 - radius;
-    const halfZ = shellSize.y / 2 - wallThickness / 2 - radius;
+    if (walkBounds) {
+      resolved.x = THREE.MathUtils.clamp(resolved.x, walkBounds.minX + radius, walkBounds.maxX - radius);
+      resolved.z = THREE.MathUtils.clamp(resolved.z, walkBounds.minZ + radius, walkBounds.maxZ - radius);
+    } else {
+      // Clamp to wall boundaries
+      const halfX = shellSize.x / 2 - wallThickness / 2 - radius;
+      const halfZ = shellSize.y / 2 - wallThickness / 2 - radius;
+      resolved.x = THREE.MathUtils.clamp(resolved.x, -halfX, halfX);
+      resolved.z = THREE.MathUtils.clamp(resolved.z, -halfZ, halfZ);
+    }
 
-    resolved.x = THREE.MathUtils.clamp(resolved.x, -halfX, halfX);
-    resolved.z = THREE.MathUtils.clamp(resolved.z, -halfZ, halfZ);
-
-    // 2. Resolve obstacles with circle-to-AABB sliding
+    // Resolve obstacles with circle-to-AABB sliding
     // Iterate twice to resolve corners
     for (let iter = 0; iter < 2; iter++) {
       for (const box of obstacles) {
@@ -286,13 +355,16 @@ export class PlayerMover {
 
   cancelMovement(): void {
     this.target = null;
+    this.pathQueue = [];
     this.onArrival = null;
     this.setMoving(false);
   }
 
   setPosition(pos: { x: number; y: number; z: number }): void {
     this.root.position.set(pos.x, pos.y, pos.z);
+    this.deckHeight = pos.y;
     this.target = null;
+    this.pathQueue = [];
     this.setMoving(false);
   }
 }

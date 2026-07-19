@@ -31,7 +31,7 @@ npm run package:itch  # build + stillpoint-itch.zip
 
 1. Find time clue → set wall clock to **3:17** → open desk drawer
 2. Rearrange photo backs → spell **STILL** → reveal wall safe → get key blade
-3. Combine key blade + handle → unlock wardrobe
+3. Use key blade on wardrobe → unlock wardrobe
 4. Use cipher disk + letter → door padlock **STILLPOINT** → escape
 
 ## Project layout
@@ -48,7 +48,7 @@ legacy/godot/ Archived Godot MVP (reference only)
 - `data/puzzles/bedroom.json` — puzzle solutions, gates, item uses
 - `data/story/bedroom-script.json` — examine text, journal, thoughts, ending
 - `data/rooms/bedroom.json` — room layout, props, hotspots, lighting
-- `data/items.json` — inventory and combine rules
+- `data/items.json` — inventory item definitions
 
 ## Deploy
 

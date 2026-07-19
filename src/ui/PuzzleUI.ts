@@ -4,9 +4,6 @@ export class PuzzleUI {
   private clockMinute = document.getElementById('clock-minute') as HTMLInputElement;
   private photoModal = document.getElementById('photo-modal')!;
   private photoTiles = document.getElementById('photo-tiles')!;
-  private combineModal = document.getElementById('combine-modal')!;
-  private combineA = document.getElementById('combine-a') as HTMLSelectElement;
-  private combineB = document.getElementById('combine-b') as HTMLSelectElement;
   private padlockModal = document.getElementById('padlock-modal')!;
   private padlockEntry = document.getElementById('padlock-entry') as HTMLInputElement;
 
@@ -16,9 +13,6 @@ export class PuzzleUI {
   onClockSubmit?: (puzzleId: string, hour: number, minute: number) => void;
   onPhotoSubmit?: (puzzleId: string, answer: string) => void;
   onPadlockSubmit?: (puzzleId: string, answer: string) => void;
-  onCombine?: (a: string, b: string) => void;
-  getInventoryItems?: () => string[];
-  getItemLabel?: (id: string) => string;
 
   constructor() {
     document.getElementById('clock-submit')!.addEventListener('click', () => {
@@ -29,13 +23,6 @@ export class PuzzleUI {
       this.onPhotoSubmit?.(this.activePuzzleId, this.photoLetters.join(''));
     });
     document.getElementById('photo-close')!.addEventListener('click', () => this.closePhoto());
-    document.getElementById('combine-submit')!.addEventListener('click', () => {
-      const a = this.combineA.value;
-      const b = this.combineB.value;
-      if (a && b) this.onCombine?.(a, b);
-      this.closeCombine();
-    });
-    document.getElementById('combine-close')!.addEventListener('click', () => this.closeCombine());
     document.getElementById('padlock-submit')!.addEventListener('click', () => this.submitPadlock());
     document.getElementById('padlock-close')!.addEventListener('click', () => this.closePadlock());
     this.padlockEntry.addEventListener('keydown', (e) => {
@@ -80,29 +67,8 @@ export class PuzzleUI {
     this.padlockModal.classList.add('hidden');
   }
 
-  openCombine(): void {
-    const items = this.getInventoryItems?.() ?? [];
-    this.fillSelect(this.combineA, items);
-    this.fillSelect(this.combineB, items);
-    this.combineModal.classList.remove('hidden');
-  }
-
-  closeCombine(): void {
-    this.combineModal.classList.add('hidden');
-  }
-
   private submitPadlock(): void {
     this.onPadlockSubmit?.(this.activePuzzleId, this.padlockEntry.value.trim());
-  }
-
-  private fillSelect(select: HTMLSelectElement, items: string[]): void {
-    select.innerHTML = '<option value="">(select)</option>';
-    for (const id of items) {
-      const opt = document.createElement('option');
-      opt.value = id;
-      opt.textContent = this.getItemLabel?.(id) ?? id;
-      select.appendChild(opt);
-    }
   }
 
   private renderPhotoTiles(): void {

@@ -35,6 +35,8 @@ export class HUD {
   private inspectedItemId = '';
 
   onThoughtBlockingChange?: (active: boolean) => void;
+  /** Fires when the player clicks to dismiss a thought (before fade-out). */
+  onThoughtDismissStart?: () => void;
   onZoomBack?: () => void;
   onMeditate?: () => void;
   onReturnToRoom?: () => void;
@@ -61,6 +63,7 @@ export class HUD {
     this.itemInspectUse.addEventListener('click', () => this.toggleItemArmed());
 
     this.thoughtOverlay.onBlockingChange = (active) => this.onThoughtBlockingChange?.(active);
+    this.thoughtOverlay.onDismissStart = () => this.onThoughtDismissStart?.();
 
     this.narrative.events.on('examineShown', ({ title, body }) => this.showExamine(title, body));
     this.narrative.events.on('thoughtShown', (text) => this.showThought(text));
@@ -225,7 +228,6 @@ export class HUD {
     switch (action) {
       case 'pickup': return 'Take';
       case 'open_puzzle': return 'Use';
-      case 'combine': return 'Combine';
       default: return 'Examine';
     }
   }

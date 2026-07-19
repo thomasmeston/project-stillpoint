@@ -14,15 +14,11 @@
     },
     "key_blade": {
       "label": "Key Blade",
-      "description": "Narrow brass blade without a handle. Delusion: key to next truth. Memory: key to the closet where her gift was kept."
+      "description": "Narrow brass key from the wall safe. Fits the wardrobe latch. Delusion: key to next truth. Memory: key to the closet where her gift was kept."
     },
     "key_handle": {
       "label": "Key Handle",
-      "description": "Worn wooden grip, snapped off something domestic. Rest — where the head falls — where this piece waited."
-    },
-    "assembled_key": {
-      "label": "Assembled Key",
-      "description": "Blade and handle joined. Fits the wardrobe latch. Opens doctrine and old coats in the same motion."
+      "description": "Worn wooden grip, snapped off something domestic. Rest — where the head falls — where this piece waited. Not needed for the lock. Kept anyway."
     },
     "cipher_disk": {
       "label": "Cipher Disk",
@@ -36,18 +32,5 @@
       "label": "Phone",
       "description": "No signal. Screen frozen on one notification: You chose to forget. Voicemail waiting — her voice, older: Dad, if you get this… Catalogued as Relic Seven. Never played."
     }
-  },
-  "combine_rules": [
-    {
-      "inputs": [
-        "key_blade",
-        "key_handle"
-      ],
-      "result": "assembled_key",
-      "on_success": [
-        "journal:key_assembled",
-        "thought:key_ready"
-      ]
-    }
-  ]
+  }
 }

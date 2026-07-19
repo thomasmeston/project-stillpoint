@@ -267,7 +267,6 @@ export function buildMergedStoryJson(roomId?: DevLevelId): Record<string, unknow
 export function buildMergedItemsJson(): Record<string, unknown> {
   const merged = JSON.parse(JSON.stringify(itemsData)) as {
     items: Record<string, { label: string; description?: string }>;
-    combine_rules: unknown[];
   };
 
   for (const [itemId, ov] of Object.entries(overrides.items)) {

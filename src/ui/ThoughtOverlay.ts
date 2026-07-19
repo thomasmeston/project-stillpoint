@@ -4,6 +4,7 @@ type WordEntry = {
 
 export class ThoughtOverlay {
   onBlockingChange?: (active: boolean) => void;
+  onDismissStart?: () => void;
 
   private overlay: HTMLElement;
   private anchorEl: HTMLElement | null = null;
@@ -80,6 +81,7 @@ export class ThoughtOverlay {
 
   private dismiss(): void {
     this.dismissable = false;
+    this.onDismissStart?.();
     this.overlay.classList.remove('dismissable');
     this.overlay.classList.add('fade-out');
     this.anchorEl?.classList.add('dismissed');

@@ -110,9 +110,9 @@ export class CorkBoardCluster {
   };
 
   constructor() {
-    this.group.name = 'CorkBoardCluster';
-    this.group.position.copy(CORK_BOARD_CLUSTER_OFFSET);
-    this.group.rotation.y = Math.PI;
+    this.group.name = 'CorkBoard';
+    this.group.userData.devEditable = true;
+    // Position / facing come from room prop data via RoomBuilder.
 
     const frame = buildCorkBoardFrame(BOARD_W, BOARD_H);
     frame.position.z = ITEM_Z * 0.35;
@@ -148,7 +148,7 @@ export class CorkBoardCluster {
     return this.inspectedIndex !== null || this.inspectMode === 'to_inspect';
   }
 
-  inspectItem(index: number): void {
+  inspectItem(index: number, viewCenterWorld?: THREE.Vector3): void {
     if (index < 0 || index >= this.items.length) return;
 
     if (this.inspectedIndex === index && this.inspectMode === 'none') {
@@ -164,7 +164,7 @@ export class CorkBoardCluster {
 
     this.inspectedIndex = index;
     this.inspectFrom = this.poseFromMesh(this.items[index].root);
-    this.inspectTo = this.inspectPose();
+    this.inspectTo = this.inspectPose(viewCenterWorld);
     this.inspectMode = 'to_inspect';
     this.inspectTime = 0;
     this.applyInspectDimming(index);
@@ -295,9 +295,15 @@ export class CorkBoardCluster {
     };
   }
 
-  private inspectPose(): ItemRestPose {
+  private inspectPose(viewCenterWorld?: THREE.Vector3): ItemRestPose {
+    const position = INSPECT_CENTER.clone();
+    if (viewCenterWorld) {
+      this.group.updateMatrixWorld(true);
+      const local = this.group.worldToLocal(viewCenterWorld.clone());
+      position.set(local.x, local.y, Math.max(0.28, local.z + 0.2));
+    }
     return {
-      position: INSPECT_CENTER.clone(),
+      position,
       rotationZ: 0,
       scale: INSPECT_SCALE,
     };

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createPaperMesh, createPushPin, type PaperTheme } from './CrypticPaperArt';
+import { createPaperMesh, createPushPin, WALL_NOTE_THEMES, type PaperTheme } from './CrypticPaperArt';
 
 const INSPECT_CENTER = new THREE.Vector3(0.25, 0.05, 0.32);
 const INSPECT_SCALE = 2.75;
@@ -15,17 +15,6 @@ export function getWallNotesFocusOnWall(): THREE.Vector3 {
     0.08,
   );
 }
-
-const THEMES: PaperTheme[] = [
-  'portal',
-  'sacred_geometry',
-  'time_spiral',
-  'orbit',
-  'warp_grid',
-  'sigil',
-  'diagram',
-  'notes',
-];
 
 type NoteLayout = {
   x: number;
@@ -54,7 +43,6 @@ export type WallNoteHit = { type: 'paper'; index: number };
 
 function buildLayouts(): NoteLayout[] {
   const layouts: NoteLayout[] = [];
-  let seed = 200;
   const slots: Array<[number, number, number]> = [
     [-1.4, -0.45, -8], [-0.95, -0.35, 12], [-0.55, -0.55, -15], [-0.15, -0.25, 6],
     [0.25, -0.45, -10], [0.65, -0.15, 18], [1.05, -0.5, -6], [1.45, -0.3, 14],
@@ -66,12 +54,13 @@ function buildLayouts(): NoteLayout[] {
     [1.55, -0.15, -14], [0.0, 0.35, 8],
   ];
 
-  for (const [x, y, rot] of slots) {
-    const theme = THEMES[seed % THEMES.length];
-    const w = 0.14 + (seed % 5) * 0.015;
-    const h = 0.18 + (seed % 4) * 0.018;
+  for (let i = 0; i < slots.length; i += 1) {
+    const [x, y, rot] = slots[i];
+    const theme = WALL_NOTE_THEMES[i];
+    const seed = 1000 + i * 97;
+    const w = 0.14 + (i % 5) * 0.015;
+    const h = 0.18 + (i % 4) * 0.018;
     layouts.push({ x, y, rot, w, h, seed, theme });
-    seed += 7;
   }
   return layouts;
 }
@@ -98,8 +87,9 @@ export class WallNotesCluster {
   };
 
   constructor() {
-    this.group.name = 'WallNotesCluster';
-    this.group.position.x = WALL_NOTES_CLUSTER_OFFSET_X;
+    this.group.name = 'WallNotes';
+    this.group.userData.devEditable = true;
+    // Position comes from room prop data via RoomBuilder.
     const layouts = buildLayouts();
     for (let i = 0; i < layouts.length; i++) {
       const layout = layouts[i];
@@ -141,7 +131,7 @@ export class WallNotesCluster {
     return this.inspectedIndex !== null || this.inspectMode === 'to_inspect';
   }
 
-  inspectPaper(index: number): void {
+  inspectPaper(index: number, viewCenterWorld?: THREE.Vector3): void {
     if (index < 0 || index >= this.papers.length) return;
 
     if (this.inspectedIndex === index && this.inspectMode === 'none') {
@@ -157,7 +147,7 @@ export class WallNotesCluster {
 
     this.inspectedIndex = index;
     this.inspectFrom = this.poseFromMesh(this.papers[index].mesh);
-    this.inspectTo = this.inspectPose();
+    this.inspectTo = this.inspectPose(viewCenterWorld);
     this.inspectMode = 'to_inspect';
     this.inspectTime = 0;
     this.applyInspectDimming(index);
@@ -228,9 +218,16 @@ export class WallNotesCluster {
     };
   }
 
-  private inspectPose(): PaperRestPose {
+  private inspectPose(viewCenterWorld?: THREE.Vector3): PaperRestPose {
+    const position = INSPECT_CENTER.clone();
+    if (viewCenterWorld) {
+      this.group.updateMatrixWorld(true);
+      const local = this.group.worldToLocal(viewCenterWorld.clone());
+      // Center on camera focus; pull slightly off the wall toward the viewer.
+      position.set(local.x, local.y, Math.max(0.28, local.z + 0.2));
+    }
     return {
-      position: INSPECT_CENTER.clone(),
+      position,
       rotationZ: 0,
       scale: INSPECT_SCALE,
     };

@@ -14,8 +14,6 @@ export function buildItemMesh(itemId: string): THREE.Object3D {
       return buildKeyBlade();
     case 'key_handle':
       return buildKeyHandle();
-    case 'assembled_key':
-      return buildAssembledKey();
     case 'cipher_disk':
       return buildCipherDisk();
     case 'stillpoint_letter':
@@ -74,16 +72,6 @@ function buildKeyHandle(): THREE.Group {
   const stub = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.012, 8), wood);
   stub.position.y = 0.056;
   g.add(stub);
-  return g;
-}
-
-function buildAssembledKey(): THREE.Group {
-  const g = new THREE.Group();
-  g.add(buildKeyHandle());
-  const blade = buildKeyBlade();
-  blade.position.y = 0.06;
-  blade.rotation.z = Math.PI / 2;
-  g.add(blade);
   return g;
 }
 

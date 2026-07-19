@@ -148,7 +148,7 @@
     },
     "key_handle": {
       "title": "Key Handle",
-      "body": "Worn grip, warm from your pocket. It belongs with the brass blade from the safe — domestic metal, not sacred. Unless you made it sacred too."
+      "body": "Worn grip, warm from your pocket. Snapped off something domestic — Rest, where the head falls. The wardrobe does not need it. You kept it anyway."
     },
     "painting": {
       "title": "Framed Painting",
@@ -198,7 +198,7 @@
     },
     "wardrobe": {
       "title": "Wardrobe",
-      "body": "Locked wardrobe. Assembled key fits the brass latch. Inside: cipher disk, folded letter, coats that smell like autumn you didn't live this year.",
+      "body": "Locked wardrobe. The brass key from the safe fits the latch. Inside: an old typewriter, cipher disk, folded letter, coats that smell like autumn you didn't live this year.",
       "thought": "wardrobe_musings"
     },
     "cipher_disk_pickup": {
@@ -218,10 +218,6 @@
       "title": "Window",
       "body": "Four panes, linen curtains, iron bars outside. Moonlit night, distant trees. The sill has a faint scratch — claw marks? — and a ring stain where a cup sat with the first straw.",
       "thought": "window_musings"
-    },
-    "combine_station": {
-      "title": "Desk Surface",
-      "body": "Clear space to fit two small objects together — blade and handle, mundane parts waiting to become a key."
     },
     "lamp": {
       "title": "Lamp",
