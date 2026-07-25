@@ -1,14 +1,15 @@
-# AGENTS.md — Project Stillpoint (Room 1)
+# AGENTS.md — Project Stillpoint
 
 > Harness-neutral handoff for Cody, Cloud Cody, or any coding agent.
-> Last updated: 2026-06-10
+> Last updated: 2026-07-25
 
 ## What this is
 
-Browser-based isometric escape room: you wake trapped in a bedroom and must solve puzzles to escape while uncovering the truth about **Project Stillpoint**.
+Browser isometric escape room (hub-and-spoke): wake amnesiac in a locked bedroom, dual-read crow-cosmology vs memory, Meditate to open portal levels (Ship first), earn lessons that re-gate the bedroom escape. Final padlock **STILLPOINT**. Full pitch: `README.md`. Narrative design: `StoryPlan.md`.
 
 **GitHub:** https://github.com/thomasmeston/project-stillpoint  
-**Local path:** `C:\Users\thoma\OneDrive\Documents\GitHub\project-stillpoint`
+**Local path:** `C:\Users\thoma\OneDrive\Documents\GitHub\project-stillpoint`  
+**Agent OS:** `C:\Users\thoma\agent-os\context\projects\project-stillpoint.md`
 
 ## Stack
 
@@ -16,9 +17,9 @@ Browser-based isometric escape room: you wake trapped in a bedroom and must solv
 |-------|------|
 | Build | Vite 6, TypeScript |
 | 3D | Three.js (isometric room, click-to-move) |
-| Audio | Howler |
+| Audio | Howler (+ Web Audio synth SFX fallback) |
 | Content | JSON under `data/` |
-| Character | Quaternius Animated Men Pack (CC0) — `public/models/characters/man-in-suit.glb` |
+| Character | Papercraft GLB — `public/models/characters/man-papercraft.glb` |
 | Legacy | Godot MVP archived in `legacy/godot/` — do not maintain |
 
 ## Read first (in order)
@@ -98,11 +99,14 @@ npm run package:itch # build + stillpoint-itch.zip
 - Only commit when Thomas explicitly asks.
 - Minimize diff; match existing Three.js/TS patterns in `src/game/` and `src/scene/`.
 - Do not revive or maintain `legacy/godot/` unless explicitly requested.
-- Large assets in `public/` — avoid unnecessary churn; GLB is CC0 (Quaternius).
+- Large assets in `public/` — avoid unnecessary churn; note CC-BY when not CC0.
+- Wall-parented Dev Mode edits: use wall **rest pose**, never folded `wall.position`.
+- `localStorage` `dev_room_layout_*` overrides room JSON — retire/rename props when re-placing.
 
 ## Active work
 
-See `Handoff.md` and Agent OS slice **A-002** in `agent-os/memory/active-work.md`.
+See `Handoff.md` and Agent OS slice **A-002** in `C:\Users\thoma\agent-os\memory\active-work.md`.
+Next: portal-level depth; cork/wall-notes narrative; Pages confirm; remaining placeholder GLBs.
 
 ## Agent OS registration
 

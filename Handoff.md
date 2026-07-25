@@ -1,6 +1,6 @@
 # Handoff — Project Stillpoint (Room 1 + Ship Deck)
 
-> Last updated: 2026-07-02 (StoryPlan narrative pass, cork board + army man GLB)
+> Last updated: 2026-07-25 (Agent OS capture; bedroom props / ship floors / README pitch; Dev Mode wall rest-pose)
 
 ## Context
 
@@ -95,8 +95,14 @@ The game now supports **multi-room loading** (`bedroom`, `pirate_ship`, `level_2
 - Window view: tropical beach landscape procedural texture on `WindowGlass` (`WindowFrameProp.ts` frame mesh)
 - **Oak tree painting:** procedural **tropical beach landscape** canvas (`OakTreePaintingArt.ts`); **swing-open animation** on first examine (`PaintingRevealController.ts`) sets `painting_moved` and reveals wall safe
 - **Wall notes cluster:** ~30 procedural cryptic papers pinned on north wall (`WallNotesCluster.ts`, `CrypticPaperArt.ts`); crow-ledger + “call her” memory crumbs in art; examine hotspot walks player in and enters detail zoom
-- **Cork board cluster:** large cork board on south wall (right of wardrobe) with five crow-gift props — straw, gum wrapper, black button, newspaper scrap, **green army man** (`CorkBoardCluster.ts`, `CorkBoardPinnedArt.ts`); paper strips under each item show the **five intro words** the player clicked during floating-word intro (`IntroWords.ts`, `GameState.introWordsChosen` persisted in save); per-item inspect zoom; hotspot `cork_board`
+- **Cork board cluster:** large cork board on south wall (right of wardrobe) with five crow-gift props — straw, gum wrapper, black button, newspaper scrap, **green army man** (`CorkBoardCluster.ts`, `CorkBoardPinnedArt.ts`); paper strips under each item show the **five intro words** the player clicked during floating-word intro (`IntroWords.ts`, `GameState.introWordsChosen` persisted in save); per-item inspect zoom; hotspot `cork_board`; **no picture light** on frame (removed)
+- **Cork floor clutter:** red yarn ball + ~10 small procedural junk pile under cork board (`CorkBoardFloorClutter.ts` — `RedYarnBall`, `CorkBoardClutter`)
 - **Army man model:** `public/models/props/army-man.glb` — game-rip green plastic soldier (Disney's Extreme Skate Adventure / Toy Story style, CC attribution to Models Resource uploader); async GLTF load, scaled for cork-board pin size
+- **Wall bookcase:** jeremy [Bookcase](https://poly.pizza/m/fZAzX3YrGwd) (CC-BY) + procedural books (`ModernBookshelfProp.ts`, prop id `WallBookcase`); parented to **east wall**; face into room (`rotation` −90°)
+- **Typewriter:** Bruno Oliveira GLB in wardrobe mouth (`WardrobeTypewriter`); wastebin GLB near desk
+- **Cabinet lamps:** two procedural vintage table lamps (`VintageTableLampProp.ts`) with `cabinet_lamp_*` point lights
+- **SFX:** `public/audio/paper.ogg`, `drawer_open.ogg` (BigSoundBank CC0); wired on paper inspect / desk drawer unlock; synth fallbacks in `AudioManager`
+- **Ship multi-deck:** Quaternius sail ship GLB; invisible main + upper floor planes; climb path between decks; rail walls hidden (`PirateShipWorld.ts`); Dev Mode Layout can edit floor / upper floor planes
 - **Desk sketch spread:** procedural papers + sketchbook on desk surface (`DeskSketchSpread.ts`); visible during desk detail zoom — toggle sketchbook open/close, inspect individual papers
 - **Sketchbook prop:** canvas-textured closed notebook on desk (`SketchbookProp.ts`) — cover, spine, page edges, elastic band, feather sketch
 - **Procedural props:** bedside lamp (`BedsideLampProp.ts`), desk mug with pens (`DeskMugProp.ts`), **calendar scrap on bed** (`CalendarScrapProp.ts`), **nightstand reading lamp** (`NightstandReadingLightProp.ts`)
@@ -135,8 +141,9 @@ Toggle from escape menu or `` ` `` key. **Four tabs.** **Level-aware** — follo
 
 - **Layout:** click props in the scene or pick from **Object / item** dropdown — **Objects** lists all room props; **Items** lists inventory pickups (selects linked prop when present, otherwise jumps to Hotspots tab for the pickup zone); Ctrl/Shift multi-select in scene; nudge position/rotation; 50-state undo/redo (`Ctrl+Z`/`Ctrl+Y`); copy layout JSON; reset from repo defaults; **Save Layout** → writes `data/rooms/{level}.json` via Vite dev plugin (`/__dev/save`) or downloads JSON
 - **Hotspots:** click orange hotspot boxes or use dropdown; nudge **position** (X/Y/Z) and **size** (X/Y/Z); keyboard arrows/PageUp-Down move; `[`/`]` `{`/`}` `-`/`+` scale; undo/redo shared with Layout; saved with **Save Layout**
-- **Lighting:** pick `lamp`, `window`, or `reading_lamp` (or click lamp / nightstand reading light props); edit color + brightness (0–3); undo/redo; persisted in layout draft + **Save Layout** (`bedroom.json` `lighting` block)
+- **Lighting:** pick `lamp`, `window`, `reading_lamp`, or cabinet lamps (or click linked props); edit color + brightness (0–3); undo/redo; persisted in layout draft + **Save Layout** (`bedroom.json` `lighting` block)
 - **Text:** edit room opening/wake inner voices, per-hotspot examine copy, and item labels/descriptions with localStorage preview overrides (`DevContentOverrides.ts`); **Save Text** → writes `data/story/{level}-script.json` + `data/items.json` (items bedroom only); **Exit Dev Mode** in Text tab
+- **Wall-prop edit fix:** nudges use wall **rest pose** (`ViewWallController.getRestPosition*` / `RoomBuilder.getWallRestPosition`) so folded walls do not cancel moves; layout drafts retire obsolete prop ids (`Typewriter`, `Bookshelf`, `Bookcase`, `ModernBookshelf`)
 
 Parent/child relationships for grouped prop nudging defined in `DevMover.ts` `RELATIONSHIPS` map. Hotspot debug boxes visible in **Hotspots** and **Text** tabs.
 
@@ -187,18 +194,18 @@ Parent/child relationships for grouped prop nudging defined in `DevMover.ts` `RE
 
 ## Next
 
-1. **Flesh out each portal level** — distinct worlds, multi-step puzzle chains, custom art/audio (MVP uses thin procedural shells)
+1. **Flesh out each portal level** — distinct worlds, multi-step puzzle chains, custom art/audio (MVP uses thin procedural shells; Ship has real sail-ship GLB + decks)
 2. **Return path polish** — optional reverse fall cinematic bedroom ← levels (today: instant **Return to Room** at blackout)
 3. **Desk detail layer** — in top-down zoom, make lamp, phone, drawer, and mug individually clickable (hover/tooltips); sketchbook/papers work today
 4. **Wall notes** — tie inspected papers to journal clues or a future puzzle beat (visual inspect only today)
 5. **Meditate polish** — tune face close-up framing for papercraft model; filter/tokenize floating fragments for readability at high journal count
-6. **Cork board narrative** — tie each crow gift examine text to StoryPlan dual-read beats and puzzle gates (visual + inspect today)
-7. **Add OGG SFX** to `public/audio/` (click, door unlock, rotate). Synth fallback works; real audio will feel better
-8. **Replace remaining placeholder box/cylinder props** with GLB art (bed, bookshelf, wardrobe — chair, nightstand, desk, cork army man done)
-8. **Enable GitHub Pages** on repo Settings → Pages (workflow deploys from `main`)
-9. Expand Playwright coverage (full escape path with real 5 s meditate hold, all four portal round-trips)
-10. ~~**Dev Mode on portal levels**~~ — layout/text/hotspots editor now level-aware; polish UX on ship/garden levels
+6. **Cork board narrative** — tie each crow gift + floor clutter to StoryPlan dual-read beats and puzzle gates
+7. **More OGG SFX** — click / door unlock / rotate still synth-only; paper + drawer_open shipped
+8. **Replace remaining placeholder props** with GLB art (bed, wardrobe — bookcase/typewriter/ship/army man/chair/desk/nightstand done)
+9. **Confirm GitHub Pages** live after deploys from `main`
+10. Expand Playwright coverage (full escape path with real 5 s meditate hold, all four portal round-trips)
 11. Optional: itch.io upload via `npm run package:itch`
+12. **Agent OS:** project file + learnings captured 2026-07-25 — keep `Handoff.md` ↔ `context/projects/project-stillpoint.md` in sync after slices
 
 ## Checklist
 
@@ -233,6 +240,13 @@ Parent/child relationships for grouped prop nudging defined in `DevMover.ts` `RE
 - [x] Army man GLB on cork board (`public/models/props/army-man.glb`)
 - [x] Tropical beach painting + window frame prop
 - [x] Nightstand drawer animation on clock solve
+- [x] Wall bookcase (jeremy GLB + books) east-wall attached
+- [x] Typewriter in wardrobe; vintage cabinet lamps; cork floor yarn + clutter
+- [x] Paper + drawer_open OGG SFX
+- [x] Ship GLB multi-deck floors + climb path; Dev Mode floor planes
+- [x] Dev Mode wall rest-pose parenting (wall props editable when folded)
+- [x] README pitch matches hub-and-spoke + dual-track story
+- [x] Agent OS project context + learnings (2026-07-25)
 - [ ] GitHub Pages live after first deploy
 - [ ] Desk zoom: lamp / phone / drawer clickable
 - [ ] Wall notes / cork gifts tied to puzzle/narrative beats
@@ -266,6 +280,11 @@ Parent/child relationships for grouped prop nudging defined in `DevMover.ts` `RE
 | `src/scene/WallNotesCluster.ts` | Wall papers in zoom view |
 | `src/scene/CorkBoardCluster.ts` | Cork board gifts, intro word strips, inspect zoom |
 | `src/scene/CorkBoardPinnedArt.ts` | Cork board frame + pinned prop art; `loadArmyManFigure()` GLB |
+| `src/scene/CorkBoardFloorClutter.ts` | Red yarn + floor junk pile |
+| `src/scene/ModernBookshelfProp.ts` | Wall bookcase GLB + procedural books |
+| `src/scene/PirateShipWorld.ts` | Sail ship load, decks, ocean, float |
+| `src/scene/WastebinProp.ts` | Wastebin + typewriter loaders |
+| `src/scene/VintageTableLampProp.ts` | Cabinet side lamps |
 | `src/scene/WindowFrameProp.ts` | Window frame mesh |
 | `src/scene/NightstandDrawerController.ts` | Nightstand drawer slide animation |
 | `src/game/IntroWords.ts` | Intro word pool + cork-board strip defaults |
