@@ -2,9 +2,9 @@
 
 A browser isometric escape room about amnesia, obsession, and what you locked yourself away from.
 
-You wake in a locked bedroom with no memory of how you got there. The room is dense with evidence — wall notes, a cork board of crow “gifts,” a sketchbook, a typewriter, photographs, and a door that will not open until you understand enough. Every object can read two ways: as part of a private cosmology built from scraps left by a crow, or as a fragment of a life (family, friends, a daughter) you abandoned and forgot.
+You wake in a locked bedroom with no memory of how you got there. The room is dense with evidence — wall notes, a cork board of crow “gifts,” a sketchbook, a typewriter, photographs, and a door that will not open until you understand enough. Every object can read two ways: as part of a private cosmology built from scraps left by a crow, or as a fragment of a life (family, friends, a daughter) you abandoned.
 
-**How it plays:** Click-to-move exploration in a Tiny Room Stories–style room — four fixed isometric views with walls that fold so you can see into the space. Examine, take, and combine items; keep clues in a journal; listen for inner thoughts. **Meditate** after inspecting the wall clock: hold focus to open portals into mythologized memory-levels (Ship Deck first; Garden, Cavern, and Observatory unlock as you progress). Lessons you earn on those decks feed back into the bedroom and re-gate the classic escape path. The final padlock word is **STILLPOINT** — escape is mechanical, but the story is about what leaving the room means.
+**How it plays:** Click-to-move exploration in a Tiny Room Stories–style room — four fixed isometric views with walls that fold so you can see into the space. Examine, take items; keep clues in a journal; listen for inner thoughts. **Meditate** after inspecting the wall clock: hold focus to open portals into mythologized memory-levels (Ship Deck first; Garden, Cavern, and Observatory unlock as you progress). Lessons you earn on those decks feed back into the bedroom and re-gate the classic escape path. 
 
 **Repo:** https://github.com/thomasmeston/project-stillpoint  
 **Stack:** Vite 6, TypeScript, Three.js, Howler  
